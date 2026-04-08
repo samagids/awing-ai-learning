@@ -1,0 +1,11 @@
+# requirements_tf.txt — TensorFlow environment (venv_tf)
+# Used by: scripts/convert_model.py
+# Pipeline: HuggingFace model -> TFAutoModel(from_pt=True) -> TF Keras -> TFLite
+#
+# Install: venv_tf\Scripts\pip install -r scripts\requirements_tf.txt
+
+transformers>=4.30.0
+safetensors>=0.4.0
+tensorflow>=2.16.0,<2.22.0
+tf_keras>=2.16.0
+numpy>=1.24.0

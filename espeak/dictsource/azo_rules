@@ -1,0 +1,363 @@
+// ====================================================================
+// Awing (azo) Pronunciation Rules for eSpeak-NG
+// Maps Awing orthography to phonemes
+// Reference: Alomofor & Anderson, "Awing Orthography Guide" (2005)
+//            Alomofor, "Awing-English Dictionary" (2007)
+//
+// Tone marking in Awing orthography:
+//   á (acute) = High/Mid tone (non-low) → tone phoneme 1
+//   a (unmarked) = Low tone → tone phoneme 3
+//   â (circumflex) = Falling tone → tone phoneme 5
+//   ǎ (caron/háček) = Rising tone → tone phoneme 4
+//
+// Note: High and Mid share the same diacritic (á).
+// We map á → High tone (1) by default.
+// Context-sensitive mid tone can be refined later.
+// ====================================================================
+
+// ====================================================================
+// .replace — Normalize Unicode combining characters
+// Converts composed/decomposed forms to consistent representations
+// ====================================================================
+.replace
+// Normalize common Unicode variations
+  ŋ	ŋ
+  ɛ	ɛ
+  ɔ	ɔ
+  ə	ə
+  ɨ	ɨ
+
+
+// ====================================================================
+// Letter groups for use in rules
+// ====================================================================
+// L01 = all Awing vowel letters (for matching)
+.L01 a e ɛ ə i ɨ o ɔ u á é ɛ́ ə́ í ɨ́ ó ɔ́ ú à è ɛ̀ ə̀ ì ɨ̀ ò ɔ̀ ù â ê ɛ̂ ə̂ î ɨ̂ ô ɔ̂ û ǎ ě ɛ̌ ə̌ ǐ ɨ̌ ǒ ɔ̌ ǔ
+
+// L02 = consonant letters
+.L02 b d f g k l m n p s t w y z
+
+// L03 = nasal consonants (for prenasalized cluster detection)
+.L03 m n ŋ
+
+// L04 = high vowels (for /t/ aspiration rule)
+.L04 i ɨ u í ɨ́ ú
+
+
+// ====================================================================
+// CONSONANT GROUPS
+// Multi-character graphemes must come before single-character ones
+// eSpeak processes rules in order; first match wins
+// ====================================================================
+
+// --- Prenasalized consonants ---
+// These are syllabic nasal + consonant clusters
+// The nasal is homorganic (same place as following consonant)
+
+.group mb
+       mb     mb         // /mb/ prenasalized bilabial
+
+.group nt
+       nt     nt         // /nt/ prenasalized alveolar
+
+.group nd
+       nd     nd         // /nd/ prenasalized alveolar voiced
+
+.group nk
+       nk     Nk         // /ŋk/ prenasalized velar (nasal assimilates)
+
+.group ng
+       ng     Ng         // /ŋg/ prenasalized velar (nasal assimilates)
+       // Note: "ng" is always prenasalized, never /n/+/g/ separately
+
+.group mm
+       mm     mm         // /mm/ geminate/prenasalized bilabial nasal
+
+.group nn
+       nn     nn         // /nn/ geminate/prenasalized alveolar nasal
+
+.group nj
+       nj     n^Z        // /ɲdʒ/ prenasalized palatal (nasal + voiced affricate)
+
+.group nch
+       nch    n^tS       // /ɲtʃ/ prenasalized palatal (nasal + voiceless affricate)
+
+.group nts
+       nts    nts        // /nts/ prenasalized alveolar affricate
+
+.group ndz
+       ndz    ndz        // /ndz/ prenasalized alveolar voiced affricate
+
+.group nny
+       nny    n^n^       // /ɲɲ/ prenasalized palatal nasal
+
+
+// --- Palatalized consonants ---
+// Second element is palatal glide [j], written "y"
+
+.group ty
+       ty     tj         // /tj/ palatalized alveolar
+
+.group ky
+       ky     kj         // /kj/ palatalized velar
+
+.group py
+       py     pj         // /pj/ palatalized bilabial
+
+.group by
+       by     bj         // /bj/ palatalized bilabial voiced
+
+.group gy
+       gy     gj         // /gj/ palatalized velar voiced
+
+.group fy
+       fy     fj         // /fj/ palatalized labiodental
+
+.group ly
+       ly     lj         // /lj/ palatalized lateral
+
+.group my
+       my     mj         // /mj/ palatalized bilabial nasal
+
+
+// --- Labialized consonants ---
+// Second element is labiovelar glide [w], written "w"
+
+.group tw
+       tw     tw         // /tw/ labialized alveolar
+
+.group kw
+       kw     kw         // /kw/ labialized velar
+
+.group pw
+       pw     pw         // /pw/ labialized bilabial
+
+.group bw
+       bw     bw         // /bw/ labialized bilabial voiced
+
+.group dw
+       dw     dw         // /dw/ labialized alveolar voiced
+
+.group gw
+       gw     gw         // /gw/ labialized velar voiced
+
+.group fw
+       fw     fw         // /fw/ labialized labiodental
+
+.group lw
+       lw     lw         // /lw/ labialized lateral
+
+.group nw
+       nw     nw         // /nw/ labialized alveolar nasal
+
+.group shw
+       shw    Sw         // /ʃw/ labialized postalveolar
+
+.group chw
+       chw    tSw        // /tʃw/ labialized postalveolar affricate
+
+.group jw
+       jw     Zw         // /ʒw/ labialized postalveolar voiced
+
+
+// --- Digraph consonants (non-cluster) ---
+
+.group gh
+       gh     Q          // /ɣ/ voiced velar fricative
+
+.group sh
+       sh     S          // /ʃ/ voiceless postalveolar fricative
+
+.group ch
+       ch     tS         // /tʃ/ voiceless postalveolar affricate
+
+.group ts
+       ts     ts         // /ts/ voiceless alveolar affricate
+
+.group ny
+       ny     n^         // /ɲ/ palatal nasal
+
+
+// --- Single consonants ---
+
+.group b
+       b      b          // /b/
+
+.group d
+       d      d          // /d/
+
+.group f
+       f      f          // /f/
+
+.group g
+       g      g          // /g/ (only after nasals word-initially)
+
+.group j
+       j      Z          // /ʒ/
+
+.group k
+       k      k          // /k/
+
+.group l
+       l      l          // /l/
+
+.group m
+       m      m          // /m/
+
+.group n
+       n      n          // /n/
+
+.group p
+       p      p          // /p/
+
+.group s
+       s      s          // /s/
+
+.group t
+       t      t          // /t/
+
+.group w
+       w      w          // /w/
+
+.group y
+       y      j          // /j/ palatal approximant
+
+.group z
+       z      z          // /z/
+
+
+// --- Special characters ---
+
+.group ŋ
+       ŋ      N          // /ŋ/ velar nasal (also written as part of "ng")
+
+.group '
+       '      ?          // /ʔ/ glottal stop
+
+
+// ====================================================================
+// VOWEL GROUPS
+// Each vowel has forms with tone diacritics:
+//   acute (á) = High tone (1)
+//   unmarked  = Low tone (3)
+//   circumflex (â) = Falling tone (5)
+//   caron (ǎ) = Rising tone (4)
+//
+// Long vowels are written as doubled: aa, ee, ɛɛ, əə, oo
+// ====================================================================
+
+// --- /a/ ---
+.group a
+       aa     a:3        // long low
+       aá     a:1        // long high
+       áa     a:1        // long high (tone on first)
+       áá     a:1        // long high
+       a      a3         // short low (default)
+       á      a1         // short high
+       â      a5         // short falling
+       ǎ      a4         // short rising
+
+// --- /e/ ---
+.group e
+       ee     e:3        // long low
+       eé     e:1        // long high
+       ée     e:1        // long high (tone on first)
+       éé     e:1        // long high
+       e      e3         // short low
+       é      e1         // short high
+       ê      e5         // short falling
+       ě      e4         // short rising
+
+// --- /ɛ/ (open-mid front) ---
+.group ɛ
+       ɛɛ     E:3        // long low
+       ɛɛ́     E:1        // long high
+       ɛ́ɛ     E:1        // long high
+       ɛ́ɛ́     E:1        // long high
+       ɛ      E3         // short low
+       ɛ́      E1         // short high
+       ɛ̂      E5         // short falling
+       ɛ̌      E4         // short rising
+
+// --- /ə/ (schwa) ---
+.group ə
+       əə     @:3        // long low
+       əə́     @:1        // long high
+       ə́ə     @:1        // long high
+       ə́ə́     @:1        // long high
+       ə      @3         // short low
+       ə́      @1         // short high
+       ə̂      @5         // short falling
+       ə̌      @4         // short rising
+
+// --- /i/ ---
+.group i
+    // Diphthong iə
+       ié     i@3        // diphthong iə low
+       iə́     i@1        // diphthong iə high
+       iə     i@3        // diphthong iə low
+       i      i3         // short low
+       í      i1         // short high
+       î      i5         // short falling
+       ǐ      i4         // short rising
+
+// --- /ɨ/ (barred-i, close central) ---
+.group ɨ
+    // Diphthong ɨə
+       ɨə     i"@3       // diphthong ɨə low
+       ɨ      i"3        // short low
+       ɨ́      i"1        // short high
+       ɨ̂      i"5        // short falling
+       ɨ̌      i"4        // short rising
+
+// --- /o/ ---
+.group o
+       oo     o:3        // long low
+       oó     o:1        // long high
+       óo     o:1        // long high
+       óó     o:1        // long high
+       o      o3         // short low
+       ó      o1         // short high
+       ô      o5         // short falling
+       ǒ      o4         // short rising
+
+// --- /ɔ/ (open-mid back rounded) ---
+.group ɔ
+       ɔ      O3         // short low
+       ɔ́      O1         // short high
+       ɔ̂      O5         // short falling
+       ɔ̌      O4         // short rising
+
+// --- /u/ ---
+.group u
+    // Diphthong uə
+       uə     u@3        // diphthong uə low
+       uə́     u@1        // diphthong uə high
+       u      u3         // short low
+       ú      u1         // short high
+       û      u5         // short falling
+       ǔ      u4         // short rising
+
+
+// ====================================================================
+// SYLLABIC NASAL PREFIX
+// Ń- (high tone nasal prefix on verbs): always high tone
+// ḿ (before b/p), ń (before d/t/s/z/l/n), ɲ́ (before ch/j), ŋ́ (before k/g)
+// ====================================================================
+
+.group ḿ
+       ḿ      m1         // syllabic nasal high tone (bilabial)
+
+.group ń
+       ń      n-1        // syllabic nasal high tone (alveolar)
+
+.group ŋ́
+       ŋ́      N1         // syllabic nasal high tone (velar)
+
+
+// ====================================================================
+// PUNCTUATION AND SPACING
+// ====================================================================
+
+.group _
+       _      _          // word boundary / pause

@@ -1,0 +1,9 @@
+# DEPRECATED — this file is replaced by two separate requirement files:
+#
+#   requirements_tf.txt    — TensorFlow (venv_tf)  — for convert_model.py
+#   requirements_torch.txt — PyTorch    (venv_torch) — for everything else
+#
+# See install_dependencies.bat v2.0.0 for details.
+#
+# Keeping this file as a redirect so old instructions still work.
+-r requirements_tf.txt

@@ -1,0 +1,5 @@
+# Configuration for Awing AI Learning
+
+environment: production
+logging: verbose
+model_path: assets/model.tflite

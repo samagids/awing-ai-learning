@@ -1,0 +1,15 @@
+{
+  "format_version": 1,
+  "operations": [
+    {
+      "op_name": "/encoder/layer.0/intermediate/dense/Add",
+      "param_target": "inputs",
+      "param_name": "encoder.layer.0.intermediate.dense.bias",
+      "pre_process_transpose_perm": [
+        0
+      ]
+    }
+  ],
+  "_comment": "Auto-generated replacement for model",
+  "_generation_reason": "conversion_error"
+}

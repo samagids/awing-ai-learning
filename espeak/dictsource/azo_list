@@ -1,0 +1,75 @@
+// ====================================================================
+// Awing (azo) Exception Dictionary for eSpeak-NG
+// Contains: letter names, number words, common exceptions
+// Reference: Alomofor, "Awing-English Dictionary" (2007)
+// ====================================================================
+
+// --- Letter names ---
+// Used when spelling out words letter by letter
+_a    a1
+_b    be3
+_ch   tSe3
+_d    de3
+_e    e1
+_ɛ    E1
+_ə    @1
+_f    Ef1
+_g    ge3
+_gh   Qa1
+_i    i1
+_ɨ    i"1
+_j    Ze3
+_k    ka1
+_l    El1
+_m    Em1
+_n    En1
+_ny   En^1
+_ŋ    EN1
+_o    o1
+_ɔ    O1
+_p    pe3
+_s    Es1
+_sh   ES1
+_t    te3
+_ts   tse3
+_u    u1
+_w    we3
+_y    je3
+_z    ze3
+
+
+// --- Numbers ---
+// Awing counting system
+_0    nO5
+_1    i"mo5
+_2    be1
+_3    ta1
+_4    kwa3
+_5    ta1n3
+_6    n-tsa1
+_7    sa1mbi3
+_8    n-e1
+_9    e1bu@3
+
+
+// --- The one exception word ending in consonant ---
+// nda' — "only" (the ONLY Awing word ending in a consonant)
+nda'   nda1?
+
+
+// --- Common function words with specific pronunciation ---
+// These ensure high-frequency words are always correct
+
+// Infinitive prefix
+mə   m@3
+
+// Noun class prefixes (low tone)
+a    a3
+ə    @3
+
+// Pronouns
+// (will be expanded as more data is extracted from dictionary)
+
+
+// --- Greeting/common phrases ---
+// (placeholder for expansion from dictionary OCR)

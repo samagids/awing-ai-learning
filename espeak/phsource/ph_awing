@@ -1,0 +1,142 @@
+//====================================================================
+// Awing (azo) Phoneme Table for eSpeak-NG
+// Language: Awing — Grassfields Bantu, Ngemba subgroup
+// ISO 639-3: azo
+// Reference: Alomofor Christian & Stephen C. Anderson,
+//            "Awing Orthography Guide" (2005)
+//            "Awing-English Dictionary" (2007)
+//
+// This table extends base1. Only phonemes that are NEW or DIFFERENT
+// from base1 are defined here. base1 already provides:
+//   a, e, E(ɛ), @(ə), i, o, O(ɔ), u, S(ʃ), Z(ʒ), tS(tʃ),
+//   N(ŋ), n^(ɲ), ?(ʔ), m, n, l, w, j, t, k, b, p, d, g, f, s, z
+//====================================================================
+
+//--------------------------------------------------------------------
+// TONES — modeled after Vietnamese (ph_vietnam)
+// Each tone is a "stress" type phoneme with Tone() pitch envelope
+// Awing has 3 level tones and 2 contour tones.
+//--------------------------------------------------------------------
+
+phoneme 1   // High tone (á) — highest pitch, level
+  stress
+  Tone(50, 55, envelope/p_level, NULL)
+endphoneme
+
+phoneme 2   // Mid tone — between high and low, level
+  stress
+  Tone(35, 38, envelope/p_level, NULL)
+endphoneme
+
+phoneme 3   // Low tone (unmarked) — lowest pitch, level
+  stress
+  Tone(18, 20, envelope/p_level, NULL)
+endphoneme
+
+phoneme 4   // Rising tone (ǎ) — low to high
+  stress
+  Tone(18, 55, envelope/p_rise, NULL)
+endphoneme
+
+phoneme 5   // Falling tone (â) — high to low
+  stress
+  Tone(55, 18, envelope/p_fall, NULL)
+endphoneme
+
+
+//--------------------------------------------------------------------
+// ADDITIONAL VOWELS
+//--------------------------------------------------------------------
+
+// /ɨ/ — close central unrounded (barred-i)
+// Not in base1 — between /i/ and /u/
+phoneme i"
+  vwl
+  length 150
+  ipa ɨ
+  FMT(vowel/i#)
+endphoneme
+
+// Long vowels — Awing has distinctive length (written doubled: aa, ee, oo)
+phoneme a:
+  vwl
+  length 280
+  ipa aː
+  FMT(vowel/a)
+endphoneme
+
+phoneme e:
+  vwl
+  length 270
+  ipa eː
+  FMT(vowel/e)
+endphoneme
+
+phoneme E:
+  vwl
+  length 270
+  ipa ɛː
+  FMT(vowel/e_mid)
+endphoneme
+
+phoneme @:
+  vwl
+  length 250
+  ipa əː
+  FMT(vowel/@)
+endphoneme
+
+phoneme o:
+  vwl
+  length 270
+  ipa oː
+  FMT(vowel/o)
+endphoneme
+
+
+//--------------------------------------------------------------------
+// DIPHTHONGS (Awing-specific: -iə, -uə)
+//--------------------------------------------------------------------
+
+phoneme i@
+  vwl
+  length 250
+  ipa iə
+  FMT(vdiph/i@_2)
+endphoneme
+
+phoneme u@
+  vwl
+  length 250
+  ipa uə
+  FMT(vdiph/@u)
+endphoneme
+
+
+//--------------------------------------------------------------------
+// CONSONANTS — Awing-specific or overridden from base1
+//--------------------------------------------------------------------
+
+// /ɣ/ — voiced velar fricative (written "gh")
+// Occurs between vowels. Uses the existing Q formant file.
+phoneme Q
+  vcd vel frc
+  ipa ɣ
+  FMT(voc/Q)
+endphoneme
+
+// /ts/ — voiceless alveolar affricate (written "ts")
+phoneme ts
+  vls alv afr
+  ipa ts
+  WAV(ustop/ts, 50)
+endphoneme
+
+// /n̩/ — syllabic nasal prefix (Ń-)
+// High tone homorganic nasal that adapts to following consonant
+phoneme n-
+  vcd alv nas
+  ipa n̩
+  length 80
+  FMT(n/n-syl)
+endphoneme
