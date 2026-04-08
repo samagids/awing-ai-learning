@@ -313,11 +313,15 @@ class AuthService extends ChangeNotifier {
   // ==================== Session / Logout ====================
 
   /// Logout — clears current session. Caller must verify account PIN first.
-  void logout() {
+  Future<void> logout() async {
     _currentAccount = null;
     _currentProfile = null;
     _prefs.remove(_keyCurrentEmail);
     _prefs.remove(_keyCurrentProfileId);
+    // Sign out of Google so the login screen shows the account picker next time
+    try {
+      await CloudBackupService.loginGoogleSignIn.signOut();
+    } catch (_) {}
     notifyListeners();
   }
 

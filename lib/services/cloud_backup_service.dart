@@ -32,9 +32,16 @@ class CloudBackupService extends ChangeNotifier {
   late SharedPreferences _prefs;
   bool _initialized = false;
 
-  /// Shared GoogleSignIn instance — includes BOTH email and drive.appdata scopes.
-  /// LoginScreen should use this same instance so the user grants all scopes at once.
-  static final GoogleSignIn sharedGoogleSignIn = GoogleSignIn(
+  /// GoogleSignIn for login only — just 'email' scope, no verification needed.
+  /// Cloud backup uses a separate instance that requests drive.appdata
+  /// only when the user explicitly enables backup.
+  static final GoogleSignIn loginGoogleSignIn = GoogleSignIn(
+    scopes: ['email'],
+  );
+
+  /// GoogleSignIn for cloud backup — requests drive.appdata scope.
+  /// Only used when user explicitly enables cloud backup from settings.
+  final GoogleSignIn _driveGoogleSignIn = GoogleSignIn(
     scopes: ['email', _scope],
   );
 
@@ -43,7 +50,7 @@ class CloudBackupService extends ChangeNotifier {
   bool _isSyncing = false;
   String? _lastBackupTime;
   String? _syncError;
-  bool _autoSync = true; // Default ON so profiles persist automatically
+  bool _autoSync = false; // Off by default — user enables from backup settings
   String? _connectedEmail;
 
   // Getters
@@ -57,38 +64,32 @@ class CloudBackupService extends ChangeNotifier {
   Future<void> initialize() async {
     if (_initialized) return;
     _prefs = await SharedPreferences.getInstance();
-    // Default to true if key doesn't exist yet (first install)
-    _autoSync = _prefs.getBool(_keyAutoSync) ?? true;
+    _autoSync = _prefs.getBool(_keyAutoSync) ?? false;
     _lastBackupTime = _prefs.getString(_keyLastBackup);
 
-    // Check if already signed in silently
-    try {
-      final account = await sharedGoogleSignIn.signInSilently();
-      if (account != null) {
-        _isSignedIn = true;
-        _connectedEmail = account.email;
+    // Check if already signed in with Drive scope silently
+    if (_autoSync) {
+      try {
+        final account = await _driveGoogleSignIn.signInSilently();
+        if (account != null) {
+          _isSignedIn = true;
+          _connectedEmail = account.email;
+        }
+      } catch (e) {
+        debugPrint('Cloud backup silent sign-in failed: $e');
       }
-    } catch (e) {
-      debugPrint('Cloud backup silent sign-in failed: $e');
     }
 
     _initialized = true;
     notifyListeners();
   }
 
-  /// Called after login to mark cloud as connected with the signed-in account.
-  /// This avoids needing a separate sign-in for cloud backup.
-  void connectWithAccount(GoogleSignInAccount account) {
-    _isSignedIn = true;
-    _connectedEmail = account.email;
-    notifyListeners();
-  }
-
   /// Sign in to Google Drive for cloud backup.
+  /// This prompts for the drive.appdata scope — only called from backup settings.
   Future<bool> signIn() async {
     try {
       _syncError = null;
-      final account = await sharedGoogleSignIn.signIn();
+      final account = await _driveGoogleSignIn.signIn();
       if (account == null) {
         _syncError = 'Sign-in cancelled.';
         notifyListeners();
@@ -97,6 +98,8 @@ class CloudBackupService extends ChangeNotifier {
 
       _isSignedIn = true;
       _connectedEmail = account.email;
+      _autoSync = true;
+      _prefs.setBool(_keyAutoSync, true);
       _syncError = null;
       notifyListeners();
       return true;
@@ -109,10 +112,12 @@ class CloudBackupService extends ChangeNotifier {
 
   Future<void> signOut() async {
     try {
-      await sharedGoogleSignIn.signOut();
+      await _driveGoogleSignIn.signOut();
     } catch (_) {}
     _isSignedIn = false;
     _connectedEmail = null;
+    _autoSync = false;
+    _prefs.setBool(_keyAutoSync, false);
     notifyListeners();
   }
 
@@ -125,7 +130,7 @@ class CloudBackupService extends ChangeNotifier {
   /// Get authenticated HTTP headers for Drive API calls.
   Future<Map<String, String>?> _getAuthHeaders() async {
     try {
-      final account = await sharedGoogleSignIn.signInSilently();
+      final account = await _driveGoogleSignIn.signInSilently();
       if (account == null) return null;
       final auth = await account.authentication;
       if (auth.accessToken == null) return null;
