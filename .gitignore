@@ -52,7 +52,7 @@ venv_torch/
 # Training data and temp files
 training_data/
 videos/
-models/
+/models/
 scripts/_audio_temp/
 scripts/_espeak_temp/
 
