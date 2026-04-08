@@ -99,16 +99,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     IconButton(
-                      icon: const Icon(Icons.cloud_outlined),
-                      tooltip: 'Cloud Backup',
-                      onPressed: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const BackupScreen(),
-                        ),
-                      ),
-                    ),
-                    IconButton(
                       icon: const Icon(Icons.person),
                       tooltip: 'Profile',
                       onPressed: () => Navigator.push(
@@ -121,16 +111,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     IconButton(
                       icon: const Icon(Icons.swap_horiz),
                       tooltip: 'Switch Profile',
-                      onPressed: () async {
-                        final ok = await ParentalGate.verify(
-                          context,
-                          title: 'Switch Profile',
-                          message: 'Only a parent or guardian should switch profiles.',
-                        );
-                        if (ok && context.mounted) {
-                          auth.switchProfile();
-                        }
-                      },
+                      onPressed: () => auth.switchProfile(),
                     ),
                     IconButton(
                       icon: const Icon(Icons.family_restroom),

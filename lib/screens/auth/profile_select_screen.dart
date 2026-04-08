@@ -166,19 +166,9 @@ class _ProfileSelectScreenState extends State<ProfileSelectScreen> {
                         if (index < profiles.length) {
                           return _ProfileCard(
                             profile: profiles[index],
-                            onTap: () async {
-                              final p = profiles[index];
-                              // Require account PIN first (if set)
-                              if (auth.hasAccountPin) {
-                                final accountOk = await _showAccountPinDialog(auth);
-                                if (!accountOk) return;
-                              }
-                              // Then require profile PIN (if set)
-                              if (p.hasPin) {
-                                final pinOk = await _showProfilePinDialog(p);
-                                if (!pinOk) return;
-                              }
-                              if (mounted) auth.selectProfile(p.id);
+                            onTap: () {
+                              // Kids can freely switch profiles — no PIN needed
+                              auth.selectProfile(profiles[index].id);
                             },
                             onDelete: profiles.length > 0
                                 ? () => _confirmDelete(profiles[index])

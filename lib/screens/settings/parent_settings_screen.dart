@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:awing_ai_learning/services/auth_service.dart';
 import 'package:awing_ai_learning/services/parent_notification_service.dart';
+import 'package:awing_ai_learning/screens/settings/backup_screen.dart';
 
 /// Settings screen for parents to manage WhatsApp notifications,
 /// update their contact info, and send test/weekly summary messages.
@@ -317,6 +318,44 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
                     );
                   },
                 ),
+
+                // Cloud Backup
+                _SectionCard(
+                  title: 'Cloud Backup',
+                  icon: Icons.cloud_outlined,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Back up profiles and progress to Google Drive so data is safe if the app is reinstalled.',
+                        style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                      ),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const BackupScreen(),
+                            ),
+                          ),
+                          icon: const Icon(Icons.cloud_outlined),
+                          label: const Text('Manage Cloud Backup'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.indigo,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
 
                 // Info footer
                 const SizedBox(height: 24),
