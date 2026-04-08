@@ -120,7 +120,9 @@ class _ProfileSelectScreenState extends State<ProfileSelectScreen> {
         final profiles = auth.profiles;
         final email = auth.currentEmail;
 
-        return Scaffold(
+        return PopScope(
+          canPop: false,
+          child: Scaffold(
           body: SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -230,6 +232,7 @@ class _ProfileSelectScreenState extends State<ProfileSelectScreen> {
               ),
             ),
           ),
+        ),
         );
       },
     );

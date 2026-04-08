@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:provider/provider.dart';
 import 'package:awing_ai_learning/services/auth_service.dart';
 import 'package:awing_ai_learning/services/cloud_backup_service.dart';
@@ -15,10 +14,6 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
   String? _error;
 
-  final GoogleSignIn _googleSignIn = GoogleSignIn(
-    scopes: ['email'],
-  );
-
   Future<void> _signInWithGoogle() async {
     setState(() {
       _isLoading = true;
@@ -26,7 +21,10 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      final account = await _googleSignIn.signIn();
+      // Use the SHARED GoogleSignIn instance from CloudBackupService.
+      // This ensures both email AND drive.appdata scopes are granted
+      // in a single consent flow — no separate sign-in needed for backup.
+      final account = await CloudBackupService.sharedGoogleSignIn.signIn();
       if (account == null) {
         // User cancelled sign-in
         setState(() => _isLoading = false);
@@ -37,6 +35,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
       final auth = context.read<AuthService>();
       final cloud = context.read<CloudBackupService>();
+
+      // Connect cloud backup with the signed-in account
+      cloud.connectWithAccount(account);
+
       final error = auth.loginWithGoogle(
         account.email,
         displayName: account.displayName,
@@ -49,6 +51,9 @@ class _LoginScreenState extends State<LoginScreen> {
           _error = error;
           _isLoading = false;
         });
+      } else {
+        // Trigger an initial backup after successful login
+        cloud.onDataChanged();
       }
       // AuthService notifies listeners -> app rebuilds
     } catch (e) {
