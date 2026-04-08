@@ -10,6 +10,7 @@ import 'package:awing_ai_learning/screens/exam/student_join_screen.dart';
 import 'package:awing_ai_learning/screens/admin/developer_screen.dart';
 import 'package:awing_ai_learning/screens/settings/feedback_screen.dart';
 import 'package:awing_ai_learning/screens/settings/parent_settings_screen.dart';
+import 'package:awing_ai_learning/screens/settings/backup_screen.dart';
 import 'package:awing_ai_learning/screens/contribute/contribute_screen.dart';
 import 'package:awing_ai_learning/components/parental_gate.dart';
 import 'package:awing_ai_learning/screens/about_screen.dart';
@@ -97,6 +98,16 @@ class _HomeScreenState extends State<HomeScreen> {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    IconButton(
+                      icon: const Icon(Icons.cloud_outlined),
+                      tooltip: 'Cloud Backup',
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const BackupScreen(),
+                        ),
+                      ),
+                    ),
                     IconButton(
                       icon: const Icon(Icons.person),
                       tooltip: 'Profile',
