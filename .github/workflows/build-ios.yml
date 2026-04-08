@@ -20,12 +20,26 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.22.0'
           channel: 'stable'
           cache: true
 
       - name: Flutter version info
         run: flutter --version
+
+      - name: Create placeholder assets (generated locally, not in repo)
+        run: |
+          touch assets/model.tflite
+          for dir in assets/audio/boy/alphabet assets/audio/boy/vocabulary assets/audio/boy/sentences assets/audio/boy/stories \
+                     assets/audio/girl/alphabet assets/audio/girl/vocabulary assets/audio/girl/sentences assets/audio/girl/stories \
+                     assets/audio/young_man/alphabet assets/audio/young_man/vocabulary assets/audio/young_man/sentences assets/audio/young_man/stories \
+                     assets/audio/young_woman/alphabet assets/audio/young_woman/vocabulary assets/audio/young_woman/sentences assets/audio/young_woman/stories \
+                     assets/audio/man/alphabet assets/audio/man/vocabulary assets/audio/man/sentences assets/audio/man/stories \
+                     assets/audio/woman/alphabet assets/audio/woman/vocabulary assets/audio/woman/sentences assets/audio/woman/stories \
+                     assets/audio/alphabet assets/audio/vocabulary assets/audio/tones assets/audio/sentences assets/audio/stories assets/audio/dictionary \
+                     assets/images; do
+            mkdir -p "$dir"
+            [ -z "$(ls -A $dir 2>/dev/null)" ] && touch "$dir/.gitkeep"
+          done
 
       - name: Install dependencies
         run: flutter pub get
