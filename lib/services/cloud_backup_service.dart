@@ -232,15 +232,39 @@ class CloudBackupService extends ChangeNotifier {
         return false;
       }
 
-      // Collect data to backup
+      // Collect data to backup — must match the actual SharedPreferences keys
+      // used by AuthService and ProgressService
       final accountsJson = _prefs.getString('auth_accounts');
-      final progressJson = _prefs.getString('progress_data');
-      final settingsJson = _prefs.getString('app_settings');
+
+      // ProgressService stores data across multiple individual keys
+      final progressData = <String, dynamic>{};
+      for (final key in [
+        'completed_lessons',
+        'quiz_scores',
+        'daily_streak',
+        'last_open_date',
+        'words_learned',
+        'spaced_repetition',
+        'total_xp',
+        'badges',
+        'viewed_letters',
+        'viewed_words',
+        'tried_difficulty_levels',
+      ]) {
+        final value = _prefs.getString(key) ?? _prefs.getInt(key)?.toString();
+        if (value != null) progressData[key] = value;
+      }
+
+      // Settings
+      final settingsData = <String, dynamic>{
+        'isDarkMode': _prefs.getBool('isDarkMode') ?? false,
+        'cloud_auto_sync': _prefs.getBool('cloud_auto_sync') ?? true,
+      };
 
       final backup = {
         'accounts': accountsJson != null ? jsonDecode(accountsJson) : {},
-        'progress': progressJson != null ? jsonDecode(progressJson) : {},
-        'settings': settingsJson != null ? jsonDecode(settingsJson) : {},
+        'progress': progressData,
+        'settings': settingsData,
         'backup_time': DateTime.now().toIso8601String(),
         'app_version': '1.2.0',
       };
@@ -291,15 +315,32 @@ class CloudBackupService extends ChangeNotifier {
         return false;
       }
 
-      // Restore data
+      // Restore data — write back to the same individual SharedPreferences keys
       if (backup['accounts'] != null) {
-        _prefs.setString('auth_accounts', jsonEncode(backup['accounts']));
+        await _prefs.setString('auth_accounts', jsonEncode(backup['accounts']));
       }
-      if (backup['progress'] != null) {
-        _prefs.setString('progress_data', jsonEncode(backup['progress']));
+
+      // Restore progress — each key stored individually
+      if (backup['progress'] != null && backup['progress'] is Map) {
+        final progress = backup['progress'] as Map<String, dynamic>;
+        // Int keys need setInt, string keys need setString
+        const intKeys = {'daily_streak', 'total_xp'};
+        for (final entry in progress.entries) {
+          if (intKeys.contains(entry.key)) {
+            final intVal = int.tryParse(entry.value.toString());
+            if (intVal != null) await _prefs.setInt(entry.key, intVal);
+          } else if (entry.value is String) {
+            await _prefs.setString(entry.key, entry.value);
+          }
+        }
       }
-      if (backup['settings'] != null) {
-        _prefs.setString('app_settings', jsonEncode(backup['settings']));
+
+      // Restore settings
+      if (backup['settings'] != null && backup['settings'] is Map) {
+        final settings = backup['settings'] as Map<String, dynamic>;
+        if (settings['isDarkMode'] != null) {
+          await _prefs.setBool('isDarkMode', settings['isDarkMode'] == true);
+        }
       }
 
       _lastBackupTime = backup['backup_time'];
