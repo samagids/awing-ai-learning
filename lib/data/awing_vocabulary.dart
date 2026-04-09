@@ -242,7 +242,7 @@ const List<AwingWord> actions = [
   // Beginner — simple everyday actions
   AwingWord(awing: 'nô', english: 'drink', category: 'actions'),
   AwingWord(awing: 'ko', english: 'take', category: 'actions'),
-  AwingWord(awing: 'yîə', english: 'come', category: 'actions'),
+  AwingWord(awing: 'yǐə', english: 'come', category: 'actions'),
   AwingWord(awing: 'fê', english: 'give', category: 'actions'),
   AwingWord(awing: 'mîə', english: 'swallow', category: 'actions'),
   AwingWord(awing: 'lúmə', english: 'bite', category: 'actions'),
@@ -648,299 +648,138 @@ class AwingPhrase {
   });
 }
 
-/// Simple, kid-friendly phrases organized from easiest to hardest.
-/// Each phrase uses only common Awing words.
+/// Phrases and sentences verified from the Awing Orthography Guide (2005)
+/// by Alomofor Christian and Stephen C. Anderson, and the Awing English
+/// Dictionary (2007) by Alomofor Christian, CABTAL.
+///
+/// IMPORTANT: Only add phrases that are directly sourced from these PDFs
+/// or confirmed by a native Awing speaker. Do NOT fabricate phrases.
 const List<AwingPhrase> awingPhrases = [
-  // === GREETINGS (the first thing every learner needs) ===
-  AwingPhrase(
-    awing: "Apellah!",
-    english: "How are you?",
-    context: "The simplest, most common Awing greeting",
-    category: 'greeting',
-    clipKey: 'greeting_apellah',
-  ),
-  AwingPhrase(
-    awing: "Cha'tɔ́!",
-    english: "Greetings!",
-    context: "General greeting when meeting someone",
-    category: 'greeting',
-    clipKey: 'greeting_chatoo',
-  ),
-  AwingPhrase(
-    awing: "Yə kwa'ə.",
-    english: "I am fine.",
-    context: "Reply to 'How are you?'",
-    category: 'greeting',
-    clipKey: 'greeting_kwae',
-  ),
-  AwingPhrase(
-    awing: "Ee!",
-    english: "Yes!",
-    context: "Simple yes — used very often",
-    category: 'greeting',
-    clipKey: 'greeting_ee',
-  ),
-  AwingPhrase(
-    awing: "Wo'!",
-    english: "Sure! / Of course!",
-    context: "Agreeing with someone enthusiastically",
-    category: 'greeting',
-    clipKey: 'greeting_wo',
-  ),
+  // === VERIFIED SENTENCES — from AwingOrthography2005.pdf ===
 
-  // === DAILY LIFE (simple, practical phrases) ===
+  // Page 9: Past tense example
   AwingPhrase(
-    awing: "Lɛ̌ ndo?",
-    english: "What is this?",
-    context: "Pointing at something and asking what it is",
-    category: 'daily',
-    clipKey: 'daily_what_is_this',
-  ),
-  AwingPhrase(
-    awing: "Ko pə nəgoomɔ́.",
-    english: "Give me plantain.",
-    context: "Asking for food — simple request",
-    category: 'daily',
-    clipKey: 'daily_give_plantain',
-  ),
-  AwingPhrase(
-    awing: "Yîə fɛ́ə!",
-    english: "Come here!",
-    context: "Calling someone to come to you",
-    category: 'daily',
-    clipKey: 'daily_come_here',
-  ),
-  AwingPhrase(
-    awing: "Ko pə asé.",
-    english: "Come and sit down.",
-    context: "Inviting someone to sit — welcoming a visitor",
-    category: 'daily',
-    clipKey: 'daily_sit_down',
-  ),
-  AwingPhrase(
-    awing: "A kə ghɛnɔ́ mətéenɔ́.",
+    awing: "A kə ghɛnɔ́ məteenɔ́.",
     english: "He went to the market.",
-    context: "Talking about where someone went",
+    context: "Past tense — talking about where someone went",
     category: 'daily',
     clipKey: 'daily_market',
   ),
 
-  // === QUESTIONS (simple questions kids ask) ===
+  // Page 10: Elision / demonstrative example
   AwingPhrase(
-    awing: "Ache kə?",
-    english: "What do you want?",
-    context: "Asking someone what they need",
-    category: 'question',
-    clipKey: 'question_what_want',
+    awing: "Lɛ̌ nəpɔ'ɔ́.",
+    english: "This is a pumpkin.",
+    context: "Pointing at something and naming it",
+    category: 'daily',
+    clipKey: 'daily_this_pumpkin',
   ),
+
+  // Page 11: Full stop / declarative sentence
   AwingPhrase(
-    awing: "Ghô ghɛnɔ́ lə afô?",
+    awing: "Móonə a tə nonnɔ́ a əkwunɔ́.",
+    english: "The baby is lying on the bed.",
+    context: "Describing what someone is doing — present progressive",
+    category: 'daily',
+    clipKey: 'daily_baby_bed',
+  ),
+
+  // Page 11: Question mark / interrogative
+  AwingPhrase(
+    awing: "A ghɛlɔ́ lə aké?",
+    english: "What is he doing?",
+    context: "Asking about someone's activity — complement question",
+    category: 'question',
+    clipKey: 'question_what_doing',
+  ),
+
+  // Page 11: Exclamation / command
+  AwingPhrase(
+    awing: "Lǒ!",
+    english: "Get out!",
+    context: "Command — telling someone to leave",
+    category: 'classroom',
+    clipKey: 'classroom_get_out',
+  ),
+
+  // Page 11: Negative imperative
+  AwingPhrase(
+    awing: "Kə pinkɔ́ sóŋə!",
+    english: "Don't mention it again!",
+    context: "Telling someone not to repeat something",
+    category: 'classroom',
+    clipKey: 'classroom_dont_mention',
+  ),
+
+  // Page 11: Comma / two clauses
+  AwingPhrase(
+    awing: "Po ma ngyǐə lə əfê, po ghɛnɔ́ lə nkǐə.",
+    english: "They are not coming here, they are going to the stream.",
+    context: "Describing movement — two clauses with comma",
+    category: 'daily',
+    clipKey: 'daily_going_stream',
+  ),
+
+  // Page 11-12: Comma / listing possessions
+  AwingPhrase(
+    awing: "Ŋwu yə a túgə pəŋgyɛ̌ pɛn pəpɛ̌, məŋgɔ́b mɛn mənteelɔ́ nə tá'ə ngwûə.",
+    english: "That man has two wives, three chickens and one dog.",
+    context: "Listing things someone has — numbers and nouns",
+    category: 'daily',
+    clipKey: 'daily_man_possessions',
+  ),
+
+  // Page 12: Quotation marks / direct speech
+  AwingPhrase(
+    awing: "Ghǒ ghɛnɔ́ lə əfó?",
     english: "Where are you going?",
     context: "Asking someone where they are headed",
     category: 'question',
     clipKey: 'question_where_going',
   ),
+
+  // Page 12: Full quotation with speaker
   AwingPhrase(
-    awing: "Ee wə nə kó?",
-    english: "Is it good?",
-    context: "Asking if something is good or okay",
-    category: 'question',
-    clipKey: 'question_is_good',
+    awing: "Máma a tə mbítə ngə, \"Ghǒ ghɛnɔ́ lə əfó?\"",
+    english: "Grandmother is asking, \"Where are you going?\"",
+    context: "Direct speech — quoting what grandmother said",
+    category: 'daily',
+    clipKey: 'daily_grandma_asking',
   ),
 
-  // === CLASSROOM (phrases for learners) ===
+  // Page 12: Capitalisation / first word
   AwingPhrase(
-    awing: "Nô ndèe.",
-    english: "Drink water.",
-    context: "Simple command — useful in class",
-    category: 'classroom',
-    clipKey: 'classroom_drink_water',
-  ),
-  AwingPhrase(
-    awing: "Pímə fɛ́ə!",
-    english: "Look here!",
-    context: "Getting someone's attention",
-    category: 'classroom',
-    clipKey: 'classroom_look_here',
-  ),
-  AwingPhrase(
-    awing: "Lô!",
-    english: "Get out!",
-    context: "Telling someone to leave — exclamation",
-    category: 'classroom',
-    clipKey: 'classroom_get_out',
+    awing: "Po zí nóolə.",
+    english: "They have seen a snake.",
+    context: "Reporting what happened — perfect tense",
+    category: 'daily',
+    clipKey: 'daily_seen_snake',
   ),
 
-  // === FAREWELLS ===
+  // Page 12: Capitalisation / proper nouns
   AwingPhrase(
-    awing: "Wə yîə ndèe.",
-    english: "Come back again.",
-    context: "Inviting someone to return",
-    category: 'farewell',
-    clipKey: 'farewell_come_back',
-  ),
-  AwingPhrase(
-    awing: "Cha'tɔ́ ndèe!",
-    english: "Goodbye!",
-    context: "Final farewell greeting",
-    category: 'farewell',
-    clipKey: 'farewell_goodbye',
+    awing: "Mbá'chi, Apɛnə nə Mbyáb tə nkɔ́'ə atǐə.",
+    english: "Mbachia, Apena and Mbyaabo are climbing a tree.",
+    context: "Proper nouns are capitalized — naming people",
+    category: 'daily',
+    clipKey: 'daily_climbing_tree',
   ),
 
-  // === NEW SENTENCES — from orthography & phonology PDFs ===
+  // Page 12: Capitalisation / after colon
   AwingPhrase(
-    awing: "Mǎ a kə nə̂ŋə majîə.",
-    english: "Mother is cooking food.",
-    context: "Describing what someone is doing at home",
+    awing: "Lɔ́ anuə: Táta akɛ̌ ndé chíə pó.",
+    english: "It is true: Tata (grandfather) is not in the house.",
+    context: "Colon usage — confirming a fact",
     category: 'daily',
-    clipKey: 'daily_mother_cooking',
-  ),
-  AwingPhrase(
-    awing: "Mɔ́ŋkə a kə zé'ə aŋwa'lə.",
-    english: "The child is learning at school.",
-    context: "Talking about a child going to school",
-    category: 'daily',
-    clipKey: 'daily_child_school',
-  ),
-  AwingPhrase(
-    awing: "Tǎ a kə ghɛnɔ́ afoonə.",
-    english: "Father has gone to the farm.",
-    context: "Describing family activities — farming",
-    category: 'daily',
-    clipKey: 'daily_father_farm',
-  ),
-  AwingPhrase(
-    awing: "Ko pə ndě, yə nô.",
-    english: "Give me water to drink.",
-    context: "Asking politely for water",
-    category: 'daily',
-    clipKey: 'daily_give_water',
-  ),
-  AwingPhrase(
-    awing: "Ngwûə a kə kə́ərə.",
-    english: "The dog is running.",
-    context: "Describing an animal's action",
-    category: 'daily',
-    clipKey: 'daily_dog_running',
-  ),
-  AwingPhrase(
-    awing: "Pímə atîə wíŋɔ́!",
-    english: "Look at the big tree!",
-    context: "Pointing at something in nature",
-    category: 'daily',
-    clipKey: 'daily_big_tree',
-  ),
-  AwingPhrase(
-    awing: "Əfo a kə sóŋə.",
-    english: "The chief is speaking.",
-    context: "Describing an important person's action",
-    category: 'daily',
-    clipKey: 'daily_chief_speaking',
-  ),
-  AwingPhrase(
-    awing: "Yə kə jíə majîə.",
-    english: "He/she is eating food.",
-    context: "Describing what someone is doing",
-    category: 'daily',
-    clipKey: 'daily_eating_food',
-  ),
-  AwingPhrase(
-    awing: "Mbəŋə a kə pə̀ə.",
-    english: "The rain is falling.",
-    context: "Talking about weather",
-    category: 'daily',
-    clipKey: 'daily_rain_falling',
-  ),
-  AwingPhrase(
-    awing: "Sáŋɔ́ a kə zoobɔ́.",
-    english: "The bird is singing.",
-    context: "Describing nature sounds",
-    category: 'daily',
-    clipKey: 'daily_bird_singing',
+    clipKey: 'daily_tata_house',
   ),
 
-  // === MORE QUESTIONS ===
-  AwingPhrase(
-    awing: "Ntɔ́gə wâ lɛ̌ nkə?",
-    english: "What is your name?",
-    context: "Asking someone their name — essential first conversation",
-    category: 'question',
-    clipKey: 'question_your_name',
-  ),
-  AwingPhrase(
-    awing: "Ghô yîə lə afô?",
-    english: "Where do you come from?",
-    context: "Asking about someone's origin",
-    category: 'question',
-    clipKey: 'question_where_from',
-  ),
-  AwingPhrase(
-    awing: "Mɔ́ŋkə əpá wâ a kə afô?",
-    english: "Where are your two children?",
-    context: "Asking about family members",
-    category: 'question',
-    clipKey: 'question_where_children',
-  ),
-  AwingPhrase(
-    awing: "Ghô loonɔ́ nkə?",
-    english: "What do you want?",
-    context: "Asking what someone desires — marketplace, home",
-    category: 'question',
-    clipKey: 'question_what_want_2',
-  ),
+  // === VERIFIED WORDS USED AS EXCLAMATIONS — from Awing English Dictionary ===
+  // Page vi of dictionary: tone examples confirm these words exist
 
-  // === MORE CLASSROOM ===
-  AwingPhrase(
-    awing: "Fɔ̂nə aŋwa'lə wâ!",
-    english: "Read your book!",
-    context: "Teacher telling students to read",
-    category: 'classroom',
-    clipKey: 'classroom_read_book',
-  ),
-  AwingPhrase(
-    awing: "Ŋwa'lɔ́ ntɔ́gə wâ.",
-    english: "Write your name.",
-    context: "Teacher asking students to write their name",
-    category: 'classroom',
-    clipKey: 'classroom_write_name',
-  ),
-  AwingPhrase(
-    awing: "Zó'ə ashî'nə!",
-    english: "Listen well!",
-    context: "Teacher getting attention",
-    category: 'classroom',
-    clipKey: 'classroom_listen_well',
-  ),
-  AwingPhrase(
-    awing: "Lwɔ̀ŋə əmɔ́ kə ətáanə.",
-    english: "Count from one to five.",
-    context: "Number counting practice",
-    category: 'classroom',
-    clipKey: 'classroom_count_five',
-  ),
-
-  // === GRATITUDE & POLITENESS ===
-  AwingPhrase(
-    awing: "Mbɔ́ɔnɔ́!",
-    english: "Thank you!",
-    context: "Expressing gratitude — essential polite expression",
-    category: 'greeting',
-    clipKey: 'greeting_thank_you',
-  ),
-  AwingPhrase(
-    awing: "Ndzɔ̂ŋə pə.",
-    english: "I am sorry.",
-    context: "Apologizing to someone",
-    category: 'greeting',
-    clipKey: 'greeting_sorry',
-  ),
-  AwingPhrase(
-    awing: "Ashî'nə sagɔ́!",
-    english: "Very good! / Well done!",
-    context: "Praising someone — encouragement",
-    category: 'greeting',
-    clipKey: 'greeting_well_done',
-  ),
+  // yə = he (p.8 orthography), yǐə = come (p.8 orthography)
+  // ko = take (p.8 orthography), kǒ = snore (p.8 orthography)
+  // mǎ = mother (p.9 orthography noun class table)
 ];
 
 // ============================================================

@@ -322,9 +322,9 @@ const List<Map<String, dynamic>> _conversations = [
       },
       {
         'speaker': 'Person B',
-        'awing': "Cha'tɔ́! Yə yîə?",
+        'awing': "Cha'tɔ́! Yə yǐə?",
         'english': 'Greetings! How are you? (Is he/she coming?)',
-        'tip': 'Yə yîə? is a polite way to ask someone\'s status.',
+        'tip': 'Yə yǐə? is a polite way to ask someone\'s status.',
       },
       {
         'speaker': 'Person A',
@@ -370,7 +370,7 @@ const List<Map<String, dynamic>> _conversations = [
     'lines': [
       {
         'speaker': 'Person A',
-        'awing': "Cha'tɔ́! Yə yîə?",
+        'awing': "Cha'tɔ́! Yə yǐə?",
         'english': 'Hello! How are you?',
         'tip': 'This is the standard greeting when arriving.',
       },
@@ -460,7 +460,7 @@ const List<Map<String, dynamic>> _conversations = [
       },
       {
         'speaker': 'Person B',
-        'awing': 'Akwe! Wə yîə ndèe.',
+        'awing': 'Akwe! Wə yǐə ndèe.',
         'english': 'Okay! Come back please.',
         'tip': 'Ndèe at the end makes this a hopeful request.',
       },

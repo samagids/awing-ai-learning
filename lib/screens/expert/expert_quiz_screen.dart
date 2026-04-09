@@ -205,8 +205,8 @@ class _ExpertQuizScreenState extends State<ExpertQuizScreen> {
       {
         'type': 'sentence',
         'question': 'How would you say "Come back, please" in Awing?',
-        'correctAnswer': 'Wə yîə ndèe',
-        'allAnswers': ['Wə yîə ndèe', 'Yə yîə ndèe', 'Ko yîə ndèe', 'Pə yîə ndèe'],
+        'correctAnswer': 'Wə yǐə ndèe',
+        'allAnswers': ['Wə yǐə ndèe', 'Yə yǐə ndèe', 'Ko yǐə ndèe', 'Pə yǐə ndèe'],
       },
       {
         'type': 'sentence',
@@ -217,8 +217,8 @@ class _ExpertQuizScreenState extends State<ExpertQuizScreen> {
       {
         'type': 'sentence',
         'question': 'Which response is appropriate for "Cha\'tɔ́!"?',
-        'correctAnswer': "Cha'tɔ́! Yə yîə?",
-        'allAnswers': ["Cha'tɔ́! Yə yîə?", "Ko pə asé", "Ache fɛ́ə ndo?", "Akwe?"],
+        'correctAnswer': "Cha'tɔ́! Yə yǐə?",
+        'allAnswers': ["Cha'tɔ́! Yə yǐə?", "Ko pə asé", "Ache fɛ́ə ndo?", "Akwe?"],
       },
     ].take(count).toList();
   }

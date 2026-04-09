@@ -68,7 +68,7 @@ final List<AwingStory> awingStories = [
     illustration: '🦉',
     sentences: [
       StorySentence(
-        awing: 'Koŋə yîə alá\'ə.',
+        awing: 'Koŋə yǐə alá\'ə.',
         english: 'The owl came to the village.',
       ),
       StorySentence(
@@ -92,7 +92,7 @@ final List<AwingStory> awingStories = [
       StoryVocabulary(awing: 'koŋə', english: 'owl'),
       StoryVocabulary(awing: 'əshûə', english: 'fish'),
       StoryVocabulary(awing: 'alá\'ə', english: 'village'),
-      StoryVocabulary(awing: 'yîə', english: 'come'),
+      StoryVocabulary(awing: 'yǐə', english: 'come'),
       StoryVocabulary(awing: 'zó\'ə', english: 'hear'),
       StoryVocabulary(awing: 'wâakɔ́', english: 'water'),
       StoryVocabulary(awing: 'pímə', english: 'see/believe'),
@@ -236,7 +236,7 @@ final List<AwingStory> awingStories = [
     illustration: '🌿',
     sentences: [
       StorySentence(
-        awing: 'Apɛ̌ɛlə ko mǎ yîə akoobɔ́.',
+        awing: 'Apɛ̌ɛlə ko mǎ yǐə akoobɔ́.',
         english: 'A young person came with mother to the forest.',
       ),
       StorySentence(
@@ -296,7 +296,7 @@ final List<AwingStory> awingStories = [
         english: 'The dog was sleeping at the house.',
       ),
       StorySentence(
-        awing: 'Ngɔ́bə yîə nchîndê.',
+        awing: 'Ngɔ́bə yǐə nchîndê.',
         english: 'The chicken came to the compound.',
       ),
       StorySentence(
@@ -374,7 +374,7 @@ final List<AwingStory> awingStories = [
         english: 'He drank water and rested.',
       ),
       StorySentence(
-        awing: 'Aləmə yîə nəpóolə.',
+        awing: 'Aləmə yǐə nəpóolə.',
         english: 'Clouds came in the sky.',
       ),
       StorySentence(

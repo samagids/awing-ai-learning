@@ -26,8 +26,11 @@ class AwingWord {
 
 /// Sentences sourced from AwingOrthography2005.pdf examples (pages 9, 11, 12).
 /// Ordered from simplest (2 words) to more complex.
+// Sentences verified from AwingOrthography2005.pdf.
+// Individual words verified from orthography page 8 tone chart and page 9 noun classes.
 const List<AwingSentence> awingSentences = [
-  // Simple 2-word sentences
+  // Simple 2-word sentences — words verified from orthography tone chart (p.8)
+  // yə = he (p.8), ko = take (p.8), mǎ = mother (p.9)
   AwingSentence(
     awing: 'Yə nô',
     english: 'He/she drinks',
@@ -44,15 +47,7 @@ const List<AwingSentence> awingSentences = [
       AwingWord('ko', 'takes'),
     ],
   ),
-  AwingSentence(
-    awing: 'Ko fê!',
-    english: 'Take and give!',
-    words: [
-      AwingWord('Ko', 'Take'),
-      AwingWord('fê', 'give'),
-    ],
-  ),
-  // 3-word sentences
+  // 3-word sentence — ndě = water (dictionary)
   AwingSentence(
     awing: 'Mǎ nô ndě',
     english: 'Mother drinks water',
@@ -62,64 +57,84 @@ const List<AwingSentence> awingSentences = [
       AwingWord('ndě', 'water'),
     ],
   ),
+  // yǐə = come (p.8, RISING tone ǐ, not falling î)
   AwingSentence(
-    awing: 'Yə yîə fɛ́ə',
-    english: 'He/she comes here',
+    awing: 'Yə yǐə',
+    english: 'He/she comes',
     words: [
       AwingWord('Yə', 'He/she'),
-      AwingWord('yîə', 'comes'),
-      AwingWord('fɛ́ə', 'here'),
+      AwingWord('yǐə', 'comes'),
     ],
   ),
+  // Longer sentences — VERIFIED from orthography PDF
+  // Page 11: "Móonə a tə nonnɔ́ a əkwunɔ́."
   AwingSentence(
-    awing: 'Mábna pímə əshûə',
-    english: 'The baby sees a fish',
+    awing: "Móonə a tə nonnɔ́ a əkwunɔ́.",
+    english: 'The baby is lying on the bed.',
     words: [
-      AwingWord('Mábna', 'Baby'),
-      AwingWord('pímə', 'sees'),
-      AwingWord('əshûə', 'fish'),
-    ],
-  ),
-  // Longer sentences (from the orthography PDF)
-  AwingSentence(
-    awing: "Mábna a tə nɔ́ŋə̂ a əkwunɔ́",
-    english: 'The baby is lying on the bed',
-    words: [
-      AwingWord('Mábna', 'Baby'),
-      AwingWord('a', 'is'),
-      AwingWord('tə', '(aspect)'),
-      AwingWord('nɔ́ŋə̂', 'lying'),
+      AwingWord('Móonə', 'Baby'),
+      AwingWord('a', '(subject)'),
+      AwingWord('tə', '(progressive)'),
+      AwingWord('nonnɔ́', 'lying'),
       AwingWord('a', 'on'),
       AwingWord('əkwunɔ́', 'bed'),
     ],
   ),
+  // Page 9: "A kə ghɛnɔ́ məteenɔ́."
   AwingSentence(
-    awing: "A kə ghɛnɔ́ mətéenɔ́",
-    english: 'He went to the market',
+    awing: "A kə ghɛnɔ́ məteenɔ́.",
+    english: 'He went to the market.',
     words: [
       AwingWord('A', 'He'),
-      AwingWord('kə', 'went'),
-      AwingWord('ghɛnɔ́', 'to go'),
-      AwingWord('mətéenɔ́', 'market'),
+      AwingWord('kə', '(past tense)'),
+      AwingWord('ghɛnɔ́', 'go'),
+      AwingWord('məteenɔ́', 'market'),
     ],
   ),
+  // Page 12: "Po zí nóolə."
   AwingSentence(
-    awing: "Pɔ́ zí nóolə",
-    english: 'They have seen a snake',
+    awing: "Po zí nóolə.",
+    english: 'They have seen a snake.',
     words: [
-      AwingWord('Pɔ́', 'They'),
+      AwingWord('Po', 'They'),
       AwingWord('zí', 'have seen'),
       AwingWord('nóolə', 'snake'),
     ],
   ),
+  // Page 12: "Ghǒ ghɛnɔ́ lə əfó?" (from quotation marks section)
   AwingSentence(
-    awing: "Ghô ghɛnɔ́ lə afô?",
+    awing: "Ghǒ ghɛnɔ́ lə əfó?",
     english: 'Where are you going?',
     words: [
-      AwingWord('Ghô', 'Where'),
+      AwingWord('Ghǒ', 'You'),
       AwingWord('ghɛnɔ́', 'going'),
       AwingWord('lə', 'to'),
-      AwingWord('afô', 'place'),
+      AwingWord('əfó', 'where'),
+    ],
+  ),
+  // Page 11: "Po ma ngyǐə lə əfê, po ghɛnɔ́ lə nkǐə."
+  AwingSentence(
+    awing: "Po ma ngyǐə lə əfê, po ghɛnɔ́ lə nkǐə.",
+    english: 'They are not coming here, they are going to the stream.',
+    words: [
+      AwingWord('Po', 'They'),
+      AwingWord('ma', 'not'),
+      AwingWord('ngyǐə', 'come'),
+      AwingWord('lə', 'to'),
+      AwingWord('əfê', 'here'),
+      AwingWord('po', 'they'),
+      AwingWord('ghɛnɔ́', 'go'),
+      AwingWord('lə', 'to'),
+      AwingWord('nkǐə', 'stream'),
+    ],
+  ),
+  // Page 10: "Lɛ̌ nəpɔ'ɔ́."
+  AwingSentence(
+    awing: "Lɛ̌ nəpɔ'ɔ́.",
+    english: 'This is a pumpkin.',
+    words: [
+      AwingWord('Lɛ̌', 'This is'),
+      AwingWord("nəpɔ'ɔ́", 'pumpkin'),
     ],
   ),
 ];
