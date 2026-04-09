@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "1060398800208",
+    "project_id": "sanguine-frame-291822",
+    "storage_bucket": "sanguine-frame-291822.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1060398800208:android:20f6801a0fe740c43e2055",
+        "android_client_info": {
+          "package_name": "com.awing.awing_ai_learning"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1060398800208-60ojgm0rqqp6rte6oekig0ak7nglb760.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.awing.awing_ai_learning",
+            "certificate_hash": "ddaa7c82c4f4a7deb1e4a969a82741f1d0ece68c"
+          }
+        },
+        {
+          "client_id": "1060398800208-1pu3o6uvugd0etnloqo4d11l1b7rlsl6.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBaFBDX_bWxVxxh7n8KqhM7wjFvHd2pV4g"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1060398800208-1pu3o6uvugd0etnloqo4d11l1b7rlsl6.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
