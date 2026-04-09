@@ -241,7 +241,9 @@ class CloudBackupService extends ChangeNotifier {
       // used by AuthService and ProgressService
       final accountsJson = _prefs.getString('auth_accounts');
 
-      // ProgressService stores data across multiple individual keys
+      // ProgressService stores data across multiple individual keys.
+      // Some are strings (JSON), some are ints. Use _prefs.get() which
+      // returns Object? regardless of type, avoiding type cast errors.
       final progressData = <String, dynamic>{};
       for (final key in [
         'completed_lessons',
@@ -256,7 +258,7 @@ class CloudBackupService extends ChangeNotifier {
         'viewed_words',
         'tried_difficulty_levels',
       ]) {
-        final value = _prefs.getString(key) ?? _prefs.getInt(key)?.toString();
+        final value = _prefs.get(key);
         if (value != null) progressData[key] = value;
       }
 
