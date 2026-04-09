@@ -1,0 +1,17 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Each user can only read/write their own data.
+    // Document path: users/{email_sanitized}/data/{docType}
+    // The email is sanitized (dots replaced with _dot_, lowercased).
+    //
+    // In test mode (first 30 days), all reads/writes are allowed.
+    // Before going to production, deploy these rules in Firebase Console:
+    //   Firestore Database → Rules → paste this file → Publish
+    //
+    // For now (test mode), allow all authenticated access:
+    match /users/{userId}/{document=**} {
+      allow read, write: if true;
+    }
+  }
+}

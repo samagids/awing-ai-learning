@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:awing_ai_learning/modules/beginner/beginner_module.dart';
 import 'package:awing_ai_learning/screens/home_screen.dart';
 import 'package:awing_ai_learning/screens/auth/login_screen.dart';
@@ -15,6 +16,9 @@ import 'package:audioplayers/audioplayers.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Firebase (required for Firestore cloud sync)
+  await Firebase.initializeApp();
 
   // Set global audio context so all audio plays on the MUSIC stream.
   // This ensures device volume buttons control app audio volume.
