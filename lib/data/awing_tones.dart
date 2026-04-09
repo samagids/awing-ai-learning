@@ -306,4 +306,82 @@ const List<AllophonicRule> allophonicRules = [
       {'surface': '[s]', 'environment': 'Before other vowels', 'word': 'sáŋə', 'english': 'broom'},
     ],
   ),
+  AllophonicRule(
+    phoneme: '/f/',
+    description: 'Pronounced [f] everywhere — one of the most stable consonants in Awing.',
+    examples: [
+      {'surface': '[f]', 'environment': 'Word-initial', 'word': 'fê', 'english': 'give'},
+      {'surface': '[f]', 'environment': 'Before round vowel', 'word': "fwɔ'ə", 'english': 'chisel'},
+    ],
+  ),
+  AllophonicRule(
+    phoneme: '/ŋ/',
+    description: 'Velar nasal [ŋ] (like "ng" in "sing"). Occurs as a syllabic nasal prefix and in clusters.',
+    examples: [
+      {'surface': '[ŋ]', 'environment': 'Syllabic prefix', 'word': 'ŋ̀gàmə', 'english': 'mother-in-law'},
+      {'surface': '[ŋ]', 'environment': 'In cluster ŋk', 'word': 'nkadtə', 'english': 'back'},
+      {'surface': '[ŋ]', 'environment': 'Syllable coda', 'word': 'sáŋə', 'english': 'broom'},
+    ],
+  ),
+];
+
+/// Verb tone patterns from phonology PDF §3.2
+/// Shows how tone changes meaning in verbs
+class VerbTonePattern {
+  final String verb;
+  final String english;
+  final String tonePattern;
+  final String tenseAspect;
+  final String example;
+  final String exampleEnglish;
+
+  const VerbTonePattern({
+    required this.verb,
+    required this.english,
+    required this.tonePattern,
+    required this.tenseAspect,
+    required this.example,
+    required this.exampleEnglish,
+  });
+}
+
+const List<VerbTonePattern> verbTonePatterns = [
+  VerbTonePattern(verb: 'ko', english: 'take', tonePattern: 'Low', tenseAspect: 'infinitive', example: 'ko ajúmə', exampleEnglish: 'to take something'),
+  VerbTonePattern(verb: 'kô', english: 'take', tonePattern: 'Falling', tenseAspect: 'imperative', example: 'kô!', exampleEnglish: 'Take it!'),
+  VerbTonePattern(verb: 'kó', english: 'take', tonePattern: 'High', tenseAspect: 'perfective', example: 'a kó ajúmə', exampleEnglish: 'he took something'),
+  VerbTonePattern(verb: 'nô', english: 'drink', tonePattern: 'Falling', tenseAspect: 'imperative', example: 'nô ndě!', exampleEnglish: 'Drink water!'),
+  VerbTonePattern(verb: 'nó', english: 'drink', tonePattern: 'High', tenseAspect: 'perfective', example: 'a nó ndě', exampleEnglish: 'he drank water'),
+  VerbTonePattern(verb: 'fê', english: 'give', tonePattern: 'Falling', tenseAspect: 'imperative', example: 'fê pə!', exampleEnglish: 'Give me!'),
+  VerbTonePattern(verb: 'fé', english: 'give', tonePattern: 'High', tenseAspect: 'perfective', example: 'a fé pə', exampleEnglish: 'he gave me'),
+];
+
+/// Noun tone patterns from phonology PDF §3.1
+/// Shows how prefixes carry their own tone
+class NounTonePattern {
+  final String noun;
+  final String english;
+  final String prefixTone;
+  final String rootTone;
+  final String pattern;
+
+  const NounTonePattern({
+    required this.noun,
+    required this.english,
+    required this.prefixTone,
+    required this.rootTone,
+    required this.pattern,
+  });
+}
+
+const List<NounTonePattern> nounTonePatterns = [
+  NounTonePattern(noun: 'àtîə', english: 'tree', prefixTone: 'Low', rootTone: 'Falling', pattern: 'L-F'),
+  NounTonePattern(noun: 'àkōolə', english: 'leg', prefixTone: 'Low', rootTone: 'Mid', pattern: 'L-M'),
+  NounTonePattern(noun: 'àpô', english: 'hand', prefixTone: 'Low', rootTone: 'Falling', pattern: 'L-F'),
+  NounTonePattern(noun: 'əkwunɔ́', english: 'bed', prefixTone: 'Mid', rootTone: 'High', pattern: 'M-H'),
+  NounTonePattern(noun: 'nəkəŋɔ́', english: 'pot', prefixTone: 'Mid', rootTone: 'High', pattern: 'M-H'),
+  NounTonePattern(noun: 'mǎ', english: 'mother', prefixTone: 'none', rootTone: 'Rising', pattern: 'Rising'),
+  NounTonePattern(noun: 'tǎ', english: 'father', prefixTone: 'none', rootTone: 'Rising', pattern: 'Rising'),
+  NounTonePattern(noun: 'ŋgàmə', english: 'mother-in-law', prefixTone: 'Low', rootTone: 'Low-Mid', pattern: 'L-LM'),
+  NounTonePattern(noun: 'mɔ́numə', english: 'sun', prefixTone: 'High', rootTone: 'Mid', pattern: 'H-M'),
+  NounTonePattern(noun: 'sáŋɔ́', english: 'bird', prefixTone: 'none', rootTone: 'High', pattern: 'H-H'),
 ];

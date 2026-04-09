@@ -230,12 +230,21 @@ class ExamService extends ChangeNotifier {
 
     socket.listen(
       (data) {
-        final messages = utf8.decode(data).split('\n');
+        String decoded;
+        try {
+          decoded = utf8.decode(data);
+        } catch (e) {
+          if (kDebugMode) print('UTF-8 decode error: $e');
+          return;
+        }
+        final messages = decoded.split('\n');
         for (final msg in messages) {
           if (msg.trim().isEmpty) continue;
           try {
             final json = jsonDecode(msg.trim());
-            _handleStudentMessage(socket, json);
+            if (json is Map<String, dynamic>) {
+              _handleStudentMessage(socket, json);
+            }
           } catch (e) {
             if (kDebugMode) print('Invalid message: $msg');
           }
@@ -422,12 +431,21 @@ class ExamService extends ChangeNotifier {
       // Listen for teacher messages
       _clientSocket!.listen(
         (data) {
-          final messages = utf8.decode(data).split('\n');
+          String decoded;
+          try {
+            decoded = utf8.decode(data);
+          } catch (e) {
+            if (kDebugMode) print('UTF-8 decode error from teacher: $e');
+            return;
+          }
+          final messages = decoded.split('\n');
           for (final msg in messages) {
             if (msg.trim().isEmpty) continue;
             try {
               final json = jsonDecode(msg.trim());
-              _handleTeacherMessage(json);
+              if (json is Map<String, dynamic>) {
+                _handleTeacherMessage(json);
+              }
             } catch (e) {
               if (kDebugMode) print('Invalid message from teacher: $msg');
             }
@@ -466,9 +484,13 @@ class ExamService extends ChangeNotifier {
         break;
 
       case 'EXAM_START':
-        _questions = (json['questions'] as List<dynamic>)
-            .map((q) => ExamQuestion.fromJson(q))
-            .toList();
+        final rawQuestions = json['questions'];
+        if (rawQuestions is List) {
+          _questions = rawQuestions
+              .whereType<Map<String, dynamic>>()
+              .map((q) => ExamQuestion.fromJson(q))
+              .toList();
+        }
         _secondsRemaining = json['timeLimitSeconds'] ?? 900;
         _currentQuestionIndex = 0;
         _state = ExamState.inProgress;

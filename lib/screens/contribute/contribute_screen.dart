@@ -196,6 +196,7 @@ class _ContributeScreenState extends State<ContributeScreen> {
       );
     }
 
+    if (!mounted) return;
     setState(() {
       _submitted = true;
       _emailSent = emailSuccess;

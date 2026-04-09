@@ -176,8 +176,71 @@ class ParentalGate {
   }
 
   /// Show a dialog to set or change the account PIN.
+  /// If a PIN already exists, the user must enter the current PIN first.
   static Future<void> showSetPinDialog(BuildContext context) async {
     final auth = context.read<AuthService>();
+
+    // If changing an existing PIN, verify the current one first
+    if (auth.hasAccountPin) {
+      final currentPinController = TextEditingController();
+      final verified = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.lock, color: Color(0xFF006432)),
+              SizedBox(width: 8),
+              Text('Verify Current PIN'),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Enter your current PIN to change it.'),
+              const SizedBox(height: 16),
+              TextField(
+                controller: currentPinController,
+                keyboardType: TextInputType.number,
+                maxLength: 4,
+                obscureText: true,
+                textAlign: TextAlign.center,
+                autofocus: true,
+                style: const TextStyle(fontSize: 24, letterSpacing: 12),
+                decoration: InputDecoration(
+                  labelText: 'Current PIN',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (auth.verifyAccountPin(currentPinController.text)) {
+                  Navigator.pop(ctx, true);
+                } else {
+                  ScaffoldMessenger.of(ctx).showSnackBar(
+                    const SnackBar(
+                      content: Text('Incorrect PIN'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              },
+              child: const Text('Continue'),
+            ),
+          ],
+        ),
+      );
+      if (verified != true || !context.mounted) return;
+    }
+
     final controller = TextEditingController();
     final confirmController = TextEditingController();
 
@@ -186,17 +249,19 @@ class ParentalGate {
       builder: (ctx) => AlertDialog(
         title: Row(
           children: [
-            const Icon(Icons.pin, color: const Color(0xFF006432)),
+            const Icon(Icons.pin, color: Color(0xFF006432)),
             const SizedBox(width: 8),
-            Text(auth.hasAccountPin ? 'Change PIN' : 'Set PIN'),
+            Text(auth.hasAccountPin ? 'New PIN' : 'Set PIN'),
           ],
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
-              'Set a 4-digit PIN to protect sign-out and profile deletion. '
-              'Only share this with parents/guardians.',
+            Text(
+              auth.hasAccountPin
+                  ? 'Enter your new 4-digit PIN.'
+                  : 'Set a 4-digit PIN to protect sign-out and profile deletion. '
+                    'Only share this with parents/guardians.',
             ),
             const SizedBox(height: 16),
             TextField(
@@ -205,6 +270,7 @@ class ParentalGate {
               maxLength: 4,
               obscureText: true,
               textAlign: TextAlign.center,
+              autofocus: true,
               style: const TextStyle(fontSize: 24, letterSpacing: 12),
               decoration: InputDecoration(
                 labelText: 'New PIN',
@@ -237,12 +303,65 @@ class ParentalGate {
           ),
           if (auth.hasAccountPin)
             TextButton(
-              onPressed: () {
-                auth.removeAccountPin();
-                Navigator.pop(ctx);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('PIN removed')),
+              onPressed: () async {
+                // Confirm removal — require current PIN first
+                final pinController = TextEditingController();
+                final confirmed = await showDialog<bool>(
+                  context: ctx,
+                  builder: (ctx2) => AlertDialog(
+                    title: const Text('Remove PIN?'),
+                    content: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text('Enter your current PIN to remove it.'),
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: pinController,
+                          keyboardType: TextInputType.number,
+                          maxLength: 4,
+                          obscureText: true,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(fontSize: 24, letterSpacing: 12),
+                          decoration: InputDecoration(
+                            labelText: 'Current PIN',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx2, false),
+                        child: const Text('Cancel'),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          if (auth.verifyAccountPin(pinController.text)) {
+                            Navigator.pop(ctx2, true);
+                          } else {
+                            ScaffoldMessenger.of(ctx2).showSnackBar(
+                              const SnackBar(
+                                content: Text('Incorrect PIN'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        },
+                        style: TextButton.styleFrom(foregroundColor: Colors.red),
+                        child: const Text('Remove'),
+                      ),
+                    ],
+                  ),
                 );
+                if (confirmed == true) {
+                  auth.removeAccountPin();
+                  if (ctx.mounted) Navigator.pop(ctx);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('PIN removed')),
+                  );
+                }
               },
               style: TextButton.styleFrom(foregroundColor: Colors.red),
               child: const Text('Remove PIN'),

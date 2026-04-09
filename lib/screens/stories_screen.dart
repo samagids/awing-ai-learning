@@ -286,6 +286,204 @@ final List<AwingStory> awingStories = [
       ),
     ],
   ),
+  AwingStory(
+    titleEnglish: 'The Dog and the Chicken',
+    titleAwing: 'Ngwûə ne ngɔ́bə',
+    illustration: '🐕',
+    sentences: [
+      StorySentence(
+        awing: 'Ngwûə a kə lê ndê.',
+        english: 'The dog was sleeping at the house.',
+      ),
+      StorySentence(
+        awing: 'Ngɔ́bə yîə nchîndê.',
+        english: 'The chicken came to the compound.',
+      ),
+      StorySentence(
+        awing: 'Ngɔ́bə a kə jíə ngəsáŋɔ́.',
+        english: 'The chicken was eating corn.',
+      ),
+      StorySentence(
+        awing: 'Ngwûə zó\'ə ngɔ́bə.',
+        english: 'The dog heard the chicken.',
+      ),
+      StorySentence(
+        awing: 'Yə kə́ərə kə ngɔ́bə.',
+        english: 'It ran to the chicken.',
+      ),
+      StorySentence(
+        awing: 'Ngɔ́bə shɔ́ŋə atîə wíŋɔ́!',
+        english: 'The chicken climbed a big tree!',
+      ),
+      StorySentence(
+        awing: 'Ngwûə pímə ngɔ́bə atîə.',
+        english: 'The dog looked at the chicken in the tree.',
+      ),
+      StorySentence(
+        awing: 'Ngwûə ŋwàŋə ndê, a lê ndèe.',
+        english: 'The dog returned home and slept again.',
+      ),
+    ],
+    vocabulary: [
+      StoryVocabulary(awing: 'ngwûə', english: 'dog'),
+      StoryVocabulary(awing: 'ngɔ́bə', english: 'chicken'),
+      StoryVocabulary(awing: 'lê', english: 'sleep'),
+      StoryVocabulary(awing: 'ngəsáŋɔ́', english: 'corn'),
+      StoryVocabulary(awing: 'kə́ərə', english: 'run'),
+      StoryVocabulary(awing: 'shɔ́ŋə', english: 'climb'),
+      StoryVocabulary(awing: 'atîə', english: 'tree'),
+      StoryVocabulary(awing: 'ŋwàŋə', english: 'return'),
+    ],
+    questions: [
+      ComprehensionQuestion(
+        question: 'What was the chicken eating?',
+        correctAnswer: 'corn',
+        options: ['corn', 'beans', 'bananas'],
+      ),
+      ComprehensionQuestion(
+        question: 'Where did the chicken go to escape?',
+        correctAnswer: 'A big tree',
+        options: ['A big tree', 'The river', 'The farm'],
+      ),
+      ComprehensionQuestion(
+        question: 'What did the dog do at the end?',
+        correctAnswer: 'Went home and slept',
+        options: ['Went home and slept', 'Caught the chicken', 'Climbed the tree'],
+      ),
+    ],
+  ),
+  AwingStory(
+    titleEnglish: 'The Farmer and the Rain',
+    titleAwing: 'Tǎ afoonə ne mbəŋə',
+    illustration: '🌧️',
+    sentences: [
+      StorySentence(
+        awing: 'Tǎ ghɛnɔ́ afoonə kə̂ŋə.',
+        english: 'Father went to the farm early.',
+      ),
+      StorySentence(
+        awing: 'Yə tɔ̀ə ngəsáŋɔ́ ne azó\'ə.',
+        english: 'He planted corn and yam.',
+      ),
+      StorySentence(
+        awing: 'Mɔ́numə a kə tɔnɔ́ sagɔ́.',
+        english: 'The sun was very hot.',
+      ),
+      StorySentence(
+        awing: 'Yə nô ndě, yə jwítə.',
+        english: 'He drank water and rested.',
+      ),
+      StorySentence(
+        awing: 'Aləmə yîə nəpóolə.',
+        english: 'Clouds came in the sky.',
+      ),
+      StorySentence(
+        awing: 'Mbəŋə a kə pə̀ə wíŋɔ́!',
+        english: 'The rain fell heavily!',
+      ),
+      StorySentence(
+        awing: 'Tǎ wiŋɔ́, yə sóŋə: "Ashî\'nə sagɔ́!"',
+        english: 'Father was happy, he said: "Very good!"',
+      ),
+      StorySentence(
+        awing: 'Mbəŋə ko pə ndě kə afoonə.',
+        english: 'The rain brought water to the farm.',
+      ),
+    ],
+    vocabulary: [
+      StoryVocabulary(awing: 'afoonə', english: 'farm'),
+      StoryVocabulary(awing: 'tɔ̀ə', english: 'plant'),
+      StoryVocabulary(awing: 'mɔ́numə', english: 'sun'),
+      StoryVocabulary(awing: 'tɔnɔ́', english: 'hot'),
+      StoryVocabulary(awing: 'aləmə', english: 'cloud'),
+      StoryVocabulary(awing: 'mbəŋə', english: 'rain'),
+      StoryVocabulary(awing: 'wiŋɔ́', english: 'happy/big'),
+      StoryVocabulary(awing: 'ashî\'nə', english: 'good'),
+    ],
+    questions: [
+      ComprehensionQuestion(
+        question: 'What did Father plant?',
+        correctAnswer: 'Corn and yam',
+        options: ['Corn and yam', 'Bananas', 'Cocoyam and beans'],
+      ),
+      ComprehensionQuestion(
+        question: 'What happened when clouds came?',
+        correctAnswer: 'It rained heavily',
+        options: ['It rained heavily', 'The sun got hotter', 'Father went home'],
+      ),
+      ComprehensionQuestion(
+        question: 'Why was Father happy?',
+        correctAnswer: 'Rain watered the farm',
+        options: ['Rain watered the farm', 'He found treasure', 'He finished planting'],
+      ),
+    ],
+  ),
+  AwingStory(
+    titleEnglish: 'The Child at the Market',
+    titleAwing: 'Mɔ́ŋkə kə mətéenɔ́',
+    illustration: '🛍️',
+    sentences: [
+      StorySentence(
+        awing: 'Mǎ sóŋə: "Yîə, ghɛnɔ́ mətéenɔ́."',
+        english: 'Mother said: "Come, let\'s go to the market."',
+      ),
+      StorySentence(
+        awing: 'Mɔ́ŋkə wiŋɔ́ sagɔ́!',
+        english: 'The child was very happy!',
+      ),
+      StorySentence(
+        awing: 'Yə pímə amú\'ɔ́ ne lámɔ́sə.',
+        english: 'He saw bananas and oranges.',
+      ),
+      StorySentence(
+        awing: 'Mǎ júnə ngəsáŋɔ́ ne ndzě.',
+        english: 'Mother bought corn and vegetables.',
+      ),
+      StorySentence(
+        awing: 'Mɔ́ŋkə kwɨ̌nə: "Mǎ, ko pə amú\'ɔ́!"',
+        english: 'The child asked: "Mother, give me a banana!"',
+      ),
+      StorySentence(
+        awing: 'Mǎ fê pə amú\'ɔ́ əmɔ́.',
+        english: 'Mother gave him one banana.',
+      ),
+      StorySentence(
+        awing: 'Mɔ́ŋkə jíə, yə sóŋə: "Mbɔ́ɔnɔ́, Mǎ!"',
+        english: 'The child ate and said: "Thank you, Mother!"',
+      ),
+      StorySentence(
+        awing: 'Yə ŋwàŋə ndê ne mǎ.',
+        english: 'They returned home with Mother.',
+      ),
+    ],
+    vocabulary: [
+      StoryVocabulary(awing: 'mətéenɔ́', english: 'market'),
+      StoryVocabulary(awing: 'amú\'ɔ́', english: 'banana'),
+      StoryVocabulary(awing: 'lámɔ́sə', english: 'orange'),
+      StoryVocabulary(awing: 'júnə', english: 'buy'),
+      StoryVocabulary(awing: 'ndzě', english: 'vegetable'),
+      StoryVocabulary(awing: 'kwɨ̌nə', english: 'ask'),
+      StoryVocabulary(awing: 'Mbɔ́ɔnɔ́', english: 'thank you'),
+      StoryVocabulary(awing: 'ŋwàŋə', english: 'return'),
+    ],
+    questions: [
+      ComprehensionQuestion(
+        question: 'Where did Mother and the child go?',
+        correctAnswer: 'The market',
+        options: ['The market', 'The farm', 'The school'],
+      ),
+      ComprehensionQuestion(
+        question: 'What did the child ask for?',
+        correctAnswer: 'A banana',
+        options: ['A banana', 'An orange', 'Corn'],
+      ),
+      ComprehensionQuestion(
+        question: 'What did the child say after eating?',
+        correctAnswer: 'Thank you',
+        options: ['Thank you', 'More please', 'Goodbye'],
+      ),
+    ],
+  ),
 ];
 
 /// ============================================================================

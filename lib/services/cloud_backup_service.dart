@@ -5,6 +5,9 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 
+/// Minimum interval between auto-sync backup calls (prevents API flooding).
+const Duration _autoSyncDebounce = Duration(minutes: 2);
+
 /// Cloud backup service using Google Drive appDataFolder.
 ///
 /// The appDataFolder is a hidden, app-specific folder in the user's Google Drive.
@@ -52,6 +55,7 @@ class CloudBackupService extends ChangeNotifier {
   String? _syncError;
   bool _autoSync = false; // Off by default — user enables from backup settings
   String? _connectedEmail;
+  DateTime? _lastAutoSyncTime; // Debounce auto-sync calls
 
   // Getters
   bool get isSignedIn => _isSignedIn;
@@ -143,15 +147,28 @@ class CloudBackupService extends ChangeNotifier {
 
   /// Find a file in appDataFolder by name. Returns file ID or null.
   Future<String?> _findFile(String name, Map<String, String> headers) async {
-    final query = Uri.encodeQueryComponent(
-      "name='$name' and 'appDataFolder' in parents and trashed=false",
-    );
-    final url = '$_driveFilesUrl?spaces=appDataFolder&q=$query&fields=files(id)';
-    final response = await http.get(Uri.parse(url), headers: headers);
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      final files = data['files'] as List;
-      if (files.isNotEmpty) return files[0]['id'];
+    try {
+      final query = Uri.encodeQueryComponent(
+        "name='$name' and 'appDataFolder' in parents and trashed=false",
+      );
+      final url =
+          '$_driveFilesUrl?spaces=appDataFolder&q=$query&fields=files(id)';
+      final response = await http.get(Uri.parse(url), headers: headers);
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final files = data['files'];
+        if (files is List && files.isNotEmpty) {
+          final id = files[0]['id'];
+          return id is String ? id : null;
+        }
+      } else {
+        debugPrint(
+          'Cloud _findFile($name) HTTP ${response.statusCode}: '
+          '${response.body.length > 200 ? response.body.substring(0, 200) : response.body}',
+        );
+      }
+    } catch (e) {
+      debugPrint('Cloud _findFile($name) error: $e');
     }
     return null;
   }
@@ -162,46 +179,66 @@ class CloudBackupService extends ChangeNotifier {
     Map<String, dynamic> content,
     Map<String, String> headers,
   ) async {
-    final jsonStr = jsonEncode(content);
+    try {
+      final jsonStr = jsonEncode(content);
 
-    // Check if file already exists
-    final existingId = await _findFile(name, headers);
+      // Check if file already exists
+      final existingId = await _findFile(name, headers);
 
-    if (existingId != null) {
-      // Update existing file
-      final url = '$_driveUploadUrl/$existingId?uploadType=media';
-      final response = await http.patch(
-        Uri.parse(url),
-        headers: {...headers, 'Content-Type': 'application/json'},
-        body: jsonStr,
-      );
-      return response.statusCode == 200;
-    } else {
-      // Create new file in appDataFolder
-      // Use multipart upload for metadata + content
-      final metadata = jsonEncode({
-        'name': name,
-        'parents': ['appDataFolder'],
-      });
+      if (existingId != null) {
+        // Update existing file (PATCH returns 200)
+        final url = '$_driveUploadUrl/$existingId?uploadType=media';
+        final response = await http.patch(
+          Uri.parse(url),
+          headers: {...headers, 'Content-Type': 'application/json'},
+          body: jsonStr,
+        );
+        if (response.statusCode != 200) {
+          debugPrint(
+            'Cloud _uploadFile($name) PATCH ${response.statusCode}: '
+            '${response.body.length > 200 ? response.body.substring(0, 200) : response.body}',
+          );
+          return false;
+        }
+        return true;
+      } else {
+        // Create new file in appDataFolder via multipart upload
+        final metadata = jsonEncode({
+          'name': name,
+          'parents': ['appDataFolder'],
+        });
 
-      final boundary = 'awing_backup_boundary_2026';
-      final body = '--$boundary\r\n'
-          'Content-Type: application/json; charset=UTF-8\r\n\r\n'
-          '$metadata\r\n'
-          '--$boundary\r\n'
-          'Content-Type: application/json\r\n\r\n'
-          '$jsonStr\r\n'
-          '--$boundary--';
+        // Boundary must be alphanumeric — no special chars (RFC 2046)
+        final boundary = 'AwingBackupBoundary2026';
+        final body = '--$boundary\r\n'
+            'Content-Type: application/json; charset=UTF-8\r\n\r\n'
+            '$metadata\r\n'
+            '--$boundary\r\n'
+            'Content-Type: application/json\r\n\r\n'
+            '$jsonStr\r\n'
+            '--$boundary--';
 
-      final response = await http.post(
-        Uri.parse('$_driveUploadUrl?uploadType=multipart'),
-        headers: {
-          ...headers,
-          'Content-Type': 'multipart/related; boundary="$boundary"',
-        },
-        body: body,
-      );
-      return response.statusCode == 200;
+        final response = await http.post(
+          Uri.parse('$_driveUploadUrl?uploadType=multipart'),
+          headers: {
+            ...headers,
+            'Content-Type': 'multipart/related; boundary=$boundary',
+          },
+          body: body,
+        );
+        // POST create returns 200 on success
+        if (response.statusCode != 200) {
+          debugPrint(
+            'Cloud _uploadFile($name) POST ${response.statusCode}: '
+            '${response.body.length > 200 ? response.body.substring(0, 200) : response.body}',
+          );
+          return false;
+        }
+        return true;
+      }
+    } catch (e) {
+      debugPrint('Cloud _uploadFile($name) error: $e');
+      return false;
     }
   }
 
@@ -210,13 +247,25 @@ class CloudBackupService extends ChangeNotifier {
     String name,
     Map<String, String> headers,
   ) async {
-    final fileId = await _findFile(name, headers);
-    if (fileId == null) return null;
+    try {
+      final fileId = await _findFile(name, headers);
+      if (fileId == null) return null;
 
-    final url = '$_driveFilesUrl/$fileId?alt=media';
-    final response = await http.get(Uri.parse(url), headers: headers);
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
+      final url = '$_driveFilesUrl/$fileId?alt=media';
+      final response = await http.get(Uri.parse(url), headers: headers);
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body);
+        if (decoded is Map<String, dynamic>) return decoded;
+        debugPrint('Cloud _downloadFile($name): unexpected type ${decoded.runtimeType}');
+        return null;
+      } else {
+        debugPrint(
+          'Cloud _downloadFile($name) HTTP ${response.statusCode}: '
+          '${response.body.length > 200 ? response.body.substring(0, 200) : response.body}',
+        );
+      }
+    } catch (e) {
+      debugPrint('Cloud _downloadFile($name) error: $e');
     }
     return null;
   }
@@ -265,11 +314,20 @@ class CloudBackupService extends ChangeNotifier {
       // Settings
       final settingsData = <String, dynamic>{
         'isDarkMode': _prefs.getBool('isDarkMode') ?? false,
-        'cloud_auto_sync': _prefs.getBool('cloud_auto_sync') ?? true,
+        'cloud_auto_sync': _prefs.getBool(_keyAutoSync) ?? false,
       };
 
+      dynamic accountsData = {};
+      if (accountsJson != null) {
+        try {
+          accountsData = jsonDecode(accountsJson);
+        } catch (e) {
+          debugPrint('Cloud backup: corrupt accounts JSON, backing up as empty: $e');
+        }
+      }
+
       final backup = {
-        'accounts': accountsJson != null ? jsonDecode(accountsJson) : {},
+        'accounts': accountsData,
         'progress': progressData,
         'settings': settingsData,
         'backup_time': DateTime.now().toIso8601String(),
@@ -327,30 +385,44 @@ class CloudBackupService extends ChangeNotifier {
         await _prefs.setString('auth_accounts', jsonEncode(backup['accounts']));
       }
 
-      // Restore progress — each key stored individually
+      // Restore progress — each key stored individually.
+      // Values can be int, String, or bool depending on the key.
       if (backup['progress'] != null && backup['progress'] is Map) {
-        final progress = backup['progress'] as Map<String, dynamic>;
-        // Int keys need setInt, string keys need setString
+        final progress = Map<String, dynamic>.from(backup['progress'] as Map);
         const intKeys = {'daily_streak', 'total_xp'};
         for (final entry in progress.entries) {
-          if (intKeys.contains(entry.key)) {
-            final intVal = int.tryParse(entry.value.toString());
-            if (intVal != null) await _prefs.setInt(entry.key, intVal);
-          } else if (entry.value is String) {
-            await _prefs.setString(entry.key, entry.value);
+          try {
+            if (intKeys.contains(entry.key)) {
+              final intVal = int.tryParse(entry.value.toString());
+              if (intVal != null) await _prefs.setInt(entry.key, intVal);
+            } else if (entry.value is bool) {
+              await _prefs.setBool(entry.key, entry.value as bool);
+            } else if (entry.value is int) {
+              await _prefs.setInt(entry.key, entry.value as int);
+            } else if (entry.value is double) {
+              await _prefs.setDouble(entry.key, entry.value as double);
+            } else if (entry.value is String) {
+              await _prefs.setString(entry.key, entry.value as String);
+            } else if (entry.value != null) {
+              // JSON objects/arrays → serialize back to string
+              await _prefs.setString(entry.key, jsonEncode(entry.value));
+            }
+          } catch (e) {
+            debugPrint('Cloud restore key "${entry.key}" error: $e');
           }
         }
       }
 
       // Restore settings
       if (backup['settings'] != null && backup['settings'] is Map) {
-        final settings = backup['settings'] as Map<String, dynamic>;
+        final settings = Map<String, dynamic>.from(backup['settings'] as Map);
         if (settings['isDarkMode'] != null) {
           await _prefs.setBool('isDarkMode', settings['isDarkMode'] == true);
         }
       }
 
-      _lastBackupTime = backup['backup_time'];
+      final backupTime = backup['backup_time'];
+      _lastBackupTime = backupTime is String ? backupTime : null;
       if (_lastBackupTime != null) {
         _prefs.setString(_keyLastBackup, _lastBackupTime!);
       }
@@ -371,17 +443,64 @@ class CloudBackupService extends ChangeNotifier {
   Future<Map<String, dynamic>?> getBackupInfo() async {
     try {
       final headers = await _getAuthHeaders();
-      if (headers == null) return null;
+      if (headers == null) {
+        debugPrint('Cloud getBackupInfo: not signed in');
+        return null;
+      }
       return await _downloadFile('awing_backup.json', headers);
-    } catch (_) {
+    } catch (e) {
+      debugPrint('Cloud getBackupInfo error: $e');
       return null;
     }
   }
 
-  /// Called when data changes — auto-backup if enabled.
-  Future<void> onDataChanged() async {
-    if (_autoSync && _isSignedIn) {
-      await backupAll();
+  /// Silently attempt to restore from Google Drive.
+  /// Returns true if restore succeeded (data was found and written to SharedPreferences).
+  /// Returns false if no backup found, Drive scope not granted, or any error.
+  /// This NEVER prompts the user — it only works if Drive scope was previously granted.
+  Future<bool> tryAutoRestore() async {
+    if (_isSyncing) return false;
+    try {
+      // Try silent sign-in to Drive — works only if user previously granted scope
+      final account = await _driveGoogleSignIn.signInSilently();
+      if (account == null) {
+        debugPrint('Auto-restore: Drive scope not available (never granted or expired)');
+        return false;
+      }
+
+      _isSignedIn = true;
+      _connectedEmail = account.email;
+
+      // Check if backup exists and restore
+      debugPrint('Auto-restore: Drive connected as ${account.email}, attempting restore...');
+      final result = await restoreAll();
+
+      if (result) {
+        // Enable auto-sync since we know Drive access works
+        _autoSync = true;
+        _prefs.setBool(_keyAutoSync, true);
+        debugPrint('Auto-restore: Success! Auto-sync enabled.');
+      }
+
+      return result;
+    } catch (e) {
+      debugPrint('Auto-restore error: $e');
+      return false;
     }
+  }
+
+  /// Called when data changes — auto-backup if enabled.
+  /// Debounced: skips if last auto-sync was less than 2 minutes ago.
+  Future<void> onDataChanged() async {
+    if (!_autoSync || !_isSignedIn || _isSyncing) return;
+
+    final now = DateTime.now();
+    if (_lastAutoSyncTime != null &&
+        now.difference(_lastAutoSyncTime!) < _autoSyncDebounce) {
+      return; // Too soon — skip to avoid flooding the API
+    }
+
+    _lastAutoSyncTime = now;
+    await backupAll();
   }
 }

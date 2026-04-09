@@ -1,4 +1,4 @@
-name: Build Android APK
+name: Build Android
 
 on:
   push:
@@ -56,6 +56,7 @@ jobs:
         run: flutter test
         continue-on-error: true
 
+      # === UNSIGNED APK (every push) ===
       - name: Build APK
         run: flutter build apk --release
 
@@ -69,9 +70,28 @@ jobs:
           path: build/app/outputs/flutter-apk/awing-1.2.0.apk
           retention-days: 30
 
-      - name: Build App Bundle (for Play Store)
+      # === SIGNED APP BUNDLE for Play Store (only on tags, requires secrets) ===
+      - name: Setup signing key
         if: startsWith(github.ref, 'refs/tags/v')
-        run: flutter build appbundle --release
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEY_PROPERTIES: ${{ secrets.ANDROID_KEY_PROPERTIES }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "::warning::Signing secrets not configured. Skipping signed build."
+            exit 0
+          fi
+          echo "$KEYSTORE_BASE64" | base64 --decode > android/awing-release-key.jks
+          echo "$KEY_PROPERTIES" > android/key.properties
+
+      - name: Build signed App Bundle
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          if [ ! -f android/key.properties ]; then
+            echo "Skipping — no signing key configured"
+            exit 0
+          fi
+          flutter build appbundle --release
 
       - name: Upload AAB artifact
         if: startsWith(github.ref, 'refs/tags/v')
@@ -80,3 +100,4 @@ jobs:
           name: awing-android-aab
           path: build/app/outputs/bundle/release/app-release.aab
           retention-days: 90
+          if-no-files-found: ignore

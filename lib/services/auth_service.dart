@@ -35,6 +35,10 @@ class AuthService extends ChangeNotifier {
   /// Optional callback invoked whenever user data changes (lessons, quizzes, etc.).
   void Function()? onDataChanged;
 
+  /// Optional callback invoked after a successful cloud restore.
+  /// Used to refresh ProgressService from the restored SharedPreferences data.
+  void Function()? onCloudRestoreComplete;
+
   // ==================== Getters ====================
 
   bool get isLoggedIn => _currentAccount != null && _currentProfile != null;
@@ -67,6 +71,14 @@ class AuthService extends ChangeNotifier {
       _resetDevModeTimer(); // start countdown even if persisted from last session
     }
     _initialized = true;
+    notifyListeners();
+  }
+
+  /// Reload accounts and session from SharedPreferences.
+  /// Call after cloud restore writes new data to prefs.
+  void refreshFromPrefs() {
+    _loadAccounts();
+    _restoreSession();
     notifyListeners();
   }
 
@@ -123,10 +135,13 @@ class AuthService extends ChangeNotifier {
   }
 
   /// Attempt to restore data from Google Drive after a fresh install.
+  /// Uses silent Drive sign-in — never prompts the user. If Drive scope was
+  /// previously granted (on any device with this Google account), it restores
+  /// automatically. If not, it skips gracefully.
   Future<void> _tryCloudRestore(String email, CloudBackupService cloud) async {
     try {
-      debugPrint('Attempting cloud restore for $email...');
-      final ok = await cloud.restoreAll();
+      debugPrint('Auto-restore: checking cloud for $email...');
+      final ok = await cloud.tryAutoRestore();
       if (ok) {
         // Reload accounts from SharedPreferences (restoreAll wrote them)
         _loadAccounts();
@@ -136,14 +151,17 @@ class AuthService extends ChangeNotifier {
           if (account.profiles.length == 1) {
             selectProfile(account.profiles.first.id);
           }
-          debugPrint('Cloud restore succeeded: ${account.profiles.length} profiles');
+          debugPrint('Auto-restore succeeded: ${account.profiles.length} profiles');
         }
+        // Notify UI to rebuild with restored data
         notifyListeners();
+        // Refresh ProgressService with restored progress data
+        onCloudRestoreComplete?.call();
       } else {
-        debugPrint('No cloud backup found or restore failed');
+        debugPrint('Auto-restore: no cloud backup found or Drive scope not granted');
       }
     } catch (e) {
-      debugPrint('Cloud restore error: $e');
+      debugPrint('Auto-restore error: $e');
     }
   }
 

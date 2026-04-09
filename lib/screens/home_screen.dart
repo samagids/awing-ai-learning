@@ -31,6 +31,8 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _versionTapCount = 0;
+  int _devCodeFailedAttempts = 0;
+  DateTime? _devCodeLockoutUntil;
 
   @override
   Widget build(BuildContext context) {
@@ -470,7 +472,7 @@ class _HomeScreenState extends State<HomeScreen> {
           client.close();
           debugPrint('Webhook response: ${getResponse.statusCode} $body');
           final result = jsonDecode(body);
-          return result['status'] == 'ok';
+          return result is Map && result['status'] == 'ok';
         }
       } else {
         // No redirect — read directly
@@ -478,7 +480,7 @@ class _HomeScreenState extends State<HomeScreen> {
         client.close();
         debugPrint('Webhook response (no redirect): ${postResponse.statusCode} $body');
         final result = jsonDecode(body);
-        return result['status'] == 'ok';
+        return result is Map && result['status'] == 'ok';
       }
 
       client.close();
@@ -513,6 +515,19 @@ class _HomeScreenState extends State<HomeScreen> {
               child: const Text('OK'),
             ),
           ],
+        ),
+      );
+      return;
+    }
+
+    // Rate limit: lock out for 5 minutes after 3 failed attempts
+    if (_devCodeLockoutUntil != null &&
+        DateTime.now().isBefore(_devCodeLockoutUntil!)) {
+      final remaining = _devCodeLockoutUntil!.difference(DateTime.now());
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Too many failed attempts. Try again in ${remaining.inMinutes + 1} minutes.'),
+          backgroundColor: Colors.red,
         ),
       );
       return;
@@ -558,16 +573,30 @@ class _HomeScreenState extends State<HomeScreen> {
           ElevatedButton(
             onPressed: () {
               if (codeController.text == 'awing2026') {
+                _devCodeFailedAttempts = 0;
+                _devCodeLockoutUntil = null;
                 Navigator.pop(ctx);
                 _startDevMode2FA(context, auth);
               } else {
+                _devCodeFailedAttempts++;
                 Navigator.pop(ctx);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Invalid access code'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
+                if (_devCodeFailedAttempts >= 3) {
+                  _devCodeLockoutUntil =
+                      DateTime.now().add(const Duration(minutes: 5));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Too many failed attempts. Locked for 5 minutes.'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Invalid access code (${3 - _devCodeFailedAttempts} attempts remaining)'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
               }
             },
             child: const Text('Next'),
@@ -600,7 +629,7 @@ class _HomeScreenState extends State<HomeScreen> {
     // Send code via webhook — must succeed for security
     final sent = await _sendDevVerificationEmail(code);
 
-    if (!context.mounted) return;
+    if (!mounted) return;
     Navigator.pop(context); // dismiss loading
 
     if (!sent) {
@@ -726,12 +755,20 @@ class _HomeScreenState extends State<HomeScreen> {
             child: const Text('Student'),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(ctx);
-              Navigator.push(
+              // Only parents/teachers should set up exams
+              final ok = await ParentalGate.verify(
                 context,
-                MaterialPageRoute(builder: (_) => const TeacherSetupScreen()),
+                title: 'Teacher Mode',
+                message: 'Only a parent or teacher should set up exams.',
               );
+              if (ok && context.mounted) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const TeacherSetupScreen()),
+                );
+              }
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.indigo,

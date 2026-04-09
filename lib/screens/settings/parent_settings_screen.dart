@@ -34,9 +34,28 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
   }
 
   void _save() {
+    // Validate WhatsApp number if provided
+    final phone = _whatsappController.text.trim();
+    if (phone.isNotEmpty) {
+      // Strip spaces and dashes for validation
+      final cleaned = phone.replaceAll(RegExp(r'[\s\-\(\)]'), '');
+      // Must start with + and country code, then digits (7-15 digits total)
+      if (!RegExp(r'^\+\d{7,15}$').hasMatch(cleaned)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Please enter a valid phone number with country code (e.g. +237 6XX XXX XXX)',
+            ),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
+    }
+
     final auth = context.read<AuthService>();
     auth.updateParentName(_nameController.text);
-    auth.updateWhatsAppNumber(_whatsappController.text);
+    auth.updateWhatsAppNumber(phone);
     setState(() => _hasChanges = false);
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(

@@ -212,6 +212,7 @@ class _AuthGate extends StatefulWidget {
 
 class _AuthGateState extends State<_AuthGate> {
   bool _wired = false;
+  bool _autoRestoreAttempted = false;
 
   @override
   void didChangeDependencies() {
@@ -221,7 +222,48 @@ class _AuthGateState extends State<_AuthGate> {
       final auth = context.read<AuthService>();
       final cloud = context.read<CloudBackupService>();
       auth.onDataChanged = () => cloud.onDataChanged();
+
+      // When cloud restore completes (from login or app launch),
+      // refresh ProgressService so XP/streaks/badges are up to date.
+      auth.onCloudRestoreComplete = () {
+        if (mounted) {
+          context.read<ProgressService>().refreshFromPrefs();
+          debugPrint('ProgressService refreshed after cloud restore');
+        }
+      };
       _wired = true;
+
+      // Auto-restore on app launch for returning users who have cloud backup
+      _tryAutoRestoreOnLaunch(auth, cloud);
+    }
+  }
+
+  /// On app launch, if the user is already logged in and has cloud backup
+  /// enabled, silently check if cloud has data and restore it. This covers
+  /// the case where the user synced from another device.
+  Future<void> _tryAutoRestoreOnLaunch(
+    AuthService auth,
+    CloudBackupService cloud,
+  ) async {
+    if (_autoRestoreAttempted) return;
+    _autoRestoreAttempted = true;
+
+    // Only auto-restore if user already has an account locally AND cloud sync is on
+    if (!auth.hasAccount || !cloud.autoSync) return;
+
+    try {
+      debugPrint('App launch auto-restore: checking cloud for updates...');
+      final ok = await cloud.tryAutoRestore();
+      if (ok && mounted) {
+        // Reload auth + progress from restored SharedPreferences
+        auth.refreshFromPrefs();
+        try {
+          context.read<ProgressService>().refreshFromPrefs();
+        } catch (_) {}
+        debugPrint('App launch auto-restore: success, auth + progress refreshed');
+      }
+    } catch (e) {
+      debugPrint('App launch auto-restore error: $e');
     }
   }
 

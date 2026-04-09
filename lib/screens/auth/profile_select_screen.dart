@@ -166,16 +166,33 @@ class _ProfileSelectScreenState extends State<ProfileSelectScreen> {
                         if (index < profiles.length) {
                           return _ProfileCard(
                             profile: profiles[index],
-                            onTap: () {
-                              // Kids can freely switch profiles — no PIN needed
-                              auth.selectProfile(profiles[index].id);
+                            onTap: () async {
+                              final target = profiles[index];
+                              // Only ask for PIN if the target profile has its own PIN set
+                              // This lets profiles without a PIN switch freely
+                              if (target.hasPin) {
+                                final ok = await _showProfilePinDialog(target);
+                                if (!ok) return;
+                              }
+                              if (!context.mounted) return;
+                              auth.selectProfile(target.id);
                             },
                             onDelete: profiles.length > 0
                                 ? () => _confirmDelete(profiles[index])
                                 : null,
                           );
                         } else {
-                          return _AddProfileCard(onTap: _createProfile);
+                          return _AddProfileCard(onTap: () async {
+                            // Only parents should create new profiles
+                            final ok = await ParentalGate.verify(
+                              context,
+                              title: 'Add Profile',
+                              message: 'Only a parent or guardian should create profiles.',
+                            );
+                            if (ok && context.mounted) {
+                              _createProfile();
+                            }
+                          });
                         }
                       },
                     ),
@@ -187,7 +204,17 @@ class _ProfileSelectScreenState extends State<ProfileSelectScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         TextButton.icon(
-                          onPressed: () => ParentalGate.showSetPinDialog(context),
+                          onPressed: () async {
+                            // Parent must verify before accessing PIN settings
+                            final ok = await ParentalGate.verify(
+                              context,
+                              title: 'PIN Settings',
+                              message: 'Only a parent or guardian should change the PIN.',
+                            );
+                            if (ok && context.mounted) {
+                              ParentalGate.showSetPinDialog(context);
+                            }
+                          },
                           icon: Icon(
                             auth.hasAccountPin ? Icons.pin : Icons.pin_outlined,
                             color: const Color(0xFF006432),

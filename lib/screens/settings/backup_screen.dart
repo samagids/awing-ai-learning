@@ -53,7 +53,7 @@ class BackupScreen extends StatelessWidget {
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            backup.syncError!,
+                            'Something went wrong with the backup. Please try again later.',
                             style: TextStyle(
                               color: Colors.red.shade700,
                               fontSize: 13,
@@ -288,6 +288,8 @@ class _BackupActionsCard extends StatelessWidget {
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(ctx);
+              // Safety: backup current data first so nothing is lost
+              await backup.backupAll();
               final success = await backup.restoreAll();
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -295,7 +297,7 @@ class _BackupActionsCard extends StatelessWidget {
                     content: Text(
                       success
                           ? 'Restore complete! Restart the app to see changes.'
-                          : 'Restore failed',
+                          : 'Restore failed. Your current data was backed up first.',
                     ),
                     backgroundColor: success ? Colors.green : Colors.red,
                     duration: const Duration(seconds: 4),

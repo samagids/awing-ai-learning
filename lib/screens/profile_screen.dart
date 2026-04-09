@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart' hide Badge;
 import 'package:provider/provider.dart';
 import 'package:awing_ai_learning/services/analytics_service.dart';
+import 'package:awing_ai_learning/services/auth_service.dart';
 import 'package:awing_ai_learning/services/progress_service.dart';
 import 'package:awing_ai_learning/screens/settings/feedback_screen.dart';
 
@@ -66,6 +67,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                 // Recent Quiz Scores
                 _buildRecentScoresSection(progressService),
+
+                const SizedBox(height: 24),
+
+                // My PIN section
+                _buildMyPinSection(),
 
                 const SizedBox(height: 24),
 
@@ -560,6 +566,305 @@ class _ProfileScreenState extends State<ProfileScreen> {
         );
       },
     );
+  }
+
+  /// Build "My PIN" section — lets each profile set or change their own PIN
+  Widget _buildMyPinSection() {
+    final auth = context.watch<AuthService>();
+    final profile = auth.currentProfile;
+    if (profile == null) return const SizedBox.shrink();
+
+    final hasPin = profile.hasPin;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Card(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    hasPin ? Icons.lock : Icons.lock_open,
+                    color: hasPin ? const Color(0xFF006432) : Colors.grey,
+                  ),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'My PIN',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const Spacer(),
+                  if (hasPin)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.green.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        'PIN set',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.green.shade700,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                hasPin
+                    ? 'Your profile is protected. Others need your PIN to switch to your profile.'
+                    : 'Set a 4-digit PIN to protect your profile from others.',
+                style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () => _showSetProfilePinDialog(profile.id, hasPin),
+                      icon: Icon(hasPin ? Icons.edit : Icons.add),
+                      label: Text(hasPin ? 'Change PIN' : 'Set PIN'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF006432),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ),
+                  if (hasPin) ...[
+                    const SizedBox(width: 8),
+                    OutlinedButton(
+                      onPressed: () => _showRemoveProfilePinDialog(profile.id),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.red,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text('Remove'),
+                    ),
+                  ],
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Show dialog to set or change a profile PIN
+  void _showSetProfilePinDialog(String profileId, bool hasExisting) async {
+    final auth = context.read<AuthService>();
+    final profile = auth.currentProfile;
+
+    // If changing, verify current PIN first
+    if (hasExisting && profile != null && profile.hasPin) {
+      final currentPinController = TextEditingController();
+      final verified = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Verify Current PIN'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Enter your current PIN to change it.'),
+              const SizedBox(height: 16),
+              TextField(
+                controller: currentPinController,
+                keyboardType: TextInputType.number,
+                maxLength: 4,
+                obscureText: true,
+                textAlign: TextAlign.center,
+                autofocus: true,
+                style: const TextStyle(fontSize: 28, letterSpacing: 12),
+                decoration: InputDecoration(
+                  labelText: 'Current PIN',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (profile.verifyPin(currentPinController.text)) {
+                  Navigator.pop(ctx, true);
+                } else {
+                  ScaffoldMessenger.of(ctx).showSnackBar(
+                    const SnackBar(
+                      content: Text('Incorrect PIN'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              },
+              child: const Text('Verify'),
+            ),
+          ],
+        ),
+      );
+      if (verified != true || !mounted) return;
+    }
+
+    // Now show the new PIN dialog
+    final newPinController = TextEditingController();
+    if (!mounted) return;
+    final newPin = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(hasExisting ? 'Set New PIN' : 'Set Your PIN'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Choose a 4-digit PIN to protect your profile.'),
+            const SizedBox(height: 16),
+            TextField(
+              controller: newPinController,
+              keyboardType: TextInputType.number,
+              maxLength: 4,
+              obscureText: true,
+              textAlign: TextAlign.center,
+              autofocus: true,
+              style: const TextStyle(fontSize: 28, letterSpacing: 12),
+              decoration: InputDecoration(
+                labelText: 'New PIN',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final pin = newPinController.text;
+              if (pin.length == 4) {
+                Navigator.pop(ctx, pin);
+              } else {
+                ScaffoldMessenger.of(ctx).showSnackBar(
+                  const SnackBar(
+                    content: Text('PIN must be exactly 4 digits'),
+                    backgroundColor: Colors.orange,
+                  ),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF006432),
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Set PIN'),
+          ),
+        ],
+      ),
+    );
+
+    if (newPin != null && newPin.length == 4 && mounted) {
+      auth.setProfilePin(profileId, newPin);
+      setState(() {});
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('PIN set! Others will need it to access your profile.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    }
+  }
+
+  /// Show dialog to remove a profile PIN (requires current PIN)
+  void _showRemoveProfilePinDialog(String profileId) async {
+    final auth = context.read<AuthService>();
+    final profile = auth.currentProfile;
+    if (profile == null || !profile.hasPin) return;
+
+    final controller = TextEditingController();
+    final verified = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Remove PIN'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Enter your current PIN to remove it.'),
+            const SizedBox(height: 16),
+            TextField(
+              controller: controller,
+              keyboardType: TextInputType.number,
+              maxLength: 4,
+              obscureText: true,
+              textAlign: TextAlign.center,
+              autofocus: true,
+              style: const TextStyle(fontSize: 28, letterSpacing: 12),
+              decoration: InputDecoration(
+                labelText: 'Current PIN',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () {
+              if (profile.verifyPin(controller.text)) {
+                Navigator.pop(ctx, true);
+              } else {
+                ScaffoldMessenger.of(ctx).showSnackBar(
+                  const SnackBar(
+                    content: Text('Incorrect PIN'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            },
+            child: const Text('Remove'),
+          ),
+        ],
+      ),
+    );
+
+    if (verified == true && mounted) {
+      auth.removeProfilePin(profileId);
+      setState(() {});
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('PIN removed. Anyone can switch to your profile now.'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+    }
   }
 
   /// Build recent quiz scores section

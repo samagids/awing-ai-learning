@@ -5,6 +5,7 @@ import 'package:awing_ai_learning/services/auth_service.dart';
 import 'package:awing_ai_learning/services/contribution_service.dart';
 import 'package:awing_ai_learning/models/user_model.dart';
 import 'package:awing_ai_learning/screens/admin/review_screen.dart';
+import 'package:awing_ai_learning/components/parental_gate.dart';
 
 /// Developer Mode — full admin panel.
 /// Only accessible when logged in as samagids@gmail.com.
@@ -57,7 +58,13 @@ class _DeveloperScreenState extends State<DeveloperScreen> {
             foregroundColor: Colors.greenAccent,
             actions: [
               TextButton.icon(
-                onPressed: () {
+                onPressed: () async {
+                  final ok = await ParentalGate.verify(
+                    context,
+                    title: 'Exit Developer Mode',
+                    message: 'Only the developer should exit developer mode.',
+                  );
+                  if (!ok || !context.mounted) return;
                   showDialog(
                     context: context,
                     builder: (ctx) => AlertDialog(
@@ -778,7 +785,13 @@ class _SettingsTab extends StatelessWidget {
             title: const Text('Deactivate Developer Mode'),
             subtitle: const Text('Auto-disables after 5 min of inactivity'),
             trailing: const Icon(Icons.exit_to_app, color: Colors.red),
-            onTap: () {
+            onTap: () async {
+              final ok = await ParentalGate.verify(
+                context,
+                title: 'Deactivate Developer Mode',
+                message: 'Only the developer should deactivate developer mode.',
+              );
+              if (!ok || !context.mounted) return;
               final auth = context.read<AuthService>();
               auth.disableDevMode();
               Navigator.of(context).popUntil((route) => route.isFirst);

@@ -143,6 +143,21 @@ class ProgressService extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Reload all progress data from SharedPreferences.
+  /// Call after cloud restore writes new data to prefs.
+  void refreshFromPrefs() {
+    if (!_initialized) return;
+    _completedLessons = _loadStringSet(_keyCompletedLessons);
+    _quizScores = _loadIntMap(_keyQuizScores);
+    _spacedRepetitionData = _loadSpacedRepetition(_keySpacedRepetition);
+    _totalXP = _prefs.getInt(_keyTotalXP) ?? 0;
+    _badges = _initializeBadges();
+    _viewedLetters = _loadStringSet(_keyViewedLetters);
+    _viewedWords = _loadStringSet(_keyViewedWords);
+    _triedDifficultyLevels = _loadStringSet(_keyTriedDifficultyLevels);
+    notifyListeners();
+  }
+
   /// Get current level based on XP
   int get currentLevel => (_totalXP ~/ 200) + 1;
 
@@ -390,7 +405,16 @@ class ProgressService extends ChangeNotifier {
       // First time opening
       _dailyStreak = 1;
     } else {
-      DateTime lastOpenDate = DateTime.parse(lastOpenDateStr);
+      DateTime? lastOpenDate;
+      try {
+        lastOpenDate = DateTime.parse(lastOpenDateStr);
+      } catch (_) {
+        // Corrupted date string — treat as first time
+        _dailyStreak = 1;
+        await _prefs.setString(_keyLastOpenDate, today.toIso8601String());
+        await _prefs.setInt(_keyDailyStreak, _dailyStreak);
+        return;
+      }
       DateTime lastOpenDay = DateTime(lastOpenDate.year, lastOpenDate.month, lastOpenDate.day);
       DateTime yesterday = today.subtract(const Duration(days: 1));
 
@@ -578,7 +602,7 @@ class ProgressService extends ChangeNotifier {
 
     try {
       Map<String, dynamic> decoded = jsonDecode(json);
-      return decoded.map((k, v) => MapEntry(k, v as int));
+      return decoded.map((k, v) => MapEntry(k, (v is int) ? v : int.tryParse(v.toString()) ?? 0));
     } catch (e) {
       if (kDebugMode) {
         print('Error decoding int map $key: $e');
