@@ -184,7 +184,7 @@ class CloudBackupService extends ChangeNotifier {
         'parents': ['appDataFolder'],
       });
 
-      final boundary = '===backup_boundary===';
+      final boundary = 'awing_backup_boundary_2026';
       final body = '--$boundary\r\n'
           'Content-Type: application/json; charset=UTF-8\r\n\r\n'
           '$metadata\r\n'
@@ -197,7 +197,7 @@ class CloudBackupService extends ChangeNotifier {
         Uri.parse('$_driveUploadUrl?uploadType=multipart'),
         headers: {
           ...headers,
-          'Content-Type': 'multipart/related; boundary=$boundary',
+          'Content-Type': 'multipart/related; boundary="$boundary"',
         },
         body: body,
       );
