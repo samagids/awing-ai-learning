@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:awing_ai_learning/services/progress_service.dart';
 import 'package:awing_ai_learning/data/awing_vocabulary.dart';
 import 'package:awing_ai_learning/services/pronunciation_service.dart';
+import 'package:awing_ai_learning/services/image_service.dart';
 
 class VocabularyReviewScreen extends StatefulWidget {
   const VocabularyReviewScreen({Key? key}) : super(key: key);
@@ -329,40 +330,72 @@ class _VocabularyReviewScreenState extends State<VocabularyReviewScreen> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      // Awing word
-                      Text(
-                        currentWord.word,
-                        style: const TextStyle(
-                          fontSize: 48,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.green,
-                        ),
-                        textAlign: TextAlign.center,
+                child: Column(
+                  children: [
+                    // Image fills left, word + hear it centered on right
+                    Expanded(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // Image fills left half
+                          Expanded(
+                            flex: 1,
+                            child: ClipRRect(
+                              borderRadius: const BorderRadius.only(
+                                topLeft: Radius.circular(16),
+                              ),
+                              child: Image.asset(
+                                ImageService.assetPath(currentWord.word),
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => Container(
+                                  color: Colors.green.shade50,
+                                  child: Icon(Icons.image_outlined, size: 48, color: Colors.green.shade200),
+                                ),
+                              ),
+                            ),
+                          ),
+                          // Word + hear it centered on right half
+                          Expanded(
+                            flex: 1,
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  currentWord.word,
+                                  style: const TextStyle(
+                                    fontSize: 42,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.green,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: 16),
+                                ElevatedButton.icon(
+                                  onPressed: () async {
+                                    final pronService = Provider.of<PronunciationService>(
+                                      context,
+                                      listen: false,
+                                    );
+                                    await pronService.speakAwing(currentWord.word);
+                                  },
+                                  icon: const Icon(Icons.volume_up),
+                                  label: const Text('Hear it'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.green,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 16),
-                      // Hear it button
-                      ElevatedButton.icon(
-                        onPressed: () async {
-                          final pronService = Provider.of<PronunciationService>(
-                            context,
-                            listen: false,
-                          );
-                          await pronService.speakAwing(currentWord.word);
-                        },
-                        icon: const Icon(Icons.volume_up),
-                        label: const Text('Hear it'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                        ),
-                      ),
-                      const SizedBox(height: 32),
+                    ),
+                    // Answer section below
+                    Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(children: [
                       // Answer section
                       if (!answerRevealed)
                         Column(
@@ -452,8 +485,9 @@ class _VocabularyReviewScreenState extends State<VocabularyReviewScreen> {
                             ),
                           ],
                         ),
-                    ],
-                  ),
+                      ]),
+                    ),
+                  ],
                 ),
               ),
             ),

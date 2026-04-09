@@ -1,0 +1,13 @@
+## Release signing key configuration
+## Copy this file to key.properties and fill in your values:
+##   cp key.properties.example key.properties
+##
+## Generate a signing key with:
+##   keytool -genkey -v -keystore awing-release-key.jks -keyalg RSA -keysize 2048 -validity 10000 -alias awing
+##
+## NEVER commit key.properties or .jks files to git!
+
+storePassword=YOUR_KEYSTORE_PASSWORD
+keyPassword=YOUR_KEY_PASSWORD
+keyAlias=awing
+storeFile=../awing-release-key.jks

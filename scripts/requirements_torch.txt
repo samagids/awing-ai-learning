@@ -32,6 +32,13 @@ easyocr>=1.7.0
 # Whisper ASR (auto-labels audio clips)
 openai-whisper>=20231117
 
+# Image generation (SDXL Turbo on local GPU)
+diffusers>=0.25.0
+Pillow>=10.0.0
+
+# Edge TTS (neural voice audio generation)
+edge-tts>=6.1.0
+
 # Visualization
 matplotlib>=3.7.0
 tensorboard>=2.14.0

@@ -19,11 +19,14 @@ class _TeacherSetupScreenState extends State<TeacherSetupScreen> {
   String _selectedLevel = 'beginner';
   int _timeLimit = 15;
   String? _error;
+  late Set<String> _selectedQuestionTypes;
 
   @override
   void initState() {
     super.initState();
     _examService.startAsTeacher();
+    // Initialize with all available types for beginner
+    _selectedQuestionTypes = _getAvailableQuestionTypes('beginner');
   }
 
   @override
@@ -32,34 +35,245 @@ class _TeacherSetupScreenState extends State<TeacherSetupScreen> {
     super.dispose();
   }
 
-  /// Auto-generate questions from the app's vocabulary/alphabet data.
-  void _addAutoQuestion() {
+  /// Get available question types based on level
+  Set<String> _getAvailableQuestionTypes(String level) {
+    return {
+      'translate_to_english',
+      'translate_to_awing',
+      'category_match',
+      if (level != 'beginner') 'identify_tone',
+      if (level == 'expert') 'spelling',
+    };
+  }
+
+  /// Get prompt text for a question type
+  String _getPromptForType(String type) {
+    switch (type) {
+      case 'translate_to_english':
+        return 'What does this mean in English?';
+      case 'translate_to_awing':
+        return 'How do you say this in Awing?';
+      case 'category_match':
+        return 'Which word belongs to this category?';
+      case 'identify_tone':
+        return 'What tone does this word have?';
+      case 'spelling':
+        return 'Which is the correct Awing spelling?';
+      default:
+        return 'Answer this question';
+    }
+  }
+
+  /// Auto-generate a question of a specific type
+  ExamQuestion? _generateQuestionOfType(String type) {
     final random = Random();
     final allWords = allVocabulary;
 
-    if (allWords.isEmpty) return;
+    if (allWords.isEmpty) return null;
 
-    // Pick a random word
+    switch (type) {
+      case 'translate_to_english':
+        return _generateTranslateToEnglish(random, allWords);
+      case 'translate_to_awing':
+        return _generateTranslateToAwing(random, allWords);
+      case 'category_match':
+        return _generateCategoryMatch(random, allWords);
+      case 'identify_tone':
+        return _generateIdentifyTone(random, allWords);
+      case 'spelling':
+        return _generateSpelling(random, allWords);
+      default:
+        return null;
+    }
+  }
+
+  ExamQuestion _generateTranslateToEnglish(Random random, List<AwingWord> allWords) {
     final word = allWords[random.nextInt(allWords.length)];
+    final sameCategory = allWords
+        .where((w) => w.category == word.category && w.english != word.english)
+        .toList();
+    sameCategory.shuffle();
 
-    // Build wrong answers
-    final wrongWords = allWords.where((w) => w.english != word.english).toList();
-    wrongWords.shuffle();
-    final wrongs = wrongWords.take(3).map((w) => w.english).toList();
+    final wrongWords = sameCategory.isNotEmpty
+        ? sameCategory.take(3).map((w) => w.english).toList()
+        : allWords
+            .where((w) => w.english != word.english)
+            .take(3)
+            .map((w) => w.english)
+            .toList();
 
-    final choices = [...wrongs, word.english]..shuffle();
+    final choices = [...wrongWords, word.english]..shuffle();
     final correctIndex = choices.indexOf(word.english);
 
-    final question = ExamQuestion(
+    return ExamQuestion(
       id: 'q_${DateTime.now().millisecondsSinceEpoch}',
       questionText: word.awing,
       type: 'translate_to_english',
       choices: choices,
       correctIndex: correctIndex,
     );
+  }
+
+  ExamQuestion _generateTranslateToAwing(Random random, List<AwingWord> allWords) {
+    final word = allWords[random.nextInt(allWords.length)];
+    final sameCategory = allWords
+        .where((w) => w.category == word.category && w.english != word.english)
+        .toList();
+    sameCategory.shuffle();
+
+    final wrongWords = sameCategory.isNotEmpty
+        ? sameCategory.take(3).map((w) => w.awing).toList()
+        : allWords
+            .where((w) => w.english != word.english)
+            .take(3)
+            .map((w) => w.awing)
+            .toList();
+
+    final choices = [...wrongWords, word.awing]..shuffle();
+    final correctIndex = choices.indexOf(word.awing);
+
+    return ExamQuestion(
+      id: 'q_${DateTime.now().millisecondsSinceEpoch}',
+      questionText: word.english,
+      type: 'translate_to_awing',
+      choices: choices,
+      correctIndex: correctIndex,
+    );
+  }
+
+  ExamQuestion _generateCategoryMatch(Random random, List<AwingWord> allWords) {
+    final word = allWords[random.nextInt(allWords.length)];
+    final categoryName = _getCategoryLabel(word.category);
+
+    final otherCategories = allWords
+        .where((w) => w.category != word.category)
+        .toList();
+    otherCategories.shuffle();
+
+    final wrongWords = otherCategories.take(3).map((w) => w.awing).toList();
+    final choices = [...wrongWords, word.awing]..shuffle();
+    final correctIndex = choices.indexOf(word.awing);
+
+    return ExamQuestion(
+      id: 'q_${DateTime.now().millisecondsSinceEpoch}',
+      questionText: categoryName,
+      type: 'category_match',
+      choices: choices,
+      correctIndex: correctIndex,
+    );
+  }
+
+  ExamQuestion _generateIdentifyTone(Random random, List<AwingWord> allWords) {
+    final wordsWithTone = allWords.where((w) => w.tonePattern != null && w.tonePattern!.isNotEmpty).toList();
+    if (wordsWithTone.isEmpty) {
+      return _generateTranslateToEnglish(random, allWords);
+    }
+
+    final word = wordsWithTone[random.nextInt(wordsWithTone.length)];
+    final tonePattern = word.tonePattern ?? '';
+
+    // For beginner, simplify to High/Mid/Low
+    final toneMap = {
+      'High': 'High',
+      'Mid': 'Mid',
+      'Low': 'Low',
+      'Rising': 'Rising',
+      'Falling': 'Falling',
+    };
+
+    final correctTone = toneMap[tonePattern] ?? 'Mid';
+    final allTones = ['High', 'Mid', 'Low'];
+    allTones.removeWhere((t) => t == correctTone);
+    allTones.shuffle();
+    final wrongTones = allTones.take(3).toList();
+
+    final choices = [...wrongTones, correctTone]..shuffle();
+    final correctIndex = choices.indexOf(correctTone);
+
+    return ExamQuestion(
+      id: 'q_${DateTime.now().millisecondsSinceEpoch}',
+      questionText: word.awing,
+      type: 'identify_tone',
+      choices: choices,
+      correctIndex: correctIndex,
+    );
+  }
+
+  ExamQuestion _generateSpelling(Random random, List<AwingWord> allWords) {
+    final word = allWords[random.nextInt(allWords.length)];
+
+    // Create misspellings by swapping or removing characters
+    final wrongSpellings = <String>[];
+    final awing = word.awing;
+
+    // Try to create 3 plausible misspellings
+    while (wrongSpellings.length < 3 && wrongSpellings.length < allWords.length) {
+      final candidate = allWords[random.nextInt(allWords.length)];
+      if (candidate.awing != awing && !wrongSpellings.contains(candidate.awing)) {
+        wrongSpellings.add(candidate.awing);
+      }
+    }
+
+    // Pad if needed
+    while (wrongSpellings.length < 3) {
+      wrongSpellings.add('${awing}ə');
+    }
+
+    final choices = [...wrongSpellings, awing]..shuffle();
+    final correctIndex = choices.indexOf(awing);
+
+    return ExamQuestion(
+      id: 'q_${DateTime.now().millisecondsSinceEpoch}',
+      questionText: word.english,
+      type: 'spelling',
+      choices: choices,
+      correctIndex: correctIndex,
+    );
+  }
+
+  String _getCategoryLabel(String category) {
+    final labels = {
+      'bodyParts': 'Body Parts',
+      'animals': 'Animals',
+      'actions': 'Actions',
+      'thingsObjects': 'Things & Objects',
+      'familyPeople': 'Family & People',
+      'foodDrink': 'Food & Drink',
+      'descriptiveWords': 'Descriptive Words',
+      'numbers': 'Numbers',
+    };
+    return labels[category] ?? category;
+  }
+
+  String _getQuestionTypeLabel(String type) {
+    final labels = {
+      'translate_to_english': 'English Translation',
+      'translate_to_awing': 'Awing Translation',
+      'category_match': 'Category Match',
+      'identify_tone': 'Identify Tone',
+      'spelling': 'Spelling',
+    };
+    return labels[type] ?? type;
+  }
+
+  /// Auto-generate questions from the app's vocabulary/alphabet data.
+  void _addAutoQuestion() {
+    if (_selectedQuestionTypes.isEmpty) {
+      setState(() => _error = 'Select at least one question type.');
+      return;
+    }
+
+    final random = Random();
+    final selectedType = _selectedQuestionTypes.toList()[random.nextInt(_selectedQuestionTypes.length)];
+
+    final question = _generateQuestionOfType(selectedType);
+    if (question == null) {
+      setState(() => _error = 'Could not generate question. Try again.');
+      return;
+    }
 
     _examService.addQuestion(question);
-    setState(() {});
+    setState(() => _error = null);
   }
 
   /// Add a custom question via dialog.
@@ -234,8 +448,71 @@ class _TeacherSetupScreenState extends State<TeacherSetupScreen> {
                       ],
                       selected: {_selectedLevel},
                       onSelectionChanged: (s) {
-                        setState(() => _selectedLevel = s.first);
+                        setState(() {
+                          _selectedLevel = s.first;
+                          // Update available question types for new level
+                          _selectedQuestionTypes = _getAvailableQuestionTypes(_selectedLevel);
+                        });
                       },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // Question Types selector
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Question Types',
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            setState(() {
+                              _selectedQuestionTypes = _getAvailableQuestionTypes(_selectedLevel);
+                            });
+                          },
+                          child: const Text('Reset'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Select which question types to include',
+                      style: TextStyle(fontSize: 13, color: Colors.grey),
+                    ),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: _getAvailableQuestionTypes(_selectedLevel).map((type) {
+                        final isSelected = _selectedQuestionTypes.contains(type);
+                        final label = _getQuestionTypeLabel(type);
+                        return FilterChip(
+                          label: Text(label),
+                          selected: isSelected,
+                          onSelected: (selected) {
+                            setState(() {
+                              if (selected) {
+                                _selectedQuestionTypes.add(type);
+                              } else {
+                                if (_selectedQuestionTypes.length > 1) {
+                                  _selectedQuestionTypes.remove(type);
+                                }
+                              }
+                            });
+                          },
+                        );
+                      }).toList(),
                     ),
                   ],
                 ),

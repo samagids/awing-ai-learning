@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:awing_ai_learning/services/analytics_service.dart';
+import 'package:awing_ai_learning/services/image_service.dart';
 import 'package:awing_ai_learning/services/exam_service.dart';
 
 class StudentExamScreen extends StatefulWidget {
@@ -33,6 +34,23 @@ class _StudentExamScreenState extends State<StudentExamScreen> {
     final m = seconds ~/ 60;
     final s = seconds % 60;
     return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+  }
+
+  String _getPromptForType(String type) {
+    switch (type) {
+      case 'translate_to_english':
+        return 'What does this mean in English?';
+      case 'translate_to_awing':
+        return 'How do you say this in Awing?';
+      case 'category_match':
+        return 'Which word belongs in this category?';
+      case 'identify_tone':
+        return 'What tone does this word have?';
+      case 'spelling':
+        return 'Which is the correct Awing spelling?';
+      default:
+        return 'Answer this question';
+    }
   }
 
   @override
@@ -132,21 +150,58 @@ class _StudentExamScreenState extends State<StudentExamScreen> {
                   child: Column(
                     children: [
                       Text(
-                        'What does this mean in English?',
+                        _getPromptForType(question.type),
                         style: TextStyle(
                           fontSize: 14,
                           color: Colors.grey.shade600,
                         ),
                       ),
-                      const SizedBox(height: 16),
-                      Text(
-                        question.questionText,
-                        style: const TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
+                      const SizedBox(height: 12),
+                      // Image on left, question centered on right
+                      if (question.type == 'translate_to_english' ||
+                          question.type == 'spelling')
+                        IntrinsicHeight(
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Expanded(
+                                flex: 2,
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(16),
+                                  child: Image.asset(
+                                    ImageService.assetPath(question.questionText),
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) =>
+                                        const SizedBox.shrink(),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                flex: 3,
+                                child: Center(
+                                  child: Text(
+                                    question.questionText,
+                                    style: const TextStyle(
+                                      fontSize: 28,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      else
+                        Text(
+                          question.questionText,
+                          style: const TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
                         ),
-                        textAlign: TextAlign.center,
-                      ),
                     ],
                   ),
                 ),

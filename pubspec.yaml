@@ -49,6 +49,7 @@ flutter:
   assets:
     - assets/model.tflite
     - config/webhooks.json
+    - assets/images/vocabulary/
     # 6 character voices (Edge TTS neural — Swahili Bantu voices)
     # Beginner: boy + girl (child voices)
     - assets/audio/boy/alphabet/

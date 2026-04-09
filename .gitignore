@@ -55,6 +55,9 @@ videos/
 /models/
 scripts/_audio_temp/
 scripts/_espeak_temp/
+scripts/_photo_cache/
+scripts/_ai_image_cache/
+scripts/_emoji_cache/
 
 # eSpeak-NG source and local data copy
 espeak-ng/

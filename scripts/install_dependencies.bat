@@ -65,7 +65,7 @@ exit /b 0
 REM -------------------------------------------------------
 :step_git
 REM -------------------------------------------------------
-echo [1/10] Checking Git...
+echo [1/11] Checking Git...
 where git >nul 2>nul
 if !ERRORLEVEL! equ 0 (
     for /f "tokens=3" %%v in ('git --version') do echo        Found Git %%v
@@ -94,7 +94,7 @@ exit /b 0
 REM -------------------------------------------------------
 :step_python
 REM -------------------------------------------------------
-echo [2/10] Checking Python 3.10+...
+echo [2/11] Checking Python 3.10+...
 where python >nul 2>nul
 if !ERRORLEVEL! equ 0 (
     for /f "tokens=2" %%v in ('python --version 2^>^&1') do echo        Found Python %%v
@@ -123,7 +123,7 @@ exit /b 0
 REM -------------------------------------------------------
 :step_android
 REM -------------------------------------------------------
-echo [3/10] Checking Android Studio / Android SDK...
+echo [3/11] Checking Android Studio / Android SDK...
 
 REM Find Android SDK path
 set "SDK_PATH="
@@ -204,7 +204,7 @@ exit /b 0
 REM -------------------------------------------------------
 :step_flutter
 REM -------------------------------------------------------
-echo [4/10] Checking Flutter SDK...
+echo [4/11] Checking Flutter SDK...
 
 set "FLUTTER_DIR=%USERPROFILE%\flutter"
 
@@ -253,7 +253,7 @@ exit /b 0
 REM -------------------------------------------------------
 :step_platform_folders
 REM -------------------------------------------------------
-echo [5/10] Ensuring Flutter platform folders exist...
+echo [5/11] Ensuring Flutter platform folders exist...
 
 if not exist "android" (
     echo        Generating android and ios platform projects...
@@ -268,7 +268,7 @@ exit /b 0
 REM -------------------------------------------------------
 :step_ffmpeg
 REM -------------------------------------------------------
-echo [6/10] Checking ffmpeg ^(required for audio processing^)...
+echo [6/11] Checking ffmpeg ^(required for audio processing^)...
 where ffmpeg >nul 2>nul
 if !ERRORLEVEL! equ 0 (
     echo        ffmpeg found.
@@ -361,7 +361,7 @@ exit /b 0
 REM -------------------------------------------------------
 :step_venv_torch
 REM -------------------------------------------------------
-echo [8/10] Setting up venv_torch ^(PyTorch + CUDA — audio, training, TTS^)...
+echo [9/11] Setting up venv_torch ^(PyTorch + CUDA — audio, training, TTS, image generation^)...
 echo.
 
 if not exist "venv_torch" (
@@ -409,7 +409,7 @@ exit /b 0
 REM -------------------------------------------------------
 :step_flutter_packages
 REM -------------------------------------------------------
-echo [9/10] Installing Flutter packages from pubspec.yaml...
+echo [10/11] Installing Flutter packages from pubspec.yaml...
 call flutter pub get
 
 REM flutter pub get may return non-zero due to symlink warnings (Developer Mode).
@@ -428,7 +428,7 @@ exit /b 0
 REM -------------------------------------------------------
 :step_finalize
 REM -------------------------------------------------------
-echo [10/10] Finalizing setup...
+echo [11/11] Finalizing setup...
 
 echo        Accepting Android SDK licenses via Flutter...
 REM Generate a temp file with 20 "y" lines to auto-accept all license prompts

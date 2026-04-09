@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:awing_ai_learning/data/awing_vocabulary.dart';
 import 'package:awing_ai_learning/services/analytics_service.dart';
 import 'package:awing_ai_learning/services/pronunciation_service.dart';
+import 'package:awing_ai_learning/services/image_service.dart';
 import 'package:awing_ai_learning/services/progress_service.dart';
 import 'package:awing_ai_learning/services/auth_service.dart';
 import 'package:awing_ai_learning/services/parent_notification_service.dart';
@@ -229,30 +230,59 @@ class _QuizScreenState extends State<QuizScreen> {
                   style: TextStyle(color: Colors.grey.shade600),
                 ),
                 const SizedBox(height: 32),
-                // Question
+                // Question with image on left, word centered on right
                 const Text(
                   'What does this word mean?',
                   style: TextStyle(fontSize: 18, color: Colors.grey),
                 ),
-                const SizedBox(height: 16),
-                Text(
-                  word.awing,
-                  style: const TextStyle(
-                    fontSize: 44,
-                    fontWeight: FontWeight.bold,
+                const SizedBox(height: 12),
+                IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Image fills left side
+                      Expanded(
+                        flex: 2,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: Image.asset(
+                            ImageService.assetPath(word.awing),
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      // Word + hear it centered on right
+                      Expanded(
+                        flex: 3,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              word.awing,
+                              style: const TextStyle(
+                                fontSize: 34,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 4),
+                            TextButton.icon(
+                              onPressed: () => _pronunciation.speakAwing(word.awing),
+                              icon: Icon(Icons.volume_up, color: const Color(0xFFDAA520)),
+                              label: Text(
+                                'Hear it',
+                                style: TextStyle(color: const Color(0xFFDAA520)),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 8),
-                // Hear the word button
-                TextButton.icon(
-                  onPressed: () => _pronunciation.speakAwing(word.awing),
-                  icon: Icon(Icons.volume_up, color: const Color(0xFFDAA520)),
-                  label: Text(
-                    'Hear it',
-                    style: TextStyle(color: const Color(0xFFDAA520)),
-                  ),
-                ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 12),
                 // Answer choices
                 ...choices.map((choice) {
                   final isCorrect = choice == word.english;
