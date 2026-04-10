@@ -125,7 +125,7 @@ class _StudentExamScreenState extends State<StudentExamScreen> {
             ),
           ],
         ),
-        body: Padding(
+        body: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -137,16 +137,16 @@ class _StudentExamScreenState extends State<StudentExamScreen> {
                 valueColor:
                     const AlwaysStoppedAnimation<Color>(Colors.indigo),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
 
               // Question
               Card(
-                elevation: 4,
+                elevation: 2,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.all(24),
+                  padding: const EdgeInsets.all(16),
                   child: Column(
                     children: [
                       Text(
@@ -156,48 +156,45 @@ class _StudentExamScreenState extends State<StudentExamScreen> {
                           color: Colors.grey.shade600,
                         ),
                       ),
-                      const SizedBox(height: 12),
-                      // Image on left, question centered on right
+                      const SizedBox(height: 8),
+                      // Image thumbnail + question text side by side
                       if (question.type == 'translate_to_english' ||
                           question.type == 'spelling')
-                        IntrinsicHeight(
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              Expanded(
-                                flex: 2,
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(16),
-                                  child: Image.asset(
-                                    ImageService.assetPath(question.questionText),
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (_, __, ___) =>
-                                        const SizedBox.shrink(),
+                        Row(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: SizedBox(
+                                width: 70,
+                                height: 70,
+                                child: Image.asset(
+                                  ImageService.assetPath(question.questionText),
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => Container(
+                                    color: Colors.indigo.shade50,
+                                    child: Icon(Icons.translate, color: Colors.indigo.shade300, size: 32),
                                   ),
                                 ),
                               ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                flex: 3,
-                                child: Center(
-                                  child: Text(
-                                    question.questionText,
-                                    style: const TextStyle(
-                                      fontSize: 28,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                    textAlign: TextAlign.center,
-                                  ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Text(
+                                question.questionText,
+                                style: const TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
                                 ),
+                                textAlign: TextAlign.center,
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         )
                       else
                         Text(
                           question.questionText,
                           style: const TextStyle(
-                            fontSize: 28,
+                            fontSize: 24,
                             fontWeight: FontWeight.bold,
                           ),
                           textAlign: TextAlign.center,
@@ -206,21 +203,21 @@ class _StudentExamScreenState extends State<StudentExamScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
 
               // Choices
               ...List.generate(question.choices.length, (i) {
                 final isSelected = selectedAnswer == i;
                 return Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.only(bottom: 8),
                   child: OutlinedButton(
                     onPressed: () {
                       exam.answerQuestion(question.id, i);
                     },
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(
-                        vertical: 16,
-                        horizontal: 20,
+                        vertical: 14,
+                        horizontal: 16,
                       ),
                       backgroundColor: isSelected
                           ? Colors.indigo.shade50
@@ -238,8 +235,8 @@ class _StudentExamScreenState extends State<StudentExamScreen> {
                     child: Row(
                       children: [
                         Container(
-                          width: 32,
-                          height: 32,
+                          width: 28,
+                          height: 28,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             color: isSelected
@@ -251,18 +248,19 @@ class _StudentExamScreenState extends State<StudentExamScreen> {
                               String.fromCharCode(65 + i), // A, B, C, D
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
+                                fontSize: 13,
                                 color:
                                     isSelected ? Colors.white : Colors.black87,
                               ),
                             ),
                           ),
                         ),
-                        const SizedBox(width: 16),
+                        const SizedBox(width: 12),
                         Expanded(
                           child: Text(
                             question.choices[i],
                             style: TextStyle(
-                              fontSize: 16,
+                              fontSize: 15,
                               fontWeight: isSelected
                                   ? FontWeight.w600
                                   : FontWeight.normal,
@@ -275,7 +273,7 @@ class _StudentExamScreenState extends State<StudentExamScreen> {
                 );
               }),
 
-              const Spacer(),
+              const SizedBox(height: 12),
 
               // Navigation
               Row(
@@ -324,6 +322,7 @@ class _StudentExamScreenState extends State<StudentExamScreen> {
                   ),
                 ],
               ),
+              const SizedBox(height: 20),
             ],
           ),
         ),

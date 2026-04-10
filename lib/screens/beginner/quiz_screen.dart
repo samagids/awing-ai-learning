@@ -212,7 +212,7 @@ class _QuizScreenState extends State<QuizScreen> {
       ),
       body: Stack(
         children: [
-          Padding(
+          SingleChildScrollView(
             padding: const EdgeInsets.all(20),
             child: Column(
               children: [
@@ -229,60 +229,75 @@ class _QuizScreenState extends State<QuizScreen> {
                   'Question ${_currentQuestion + 1} of ${_quizWords.length}',
                   style: TextStyle(color: Colors.grey.shade600),
                 ),
-                const SizedBox(height: 32),
-                // Question with image on left, word centered on right
+                const SizedBox(height: 20),
+                // Question
                 const Text(
                   'What does this word mean?',
                   style: TextStyle(fontSize: 18, color: Colors.grey),
                 ),
                 const SizedBox(height: 12),
-                IntrinsicHeight(
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // Image fills left side
-                      Expanded(
-                        flex: 2,
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(16),
-                          child: Image.asset(
-                            ImageService.assetPath(word.awing),
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                // Word card with image and hear-it button
+                Card(
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      children: [
+                        // Image thumbnail
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: SizedBox(
+                            width: 70,
+                            height: 70,
+                            child: Image.asset(
+                              ImageService.assetPath(word.awing),
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => Container(
+                                color: Colors.green.shade50,
+                                child: Icon(Icons.translate, color: Colors.green.shade300, size: 32),
+                              ),
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 16),
-                      // Word + hear it centered on right
-                      Expanded(
-                        flex: 3,
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              word.awing,
-                              style: const TextStyle(
-                                fontSize: 34,
-                                fontWeight: FontWeight.bold,
+                        const SizedBox(width: 16),
+                        // Word + hear it
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                word.awing,
+                                style: const TextStyle(
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: 4),
-                            TextButton.icon(
-                              onPressed: () => _pronunciation.speakAwing(word.awing),
-                              icon: Icon(Icons.volume_up, color: const Color(0xFFDAA520)),
-                              label: Text(
-                                'Hear it',
-                                style: TextStyle(color: const Color(0xFFDAA520)),
+                              const SizedBox(height: 4),
+                              GestureDetector(
+                                onTap: () => _pronunciation.speakAwing(word.awing),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.volume_up, color: const Color(0xFFDAA520), size: 20),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'Hear it',
+                                      style: TextStyle(color: const Color(0xFFDAA520), fontSize: 14),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 16),
                 // Answer choices
                 ...choices.map((choice) {
                   final isCorrect = choice == word.english;
@@ -297,14 +312,14 @@ class _QuizScreenState extends State<QuizScreen> {
                   }
 
                   return Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
+                    padding: const EdgeInsets.only(bottom: 8),
                     child: SizedBox(
                       width: double.infinity,
                       child: OutlinedButton(
                         onPressed: () => _selectAnswer(choice),
                         style: OutlinedButton.styleFrom(
                           backgroundColor: bgColor,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
                           side: BorderSide(
                             color: _answered && isCorrect
                                 ? Colors.green
@@ -320,7 +335,7 @@ class _QuizScreenState extends State<QuizScreen> {
                         child: Text(
                           choice,
                           style: TextStyle(
-                            fontSize: 18,
+                            fontSize: 16,
                             color: _answered && isCorrect
                                 ? Colors.green.shade800
                                 : _answered && isSelected && !isCorrect
@@ -332,7 +347,7 @@ class _QuizScreenState extends State<QuizScreen> {
                     ),
                   );
                 }),
-                const Spacer(),
+                const SizedBox(height: 12),
                 // Next button
                 if (_answered)
                   SizedBox(
@@ -355,6 +370,7 @@ class _QuizScreenState extends State<QuizScreen> {
                       ),
                     ),
                   ),
+                const SizedBox(height: 20),
               ],
             ),
           ),
