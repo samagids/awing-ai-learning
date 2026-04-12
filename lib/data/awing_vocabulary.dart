@@ -27,6 +27,28 @@ class AwingWord {
 }
 
 // ============================================================
+// NEW CATEGORIES (Session 37 - PDF-verified entries)
+// ============================================================
+
+/// Pronouns — personal and demonstrative pronouns
+const List<AwingWord> pronouns = [
+  // Source: Awing English Dictionary English-Awing Index
+  AwingWord(awing: 'maŋɔ', english: 'I', category: 'pronouns', difficulty: 1),
+  AwingWord(awing: 'ghǒ', english: 'you (singular)', category: 'pronouns', difficulty: 1),
+];
+
+/// Time words — temporal expressions and temporal nouns
+const List<AwingWord> timeWords = [
+  // Source: Awing English Dictionary
+  AwingWord(awing: 'ntúa\'ɔ', english: 'night', category: 'time', difficulty: 1),
+  AwingWord(awing: 'agha ghena', english: 'now', category: 'time', difficulty: 2),
+  AwingWord(awing: 'agha yia', english: 'later', category: 'time', difficulty: 2),
+  AwingWord(awing: 'taká', english: 'never', category: 'time', difficulty: 2),
+  AwingWord(awing: 'saŋ', english: 'month', category: 'time', difficulty: 2),
+  AwingWord(awing: 'agha', english: 'season', category: 'time', difficulty: 2),
+];
+
+// ============================================================
 // BEGINNER VOCABULARY (difficulty: 1) — simple, everyday words
 // ============================================================
 
@@ -85,6 +107,10 @@ const List<AwingWord> bodyParts = [
   AwingWord(awing: 'nkɔ̂ŋə', english: 'throat', category: 'body'),
   AwingWord(awing: 'ŋgwɛ̀nə', english: 'skin', category: 'body'),
   AwingWord(awing: 'ŋkwâŋə', english: 'waist', category: 'body'),
+  // === NEW: PDF-verified entries (Session 37) ===
+  AwingWord(awing: 'nalanɔ́', english: 'joint', category: 'body', difficulty: 2),
+  AwingWord(awing: 'mbî\'ɔ́', english: 'kidney', category: 'body', difficulty: 3),
+  AwingWord(awing: 'afɔ́bla', english: 'lung', category: 'body', difficulty: 3),
 ];
 
 /// Animals and nature — fun for kids
@@ -184,6 +210,16 @@ const List<AwingWord> animalsNature = [
   AwingWord(awing: 'ŋgwâŋə', english: 'porcupine', category: 'animals', difficulty: 2),
   AwingWord(awing: 'nkwúbə', english: 'dove', category: 'animals'),
   AwingWord(awing: 'ŋkwɔ́ŋə', english: 'parrot', category: 'animals', difficulty: 2),
+  // === NEW: PDF-verified entries (Session 37) ===
+  AwingWord(awing: 'máwúmɔ́', english: 'hawk', category: 'animals', difficulty: 2),
+  AwingWord(awing: 'pɨ̌\'ɔ', english: 'hen', category: 'animals', difficulty: 1),
+  AwingWord(awing: 'njakaŋɔ', english: 'jackal', category: 'animals', difficulty: 3),
+  AwingWord(awing: 'nkámɔ́zɔ\'ɔ́', english: 'monkey', category: 'animals', difficulty: 2),
+  AwingWord(awing: 'nɔ́sanɔ́', english: 'ocean/sea', category: 'nature', difficulty: 2),
+  AwingWord(awing: 'nkɔŋ nó ngɔ́sma', english: 'rainbow', category: 'nature', difficulty: 2),
+  AwingWord(awing: 'nkya\' sáŋa', english: 'moonlight', category: 'nature', difficulty: 2),
+  AwingWord(awing: 'mɔ̀m napooɔ́la', english: 'heaven', category: 'nature', difficulty: 3),
+  AwingWord(awing: 'sfoŋhasɔ́mɔ́', english: 'lake', category: 'nature', difficulty: 2),
 ];
 
 /// Food and drink — things kids eat and drink
@@ -338,6 +374,63 @@ const List<AwingWord> actions = [
   AwingWord(awing: 'pá\'tə', english: 'share/divide', category: 'actions'),
   AwingWord(awing: 'tsə́ŋə', english: 'praise', category: 'actions', difficulty: 2),
   AwingWord(awing: 'shwɔ́ŋə', english: 'pray', category: 'actions', difficulty: 2),
+  // === NEW: PDF-verified entries (Session 37) ===
+  AwingWord(awing: 'kwúɔ', english: 'die', category: 'actions', difficulty: 1),
+  AwingWord(awing: 'fóŋɔ', english: 'dig', category: 'actions', difficulty: 1),
+  AwingWord(awing: 'tsóolɔ', english: 'descend', category: 'actions', difficulty: 2),
+  AwingWord(awing: 'tsanɔ́', english: 'destroy', category: 'actions', difficulty: 2),
+  AwingWord(awing: 'looóɔ', english: 'want/desire', category: 'actions', difficulty: 1),
+  AwingWord(awing: 'túga', english: 'have', category: 'actions', difficulty: 1),
+  AwingWord(awing: 'zo\'ɔ', english: 'hear', category: 'actions', difficulty: 1),
+  AwingWord(awing: 'kwaalɔ', english: 'help', category: 'actions', difficulty: 1),
+  AwingWord(awing: 'fî\'nɔ́', english: 'imitate', category: 'actions', difficulty: 2),
+  AwingWord(awing: 'téeka', english: 'join', category: 'actions', difficulty: 1),
+  AwingWord(awing: 'sá\'ɔ', english: 'judge', category: 'actions', difficulty: 2),
+  AwingWord(awing: 'llia', english: 'jump', category: 'actions', difficulty: 1),
+  AwingWord(awing: 'bə\'kɔ́', english: 'keep', category: 'actions', difficulty: 2),
+  AwingWord(awing: 'jiwita', english: 'kill', category: 'actions', difficulty: 2),
+  AwingWord(awing: 'chwiɔ́ɔ', english: 'kiss', category: 'actions', difficulty: 2),
+  AwingWord(awing: 'póŋa', english: 'lack', category: 'actions', difficulty: 2),
+  AwingWord(awing: 'ze\'ɔ́', english: 'learn', category: 'actions', difficulty: 1),
+  AwingWord(awing: 'noŋnɔ́', english: 'lie down', category: 'actions', difficulty: 1),
+  AwingWord(awing: 'jwî\'ɔ́ta', english: 'listen', category: 'actions', difficulty: 1),
+  AwingWord(awing: 'íwna', english: 'lock', category: 'actions', difficulty: 2),
+  AwingWord(awing: 'nágɔ', english: 'look at', category: 'actions', difficulty: 1),
+  AwingWord(awing: 'ta\'a', english: 'search', category: 'actions', difficulty: 1),
+  AwingWord(awing: 'tsoŋkɔ́', english: 'make', category: 'actions', difficulty: 1),
+  AwingWord(awing: 'zɔ́\'ɔ', english: 'marry', category: 'actions', difficulty: 2),
+  AwingWord(awing: 'loŋa', english: 'melt', category: 'actions', difficulty: 2),
+  AwingWord(awing: 'nɔŋka', english: 'nurse', category: 'actions', difficulty: 2),
+  AwingWord(awing: 'zo\'na', english: 'obey', category: 'actions', difficulty: 2),
+  AwingWord(awing: 'kwáala', english: 'obtain', category: 'actions', difficulty: 2),
+  AwingWord(awing: 'nna\'', english: 'open', category: 'actions', difficulty: 1),
+  AwingWord(awing: 'tía', english: 'pay', category: 'actions', difficulty: 1),
+  AwingWord(awing: 'kwa\'ɔ́', english: 'play', category: 'actions', difficulty: 1),
+  AwingWord(awing: 'píta', english: 'plant', category: 'actions', difficulty: 1),
+  AwingWord(awing: 'no\'a', english: 'press', category: 'actions', difficulty: 2),
+  AwingWord(awing: 'fya\'ɔ́', english: 'quarrel', category: 'actions', difficulty: 2),
+  AwingWord(awing: 'kwúmtɔ́', english: 'remember', category: 'actions', difficulty: 1),
+  AwingWord(awing: 'fóga', english: 'remove', category: 'actions', difficulty: 1),
+  AwingWord(awing: 'kwúbla', english: 'repent', category: 'actions', difficulty: 3),
+  AwingWord(awing: 'kila', english: 'refuse', category: 'actions', difficulty: 2),
+  AwingWord(awing: 'chwaadka', english: 'save', category: 'actions', difficulty: 2),
+  AwingWord(awing: 'sóŋa', english: 'say', category: 'actions', difficulty: 1),
+  AwingWord(awing: 'ghabnɔ', english: 'separate', category: 'actions', difficulty: 2),
+  AwingWord(awing: 'fa\'a', english: 'serve', category: 'actions', difficulty: 2),
+  AwingWord(awing: 'tíma', english: 'sew', category: 'actions', difficulty: 2),
+  AwingWord(awing: 'ghabnɔ́', english: 'share', category: 'actions', difficulty: 2),
+  AwingWord(awing: 'gwa\'a', english: 'shine', category: 'actions', difficulty: 1),
+  AwingWord(awing: 'tóma', english: 'shoot', category: 'actions', difficulty: 2),
+  AwingWord(awing: 'naasla', english: 'show', category: 'actions', difficulty: 1),
+  AwingWord(awing: 'kaŋɔ́', english: 'shut', category: 'actions', difficulty: 1),
+  AwingWord(awing: 'ghə̀ŋə', english: 'grind', category: 'actions', difficulty: 1),
+  AwingWord(awing: 'lyǎŋə', english: 'hide', category: 'actions', difficulty: 1),
+  AwingWord(awing: 'tyə́\'lə', english: 'straddle', category: 'actions', difficulty: 3),
+  AwingWord(awing: 'piə̀', english: 'sow', category: 'actions', difficulty: 1),
+  AwingWord(awing: 'wàəà', english: 'slaughter', category: 'actions', difficulty: 2),
+  AwingWord(awing: 'zòŋə́', english: 'follow', category: 'actions', difficulty: 1),
+  AwingWord(awing: 'lə́kə́', english: 'thank', category: 'actions', difficulty: 1),
+  AwingWord(awing: 'pjə́bə́', english: 'protect', category: 'actions', difficulty: 2),
 ];
 
 /// Things, objects, and food — words kids encounter daily
@@ -427,6 +520,55 @@ const List<AwingWord> thingsObjects = [
   AwingWord(awing: 'ŋwà\'lə', english: 'letter/writing', category: 'things'),
   AwingWord(awing: 'ntɔ́gə', english: 'name', category: 'things'),
   AwingWord(awing: 'ŋkə̂ŋə', english: 'word/language', category: 'things'),
+  // === NEW: PDF-verified entries (Session 37) ===
+  AwingWord(awing: 'akwɛlɔ', english: 'herd', category: 'things', difficulty: 2),
+  AwingWord(awing: 'ndzaŋa', english: 'kind', category: 'things', difficulty: 2),
+  AwingWord(awing: 'ndé moŋa', english: 'kitchen', category: 'things', difficulty: 1),
+  AwingWord(awing: 'kɔ́\'ɔ', english: 'ladder', category: 'things', difficulty: 2),
+  AwingWord(awing: 'ɔ́tsĕba', english: 'language', category: 'things', difficulty: 2),
+  AwingWord(awing: 'noŋka', english: 'law', category: 'things', difficulty: 3),
+  AwingWord(awing: 'nchímbîɔ', english: 'life', category: 'things', difficulty: 2),
+  AwingWord(awing: 'nkya\'ɔ', english: 'light', category: 'things', difficulty: 1),
+  AwingWord(awing: 'nwîŋa', english: 'machete', category: 'things', difficulty: 1),
+  AwingWord(awing: 'ɔ́ptia', english: 'madness', category: 'things', difficulty: 2),
+  AwingWord(awing: 'ngɔ́sáŋɔ́', english: 'corn', category: 'things', difficulty: 1),
+  AwingWord(awing: 'nkáɔna', english: 'message', category: 'things', difficulty: 1),
+  AwingWord(awing: 'ntúma', english: 'messenger', category: 'things', difficulty: 2),
+  AwingWord(awing: 'anyi ntúmɔ', english: 'metal', category: 'things', difficulty: 2),
+  AwingWord(awing: 'awɛ', english: 'mirror', category: 'things', difficulty: 1),
+  AwingWord(awing: 'nkɛɛbɔ', english: 'money', category: 'things', difficulty: 1),
+  AwingWord(awing: 'akɔ́ɔma', english: 'happiness', category: 'things', difficulty: 2),
+  AwingWord(awing: 'ngo\'ɔ', english: 'hardship', category: 'things', difficulty: 2),
+  AwingWord(awing: 'naṇtooɔ́la', english: 'hernia', category: 'things', difficulty: 3),
+  AwingWord(awing: 'akwɔŋa', english: 'idea', category: 'things', difficulty: 2),
+  AwingWord(awing: 'aghoɔnɔ́', english: 'illness', category: 'things', difficulty: 2),
+  AwingWord(awing: 'nanŷina', english: 'journey', category: 'things', difficulty: 2),
+  AwingWord(awing: 'ashî\'na', english: 'kindness', category: 'things', difficulty: 2),
+  AwingWord(awing: 'ndé\'ɔ́', english: 'necklace', category: 'things', difficulty: 2),
+  AwingWord(awing: 'sɔ́\'a', english: 'needle', category: 'things', difficulty: 1),
+  AwingWord(awing: 'nka sáŋɔ́', english: 'nest', category: 'things', difficulty: 2),
+  AwingWord(awing: 'ajwa\'ali\'ɔ́', english: 'noise', category: 'things', difficulty: 2),
+  AwingWord(awing: 'ndema', english: 'number', category: 'things', difficulty: 2),
+  AwingWord(awing: 'atía nɔ́taɔna', english: 'palm tree', category: 'things', difficulty: 2),
+  AwingWord(awing: 'alanɔ́', english: 'path', category: 'things', difficulty: 1),
+  AwingWord(awing: 'awaamɔ́mbɔama', english: 'patience', category: 'things', difficulty: 2),
+  AwingWord(awing: 'ntía', english: 'payment', category: 'things', difficulty: 2),
+  AwingWord(awing: 'nkɔŋa', english: 'peace', category: 'things', difficulty: 1),
+  AwingWord(awing: 'ndá\'ɔ́', english: 'poison', category: 'things', difficulty: 2),
+  AwingWord(awing: 'naíɔ́\'ɔ', english: 'potato', category: 'things', difficulty: 1),
+  AwingWord(awing: 'shwa\'ɔ', english: 'razor', category: 'things', difficulty: 2),
+  AwingWord(awing: 'ngwúba', english: 'shoe', category: 'things', difficulty: 1),
+  AwingWord(awing: 'msóm', english: 'sin', category: 'things', difficulty: 2),
+  AwingWord(awing: 'asɔ́ɔma', english: 'shame', category: 'things', difficulty: 2),
+  AwingWord(awing: 'mafena', english: 'sacrifice', category: 'things', difficulty: 2),
+  AwingWord(awing: 'agwa\'la', english: 'school', category: 'things', difficulty: 1),
+  AwingWord(awing: 'nɔ́sana', english: 'sea', category: 'things', difficulty: 1),
+  AwingWord(awing: 'sə̀bə̀ə̀bə́', english: 'thorn', category: 'things', difficulty: 2),
+  AwingWord(awing: 'alɛ́dnə̀', english: 'wealth', category: 'things', difficulty: 2),
+  AwingWord(awing: 'ge:nə́', english: 'week', category: 'things', difficulty: 2),
+  AwingWord(awing: 'lá\'ə̀', english: 'village', category: 'things', difficulty: 1),
+  AwingWord(awing: 'mətuə́\'ə', english: 'caterpillar', category: 'things', difficulty: 2),
+  AwingWord(awing: 'àkəỳə́', english: 'cave', category: 'things', difficulty: 2),
 ];
 
 /// Family, people, and places — essential for conversations
@@ -486,6 +628,15 @@ const List<AwingWord> familyPeople = [
   AwingWord(awing: 'ŋgwîə', english: 'twins', category: 'family'),
   AwingWord(awing: 'əpɔ̀ŋə', english: 'co-wife', category: 'family', difficulty: 3),
   AwingWord(awing: 'nkwə̂ŋə', english: 'council/meeting', category: 'family', difficulty: 2),
+  // === NEW: PDF-verified entries (Session 37) ===
+  AwingWord(awing: 'mɔ̂nə', english: 'chief', category: 'family', difficulty: 2),
+  AwingWord(awing: 'mən\'ɔ', english: 'person', category: 'family', difficulty: 1),
+  AwingWord(awing: 'məbîə', english: 'boy', category: 'family', difficulty: 1),
+  AwingWord(awing: 'əbîə', english: 'girl', category: 'family', difficulty: 1),
+  AwingWord(awing: 'məkwɛ́', english: 'servant', category: 'family', difficulty: 2),
+  AwingWord(awing: 'adzə̌ə', english: 'butcher', category: 'family', difficulty: 2),
+  AwingWord(awing: 'ndzɔ̂ŋɔ', english: 'country', category: 'family', difficulty: 2),
+  AwingWord(awing: 'àfó', english: 'place', category: 'family', difficulty: 1),
 ];
 
 /// Numbers and counting
@@ -626,6 +777,27 @@ const List<AwingWord> descriptiveWords = [
   AwingWord(awing: 'kpɔ̀ŋɔ́', english: 'loud/noisy', category: 'descriptive', difficulty: 2),
   AwingWord(awing: 'nûə', english: 'sweet (like honey)', category: 'descriptive'),
   AwingWord(awing: 'shɨ̂ŋə', english: 'sour/bitter', category: 'descriptive'),
+  // === NEW: PDF-verified entries (Session 37) ===
+  AwingWord(awing: 'dɔ́tɔ̀', english: 'dirty', category: 'descriptive', difficulty: 1),
+  AwingWord(awing: 'tyanɔ́', english: 'hard', category: 'descriptive', difficulty: 1),
+  AwingWord(awing: 'yɨ̌la', english: 'difficult', category: 'descriptive', difficulty: 1),
+  AwingWord(awing: 'achîna', english: 'important', category: 'descriptive', difficulty: 2),
+  AwingWord(awing: 'bɨ̀ŋna', english: 'lazy', category: 'descriptive', difficulty: 2),
+  AwingWord(awing: 'sga', english: 'long', category: 'descriptive', difficulty: 1),
+  AwingWord(awing: 'préta', english: 'crazy', category: 'descriptive', difficulty: 2),
+  AwingWord(awing: 'yéeta', english: 'mad', category: 'descriptive', difficulty: 2),
+  AwingWord(awing: 'mbɔŋɔ́', english: 'many', category: 'descriptive', difficulty: 1),
+  AwingWord(awing: 'tsaanɔ́', english: 'mature', category: 'descriptive', difficulty: 2),
+  AwingWord(awing: 'fía', english: 'new', category: 'descriptive', difficulty: 1),
+  AwingWord(awing: 'fóŋa', english: 'poor', category: 'descriptive', difficulty: 1),
+  AwingWord(awing: 'léeta', english: 'ready', category: 'descriptive', difficulty: 1),
+  AwingWord(awing: 'ndɔŋɔ́', english: 'same', category: 'descriptive', difficulty: 2),
+  AwingWord(awing: 'ghooɔ́nɔ́', english: 'sick', category: 'descriptive', difficulty: 1),
+  AwingWord(awing: 'zaŋkɔ́', english: 'light', category: 'descriptive', difficulty: 1),
+  AwingWord(awing: 'achîna', english: 'strong', category: 'descriptive', difficulty: 2),
+  AwingWord(awing: 'neebɔ', english: 'clean', category: 'descriptive', difficulty: 1),
+  AwingWord(awing: 'azɔŋɔ́', english: 'second', category: 'descriptive', difficulty: 2),
+  AwingWord(awing: 'ntúa\'ɔ', english: 'nice', category: 'descriptive', difficulty: 1),
 ];
 
 // ============================================================
@@ -2002,6 +2174,8 @@ const List<AwingWord> dictionaryEntries = [
 
 /// All vocabulary combined for easy access
 List<AwingWord> get allVocabulary => [
+  ...pronouns,
+  ...timeWords,
   ...bodyParts,
   ...animalsNature,
   ...foodDrink,
