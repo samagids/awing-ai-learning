@@ -263,7 +263,7 @@ class _TeacherMonitorScreenState extends State<TeacherMonitorScreen> {
               const SizedBox(height: 16),
               if (isWaiting)
                 ElevatedButton.icon(
-                  onPressed: exam.participants.isEmpty
+                  onPressed: (exam.participants.isEmpty || exam.questions.isEmpty)
                       ? null
                       : () => exam.startExam(),
                   icon: const Icon(Icons.play_arrow),

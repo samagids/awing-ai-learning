@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:awing_ai_learning/services/auth_service.dart';
 import 'package:awing_ai_learning/services/cloud_backup_service.dart';
 
@@ -21,18 +23,34 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      // Use the simple login-only GoogleSignIn (just 'email' scope).
-      // This does NOT require Google verification.
-      // Drive backup scope is requested separately when user enables it.
-      final account = await CloudBackupService.loginGoogleSignIn.signIn();
+      final gsi = CloudBackupService.loginGoogleSignIn;
+
+      // Try silent sign-in first — picks up existing device account
+      // without showing the account picker (no "Add account" option).
+      GoogleSignInAccount? account = await gsi.signInSilently();
+
+      // Only show the picker if no account was found silently
+      account ??= await gsi.signIn();
+
       if (account == null) {
         // User cancelled sign-in
         setState(() => _isLoading = false);
         return;
       }
 
+      // Sign into Firebase Auth (required for Firestore security rules)
+      final GoogleSignInAuthentication googleAuth =
+          await account.authentication;
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+      await FirebaseAuth.instance.signInWithCredential(credential);
+      debugPrint('Firebase Auth: signed in as ${account.email}');
+
       if (!mounted) return;
 
+      // Register with our local AuthService
       final auth = context.read<AuthService>();
       final cloud = context.read<CloudBackupService>();
 
@@ -51,8 +69,9 @@ class _LoginScreenState extends State<LoginScreen> {
       }
       // AuthService notifies listeners -> app rebuilds
     } catch (e) {
+      debugPrint('Google Sign-In error: $e');
       setState(() {
-        _error = 'Google Sign-In failed. Please try again.';
+        _error = 'Google Sign-In failed: $e';
         _isLoading = false;
       });
     }
@@ -164,7 +183,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 24),
                 Center(
                   child: Text(
-                    'A Google account is required to use the app.\nParent signs in, then creates profiles for kids.',
+                    'Parent: sign in with your Google account.\nThen create profiles for your kids to use.',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 13,

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -70,6 +71,8 @@ class CloudBackupService extends ChangeNotifier {
       if (account != null) {
         _isSignedIn = true;
         _connectedEmail = account.email;
+        // Also ensure Firebase Auth is signed in
+        await _ensureFirebaseAuth(account);
       }
     } catch (e) {
       debugPrint('Cloud backup silent sign-in check failed: $e');
@@ -77,6 +80,23 @@ class CloudBackupService extends ChangeNotifier {
 
     _initialized = true;
     notifyListeners();
+  }
+
+  /// Ensure Firebase Auth is signed in using Google credentials.
+  /// Required for Firestore security rules (request.auth != null).
+  Future<void> _ensureFirebaseAuth(GoogleSignInAccount account) async {
+    if (FirebaseAuth.instance.currentUser != null) return;
+    try {
+      final googleAuth = await account.authentication;
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+      await FirebaseAuth.instance.signInWithCredential(credential);
+      debugPrint('Firebase Auth: signed in as ${account.email}');
+    } catch (e) {
+      debugPrint('Firebase Auth sign-in failed: $e');
+    }
   }
 
   /// Sign in — called from backup settings if user wants to explicitly connect.
@@ -91,6 +111,7 @@ class CloudBackupService extends ChangeNotifier {
         return false;
       }
 
+      await _ensureFirebaseAuth(account);
       _isSignedIn = true;
       _connectedEmail = account.email;
       _autoSync = true;
@@ -107,6 +128,7 @@ class CloudBackupService extends ChangeNotifier {
 
   Future<void> signOut() async {
     try {
+      await FirebaseAuth.instance.signOut();
       await loginGoogleSignIn.signOut();
     } catch (_) {}
     _isSignedIn = false;
@@ -210,11 +232,12 @@ class CloudBackupService extends ChangeNotifier {
       notifyListeners();
       debugPrint('Cloud backup to Firestore: success');
       return true;
-    } catch (e) {
+    } catch (e, stack) {
       _syncError = 'Backup failed: $e';
       _isSyncing = false;
       notifyListeners();
       debugPrint('Cloud backup error: $e');
+      debugPrint('Cloud backup stack: $stack');
       return false;
     }
   }
@@ -306,11 +329,12 @@ class CloudBackupService extends ChangeNotifier {
       notifyListeners();
       debugPrint('Cloud restore from Firestore: success');
       return true;
-    } catch (e) {
+    } catch (e, stack) {
       _syncError = 'Restore error: $e';
       _isSyncing = false;
       notifyListeners();
       debugPrint('Cloud restore error: $e');
+      debugPrint('Cloud restore stack: $stack');
       return false;
     }
   }
@@ -341,6 +365,7 @@ class CloudBackupService extends ChangeNotifier {
 
       _isSignedIn = true;
       _connectedEmail = account.email;
+      await _ensureFirebaseAuth(account);
 
       debugPrint(
         'Auto-restore: signed in as ${account.email}, checking Firestore...',

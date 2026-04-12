@@ -299,6 +299,7 @@ class _ContributeScreenState extends State<ContributeScreen> {
                       _notesController.clear();
                       _hasRecording = false;
                       _recordingPath = null;
+                      _recordingDuration = Duration.zero;
                     });
                   },
                   child: const Text('Submit Another'),

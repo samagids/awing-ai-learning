@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:awing_ai_learning/services/pronunciation_service.dart';
+import 'package:awing_ai_learning/services/progress_service.dart';
 
 /// Data class for a single story
 class AwingStory {
@@ -684,6 +686,7 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> {
   void initState() {
     super.initState();
     _pronunciation.init();
+    _pronunciation.setVoiceForLevel('beginner');
   }
 
   void _nextSentence() {
@@ -708,9 +711,9 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> {
     }
   }
 
-  void _speakSentence() {
+  Future<void> _speakSentence() async {
     final sentence = widget.story.sentences[_currentSentenceIndex];
-    _pronunciation.speakAwing(sentence.awing);
+    await _pronunciation.speakAwing(sentence.awing);
   }
 
   @override
@@ -719,6 +722,10 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> {
       return StoryQuizScreen(
         story: widget.story,
         onComplete: () {
+          context.read<ProgressService>().completeLesson(
+            'stories',
+            'story_${widget.story.titleEnglish.toLowerCase().replaceAll(' ', '_')}',
+          );
           Navigator.pop(context, true);
         },
       );

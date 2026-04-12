@@ -145,6 +145,7 @@ class ExamService extends ChangeNotifier {
   ServerSocket? _server;
   Socket? _clientSocket; // student's connection to teacher
   final List<Socket> _clientSockets = []; // teacher's connections to students
+  final Map<Socket, String> _socketProfileIds = {}; // socket → profileId
   String? _teacherIp;
   String? get teacherIp => _teacherIp;
 
@@ -252,14 +253,15 @@ class ExamService extends ChangeNotifier {
       },
       onDone: () {
         _clientSockets.remove(socket);
-        // Remove participant for this socket
-        _participants.removeWhere(
-          (p) => p.profileId == socket.remoteAddress.address,
-        );
+        final pid = _socketProfileIds.remove(socket);
+        if (pid != null) {
+          _participants.removeWhere((p) => p.profileId == pid);
+        }
         notifyListeners();
       },
       onError: (e) {
         _clientSockets.remove(socket);
+        _socketProfileIds.remove(socket);
         notifyListeners();
       },
     );
@@ -269,8 +271,17 @@ class ExamService extends ChangeNotifier {
     final type = json['type'] as String?;
     switch (type) {
       case 'JOIN':
+        final profileId = json['profileId'] as String? ?? '';
+        if (profileId.isEmpty) {
+          _sendToSocket(socket, {
+            'type': 'REJECT',
+            'reason': 'Invalid profile. Please update the app.',
+          });
+          socket.close();
+          break;
+        }
         final participant = ExamParticipant(
-          profileId: json['profileId'] ?? socket.remoteAddress.address,
+          profileId: profileId,
           displayName: json['displayName'] ?? 'Student',
           avatarEmoji: json['avatarEmoji'] ?? '🧒',
           level: json['level'] ?? 'beginner',
@@ -278,6 +289,7 @@ class ExamService extends ChangeNotifier {
         // Only accept if same level
         if (participant.level == _examLevel) {
           _participants.add(participant);
+          _socketProfileIds[socket] = profileId;
           // Send exam config to student
           _sendToSocket(socket, {
             'type': 'EXAM_CONFIG',

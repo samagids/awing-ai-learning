@@ -513,6 +513,14 @@ class _ReviewScreenState extends State<ReviewScreen>
                         ? reasonController.text
                         : 'Not applicable',
                   );
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Rejected: "${c.targetWord}"'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
             },
             icon: const Icon(Icons.close),
             label: const Text('Reject'),
