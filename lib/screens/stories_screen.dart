@@ -723,7 +723,6 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> {
         story: widget.story,
         onComplete: () {
           context.read<ProgressService>().completeLesson(
-            'stories',
             'story_${widget.story.titleEnglish.toLowerCase().replaceAll(' ', '_')}',
           );
           Navigator.pop(context, true);
