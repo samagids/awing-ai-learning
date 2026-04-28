@@ -53,6 +53,37 @@
 	<string>Awing AI Learning needs microphone access for pronunciation practice and audio recording.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>Awing AI Learning uses speech recognition to check your Awing pronunciation.</string>
+	<!-- Local-network permission: required by network_info_plus + nsd packages.
+	     Used so a teacher's device can host a classroom exam session over Wi-Fi
+	     and student devices can discover and join via mDNS. -->
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Awing AI Learning uses your local Wi-Fi network so teachers can host classroom exam sessions and students can discover and join nearby sessions.</string>
+	<!-- Bonjour service types we register/browse via mDNS. The single service
+	     here is the Kahoot-style exam discovery service used by exam_service.dart.
+	     iOS 14+ requires every Bonjour service type to be declared here or
+	     mDNS calls return no results. -->
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_awing-exam._tcp</string>
+	</array>
+	<!-- Google Sign-In URL scheme — REVERSED_CLIENT_ID from
+	     ios/Runner/GoogleService-Info.plist (Firebase project sanguine-frame-291822,
+	     iOS app com.awing.awingAiLearning, registered Session 57b 2026-04-27).
+	     Required for the Google Sign-In OAuth callback on iOS; without this URL
+	     scheme, login fails silently. -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>google-sign-in</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.1060398800208-d6na73hg4bpfmf0vvkcs3ms263oqt45q</string>
+			</array>
+		</dict>
+	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>

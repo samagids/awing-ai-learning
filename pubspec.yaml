@@ -6,7 +6,7 @@ description: A lightweight on-device AI application to teach the Awing language.
 
 publish_to: "none"
 
-version: 1.2.0+4
+version: 1.11.0+35
 
 environment:
   sdk: ">=3.4.0 <4.0.0"
@@ -28,10 +28,16 @@ dependencies:
   record: ^5.1.3
   url_launcher: ^6.3.1
   google_sign_in: ^6.2.2
+  # Sign in with Apple — required by App Store Review Guideline 4.8 since the
+  # app offers Google Sign-In. iOS-only at runtime; Android falls through to
+  # the Google flow. ^6.1.0 supports Flutter 3.22+.
+  sign_in_with_apple: ^6.1.4
   http: ^1.2.2
   firebase_core: ^3.8.1
   firebase_auth: ^5.3.4
   cloud_firestore: ^5.6.0
+  nsd: ^5.0.1
+  network_info_plus: ^6.1.1
 
 dependency_overrides:
   record_linux: 1.3.0
@@ -50,42 +56,7 @@ flutter_native_splash:
 flutter:
   uses-material-design: true
   assets:
-    - assets/model.tflite
     - config/webhooks.json
-    - assets/images/vocabulary/
-    # 6 character voices (Edge TTS neural — Swahili Bantu voices)
-    # Beginner: boy + girl (child voices)
-    - assets/audio/boy/alphabet/
-    - assets/audio/boy/vocabulary/
-    - assets/audio/boy/sentences/
-    - assets/audio/boy/stories/
-    - assets/audio/girl/alphabet/
-    - assets/audio/girl/vocabulary/
-    - assets/audio/girl/sentences/
-    - assets/audio/girl/stories/
-    # Medium: young_man + young_woman
-    - assets/audio/young_man/alphabet/
-    - assets/audio/young_man/vocabulary/
-    - assets/audio/young_man/sentences/
-    - assets/audio/young_man/stories/
-    - assets/audio/young_woman/alphabet/
-    - assets/audio/young_woman/vocabulary/
-    - assets/audio/young_woman/sentences/
-    - assets/audio/young_woman/stories/
-    # Expert: man + woman (adult voices)
-    - assets/audio/man/alphabet/
-    - assets/audio/man/vocabulary/
-    - assets/audio/man/sentences/
-    - assets/audio/man/stories/
-    - assets/audio/woman/alphabet/
-    - assets/audio/woman/vocabulary/
-    - assets/audio/woman/sentences/
-    - assets/audio/woman/stories/
-    # Legacy flat structure (backward compatibility)
-    - assets/audio/alphabet/
-    - assets/audio/vocabulary/
-    - assets/audio/tones/
-    - assets/audio/sentences/
-    - assets/audio/stories/
-    - assets/audio/dictionary/
-    - assets/images/
+    - assets/images/app_icon.png
+    # Large assets (audio + images) are in Play Asset Delivery pack
+    # See android/install_time_assets/ — accessed via AssetPackService

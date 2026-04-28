@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Debug-specific entitlements — same as Release plus get-task-allow=true
+	     so the debugger can attach. Apple strips get-task-allow on App Store
+	     submission so it MUST be false in Release. -->
+	<key>com.apple.developer.applesignin</key>
+	<array>
+		<string>Default</string>
+	</array>
+	<key>get-task-allow</key>
+	<true/>
+</dict>
+</plist>

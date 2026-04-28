@@ -1,7 +1,11 @@
+import 'dart:io' show Platform;
+
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:awing_ai_learning/services/auth_service.dart';
 import 'package:awing_ai_learning/services/cloud_backup_service.dart';
 
@@ -15,6 +19,106 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
   String? _error;
+
+  /// Whether to show the Sign in with Apple button on this platform.
+  ///
+  /// REQUIRED on iOS by App Store Review Guideline 4.8 since we also offer
+  /// Google Sign-In. Hidden on Android and other platforms where the
+  /// `sign_in_with_apple` package falls back to a web-based flow that we
+  /// don't support.
+  bool get _showAppleSignIn {
+    if (kIsWeb) return false;
+    try {
+      return Platform.isIOS || Platform.isMacOS;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<void> _signInWithApple() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      // Request both name and email scopes — Apple only returns these on the
+      // FIRST sign-in for any given Apple ID + app combination, so capturing
+      // them now is the only chance to get the user's display name.
+      final appleCredential = await SignInWithApple.getAppleIDCredential(
+        scopes: [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
+      );
+
+      // Exchange Apple credential for Firebase ID token. Firebase resolves the
+      // user's email to either their real address or an @privaterelay.appleid.com
+      // forwarder if they chose Hide My Email. Either form is stable per user.
+      final oauthCredential = OAuthProvider('apple.com').credential(
+        idToken: appleCredential.identityToken,
+        accessToken: appleCredential.authorizationCode,
+      );
+      final firebaseResult = await FirebaseAuth.instance
+          .signInWithCredential(oauthCredential);
+      final firebaseUser = firebaseResult.user;
+      final email = firebaseUser?.email ?? appleCredential.email;
+      if (email == null || email.isEmpty) {
+        setState(() {
+          _error = 'Apple Sign-In did not return an email. Please try again.';
+          _isLoading = false;
+        });
+        return;
+      }
+      debugPrint('Firebase Auth: signed in via Apple as $email');
+
+      if (!mounted) return;
+
+      // Display name — only present on first sign-in, then null forever after
+      // (Apple's design). On second+ sign-ins our existing AuthService account
+      // already has the name from before, so this falls through fine.
+      final givenName = appleCredential.givenName;
+      final familyName = appleCredential.familyName;
+      final displayName = [givenName, familyName]
+          .where((p) => p != null && p.isNotEmpty)
+          .join(' ')
+          .trim();
+
+      final auth = context.read<AuthService>();
+      final cloud = context.read<CloudBackupService>();
+
+      final error = auth.loginWithApple(
+        email,
+        displayName: displayName.isEmpty ? null : displayName,
+        cloudBackup: cloud,
+      );
+
+      if (error != null) {
+        setState(() {
+          _error = error;
+          _isLoading = false;
+        });
+      }
+      // AuthService notifies listeners -> app rebuilds
+    } on SignInWithAppleAuthorizationException catch (e) {
+      // User cancelled or platform refused (e.g. Apple ID not configured)
+      debugPrint('Apple Sign-In authorization error: ${e.code} ${e.message}');
+      if (e.code == AuthorizationErrorCode.canceled) {
+        setState(() => _isLoading = false);
+        return;
+      }
+      setState(() {
+        _error = 'Apple Sign-In failed: ${e.message}';
+        _isLoading = false;
+      });
+    } catch (e) {
+      debugPrint('Apple Sign-In error: $e');
+      setState(() {
+        _error = 'Apple Sign-In failed: $e';
+        _isLoading = false;
+      });
+    }
+  }
 
   Future<void> _signInWithGoogle() async {
     setState(() {
@@ -180,6 +284,36 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                 ),
+                if (_showAppleSignIn) ...[
+                  const SizedBox(height: 12),
+                  // Sign in with Apple — required by App Store Review Guideline
+                  // 4.8 since Google Sign-In is also offered. Apple HIG also
+                  // requires this exact button styling: black background, white
+                   // logo + text, "Sign in with Apple" wording.
+                  SizedBox(
+                    height: 56,
+                    child: ElevatedButton.icon(
+                      onPressed: _isLoading ? null : _signInWithApple,
+                      icon: const Icon(Icons.apple, size: 28, color: Colors.white),
+                      label: const Text(
+                        'Sign in with Apple',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.black,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 24),
                 Center(
                   child: Text(

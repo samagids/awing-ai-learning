@@ -24,8 +24,8 @@ class AuthService extends ChangeNotifier {
   bool _initialized = false;
   bool _devModeManuallyEnabled = false;
 
-  /// Auto-disable developer mode after 5 minutes of inactivity.
-  static const Duration _devModeTimeout = Duration(minutes: 5);
+  /// Auto-disable developer mode after 20 minutes of inactivity.
+  static const Duration _devModeTimeout = Duration(minutes: 20);
   Timer? _devModeTimer;
 
   Map<String, UserAccount> _accounts = {}; // email → account
@@ -94,14 +94,56 @@ class AuthService extends ChangeNotifier {
     String? photoUrl,
     CloudBackupService? cloudBackup,
   }) {
-    final e = googleEmail.trim().toLowerCase();
-    if (e.isEmpty) return 'Google sign-in failed';
+    return _loginWithProvider(
+      googleEmail,
+      authMethod: 'google',
+      displayName: displayName,
+      cloudBackup: cloudBackup,
+    );
+  }
+
+  // ==================== Apple Sign-In ====================
+
+  /// Login with Apple ID. Creates account if new.
+  ///
+  /// Required by App Store Review Guideline 4.8 because the app also offers
+  /// Google Sign-In as a third-party identity provider. Uses Firebase Auth's
+  /// resolved email — which is either the user's real email, or Apple's
+  /// @privaterelay.appleid.com forwarder if the user chose to hide their
+  /// email. Either form is stable per user per app, so it's safe to use as
+  /// the account key.
+  ///
+  /// On the first sign-in only, [displayName] is supplied (Apple does NOT
+  /// return name/email on subsequent sign-ins). On later sign-ins, the
+  /// existing account is reused via the stable email.
+  String? loginWithApple(
+    String appleEmail, {
+    String? displayName,
+    CloudBackupService? cloudBackup,
+  }) {
+    return _loginWithProvider(
+      appleEmail,
+      authMethod: 'apple',
+      displayName: displayName,
+      cloudBackup: cloudBackup,
+    );
+  }
+
+  /// Shared provider login — extracted so Google and Apple flows stay in sync.
+  String? _loginWithProvider(
+    String email, {
+    required String authMethod,
+    String? displayName,
+    CloudBackupService? cloudBackup,
+  }) {
+    final e = email.trim().toLowerCase();
+    if (e.isEmpty) return 'Sign-in failed';
 
     if (!_accounts.containsKey(e)) {
-      // Create new account for this Google email
+      // Create new account for this email (Google or Apple)
       _accounts[e] = UserAccount(
         email: e,
-        authMethod: 'google',
+        authMethod: authMethod,
         parentName: displayName,
       );
       _saveAccounts();
@@ -276,7 +318,7 @@ class AuthService extends ChangeNotifier {
   /// Set or update the account-level PIN (protects sign out, delete profile).
   void setAccountPin(String pin) {
     if (_currentAccount == null) return;
-    _currentAccount!.accountPin = pin.length == 4 ? pin : null;
+    _currentAccount!.accountPin = pin.length >= 6 ? pin : null;
     _saveAccounts();
     notifyListeners();
     onDataChanged?.call();
@@ -307,7 +349,7 @@ class AuthService extends ChangeNotifier {
       final profile = _currentAccount!.profiles.firstWhere(
         (p) => p.id == profileId,
       );
-      profile.pin = pin.length == 4 ? pin : null;
+      profile.pin = pin.length >= 6 ? pin : null;
       _saveAccounts();
       notifyListeners();
       onDataChanged?.call();
@@ -322,6 +364,30 @@ class AuthService extends ChangeNotifier {
         (p) => p.id == profileId,
       );
       profile.pin = null;
+      _saveAccounts();
+      notifyListeners();
+      onDataChanged?.call();
+    } catch (_) {}
+  }
+
+  // ==================== Parent Reset ====================
+
+  /// Reset a child profile's learning progress — zeros lessons, quizzes,
+  /// XP, and level unlocks so the child starts over as Beginner.
+  /// Caller MUST verify the account PIN before invoking this.
+  void resetProfileProgress(String profileId) {
+    if (_currentAccount == null) return;
+    try {
+      final profile = _currentAccount!.profiles.firstWhere(
+        (p) => p.id == profileId,
+      );
+      profile.lessonsCompleted.clear();
+      profile.quizBestScores.clear();
+      profile.totalXP = 0;
+      profile.mediumUnlocked = false;
+      profile.expertUnlocked = false;
+      profile.currentLevel = 'beginner';
+      profile.lastActiveAt = DateTime.now();
       _saveAccounts();
       notifyListeners();
       onDataChanged?.call();
@@ -442,12 +508,12 @@ class AuthService extends ChangeNotifier {
   }
 
   /// Enable developer mode directly (used after 2FA verification).
-  /// Starts the 5-minute inactivity auto-disable timer.
+  /// Starts the 20-minute inactivity auto-disable timer.
   void enableDevMode() {
     _devModeManuallyEnabled = true;
     _prefs.setBool(_keyDevMode, true);
     _resetDevModeTimer();
-    debugPrint('Developer mode activated (auto-disables after 5 min inactivity)');
+    debugPrint('Developer mode activated (auto-disables after 20 min inactivity)');
     notifyListeners();
   }
 
@@ -462,7 +528,7 @@ class AuthService extends ChangeNotifier {
   void _resetDevModeTimer() {
     _devModeTimer?.cancel();
     _devModeTimer = Timer(_devModeTimeout, () {
-      debugPrint('Developer mode auto-disabled after 5 min inactivity');
+      debugPrint('Developer mode auto-disabled after 20 min inactivity');
       disableDevMode();
     });
   }

@@ -5,7 +5,7 @@
 	<key>method</key>
 	<string>app-store</string>
 	<key>teamID</key>
-	<string>YOUR_TEAM_ID</string>
+	<string>9GUMAMVYJF</string>
 	<key>uploadBitcode</key>
 	<false/>
 	<key>uploadSymbols</key>
@@ -15,7 +15,7 @@
 	<key>provisioningProfiles</key>
 	<dict>
 		<key>com.awing.awingAiLearning</key>
-		<string>YOUR_PROVISIONING_PROFILE_NAME</string>
+		<string>Awing AI Learning App Store</string>
 	</dict>
 </dict>
 </plist>
