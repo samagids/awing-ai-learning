@@ -14,13 +14,10 @@ import 'package:awing_ai_learning/screens/settings/backup_screen.dart';
 import 'package:awing_ai_learning/screens/contribute/contribute_screen.dart';
 import 'package:awing_ai_learning/components/parental_gate.dart';
 import 'package:awing_ai_learning/screens/about_screen.dart';
-import 'dart:convert';
-import 'dart:io';
 import 'package:awing_ai_learning/services/analytics_service.dart';
 import 'package:awing_ai_learning/services/auth_service.dart';
 import 'package:awing_ai_learning/services/progress_service.dart';
-import 'package:awing_ai_learning/main.dart';
-import 'package:flutter/services.dart' show rootBundle;
+import 'package:awing_ai_learning/models/user_model.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -30,10 +27,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _versionTapCount = 0;
-  int _devCodeFailedAttempts = 0;
-  DateTime? _devCodeLockoutUntil;
-
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthService>();
@@ -134,13 +127,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         }
                       },
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.brightness_6),
-                      tooltip: 'Dark Mode',
-                      onPressed: () {
-                        context.read<ThemeNotifier>().toggle();
-                      },
-                    ),
+                    // Dark mode toggle hidden in v1.2.1 — re-enable after
+                    // completing full dark-mode color audit across all screens.
                   ],
                 ),
               ],
@@ -233,10 +221,18 @@ class _HomeScreenState extends State<HomeScreen> {
                         icon: Icons.school,
                         color: Colors.orange,
                         locked: !auth.isLevelUnlocked('medium'),
+                        progressWidget: (!auth.isLevelUnlocked('medium') && profile != null)
+                            ? _UnlockProgress(
+                                lessonsCompleted: profile.beginnerLessonsCompleted(),
+                                totalLessons: UserProfile.beginnerLessonIds.length,
+                                quizzesPassed: profile.beginnerQuizzesPassed(),
+                                totalQuizzes: UserProfile.beginnerQuizIds.length,
+                              )
+                            : null,
                         onTap: () {
                           if (!auth.isLevelUnlocked('medium')) {
                             _showLockedDialog(context, 'Medium',
-                                'Complete all Beginner lessons and score 90% on the quiz to unlock Medium.');
+                                'Complete all Beginner lessons and score 90% on all 10 quizzes to unlock Medium.');
                             return;
                           }
                           context.read<ProgressService>().markDifficultyLevelTried('Medium');
@@ -259,6 +255,14 @@ class _HomeScreenState extends State<HomeScreen> {
                         icon: Icons.emoji_events,
                         color: Colors.red,
                         locked: !auth.isLevelUnlocked('expert'),
+                        progressWidget: (!auth.isLevelUnlocked('expert') && auth.isLevelUnlocked('medium') && profile != null)
+                            ? _UnlockProgress(
+                                lessonsCompleted: profile.mediumLessonsCompleted(),
+                                totalLessons: UserProfile.mediumLessonIds.length,
+                                quizzesPassed: profile.mediumQuizzesPassed(),
+                                totalQuizzes: UserProfile.mediumQuizIds.length,
+                              )
+                            : null,
                         onTap: () {
                           if (!auth.isLevelUnlocked('expert')) {
                             _showLockedDialog(context, 'Expert',
@@ -371,346 +375,15 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(height: 4),
             Center(
-              child: GestureDetector(
-                onTap: () {
-                  _versionTapCount++;
-                  if (_versionTapCount >= 5 && !auth.isDeveloper) {
-                    _versionTapCount = 0;
-                    _showDevModeDialog(context, auth);
-                  } else if (_versionTapCount >= 5 && auth.isDeveloper) {
-                    _versionTapCount = 0;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Developer mode is already active')),
-                    );
-                  } else if (_versionTapCount >= 3) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('${5 - _versionTapCount} more taps...'),
-                        duration: const Duration(milliseconds: 500),
-                      ),
-                    );
-                  }
-                },
               child: Text(
-                'Version 1.2.0',
+                'Version ${AboutScreen.appVersion}',
                 style: TextStyle(color: Colors.grey.shade400, fontSize: 12),
               ),
             ),
-            ),
             const SizedBox(height: 16),
           ],
           ),
         ),
-      ),
-    );
-  }
-
-  /// Load the analytics webhook URL from bundled config.
-  Future<String?> _getAnalyticsWebhookUrl() async {
-    try {
-      final jsonStr = await rootBundle.loadString('config/webhooks.json');
-      final config = jsonDecode(jsonStr) as Map<String, dynamic>;
-      return config['analytics_url'] as String?;
-    } catch (_) {
-      return null;
-    }
-  }
-
-  /// Send a 6-digit verification code to the developer's Gmail via webhook.
-  /// Google Apps Script returns 302 redirects — Dart's HttpClient converts
-  /// POST→GET on redirect, losing the body. We must follow redirects manually.
-  Future<bool> _sendDevVerificationEmail(String code) async {
-    final webhookUrl = await _getAnalyticsWebhookUrl();
-    if (webhookUrl == null) return false;
-
-    final payload = jsonEncode({
-      'action': 'send_dev_code',
-      'code': code,
-      'email': 'samagids@gmail.com',
-    });
-
-    try {
-      final client = HttpClient();
-      client.connectionTimeout = const Duration(seconds: 15);
-
-      // Step 1: POST the payload — Apps Script processes it and returns 302
-      final postRequest = await client.postUrl(Uri.parse(webhookUrl));
-      postRequest.followRedirects = false;
-      postRequest.headers.contentType = ContentType.json;
-      postRequest.write(payload);
-      final postResponse = await postRequest.close();
-
-      debugPrint('Webhook POST: ${postResponse.statusCode}');
-
-      // Step 2: Follow 302 redirect with GET to read the response
-      if (postResponse.statusCode == 302 || postResponse.statusCode == 301) {
-        await postResponse.drain<void>();
-        final location = postResponse.headers.value('location');
-        if (location == null) {
-          client.close();
-          debugPrint('Webhook error: redirect with no location header');
-          return false;
-        }
-        debugPrint('Webhook redirect to: ${location.substring(0, 80)}...');
-
-        // Follow redirect chain with GET (googleusercontent serves the response)
-        var getUri = Uri.parse(location);
-        for (int i = 0; i < 5; i++) {
-          final getRequest = await client.getUrl(getUri);
-          getRequest.followRedirects = false;
-          final getResponse = await getRequest.close();
-
-          if (getResponse.statusCode == 302 || getResponse.statusCode == 301) {
-            await getResponse.drain<void>();
-            final nextLocation = getResponse.headers.value('location');
-            if (nextLocation == null) break;
-            getUri = Uri.parse(nextLocation);
-            continue;
-          }
-
-          final body = await getResponse.transform(utf8.decoder).join();
-          client.close();
-          debugPrint('Webhook response: ${getResponse.statusCode} $body');
-          final result = jsonDecode(body);
-          return result is Map && result['status'] == 'ok';
-        }
-      } else {
-        // No redirect — read directly
-        final body = await postResponse.transform(utf8.decoder).join();
-        client.close();
-        debugPrint('Webhook response (no redirect): ${postResponse.statusCode} $body');
-        final result = jsonDecode(body);
-        return result is Map && result['status'] == 'ok';
-      }
-
-      client.close();
-      debugPrint('Webhook error: could not get response after redirects');
-      return false;
-    } catch (e) {
-      debugPrint('Webhook error: $e');
-      return false;
-    }
-  }
-
-  void _showDevModeDialog(BuildContext context, AuthService auth) {
-    // Step 1: Must be signed in with the developer Gmail
-    if (!auth.isDeveloperEmail) {
-      showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Row(
-            children: [
-              Icon(Icons.lock, color: Colors.red),
-              SizedBox(width: 8),
-              Text('Access Denied'),
-            ],
-          ),
-          content: const Text(
-            'Developer Mode is only available for the designated developer account. '
-            'Sign in with the developer Google account to access this feature.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('OK'),
-            ),
-          ],
-        ),
-      );
-      return;
-    }
-
-    // Rate limit: lock out for 5 minutes after 3 failed attempts
-    if (_devCodeLockoutUntil != null &&
-        DateTime.now().isBefore(_devCodeLockoutUntil!)) {
-      final remaining = _devCodeLockoutUntil!.difference(DateTime.now());
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Too many failed attempts. Try again in ${remaining.inMinutes + 1} minutes.'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
-    // Step 2: Enter access code
-    final codeController = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Row(
-          children: [
-            Icon(Icons.code, color: Colors.grey),
-            SizedBox(width: 8),
-            Text('Developer Mode'),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'Step 1 of 2: Enter the developer access code.',
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: codeController,
-              obscureText: true,
-              decoration: InputDecoration(
-                labelText: 'Access Code',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                prefixIcon: const Icon(Icons.vpn_key),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              if (codeController.text == 'awing2026') {
-                _devCodeFailedAttempts = 0;
-                _devCodeLockoutUntil = null;
-                Navigator.pop(ctx);
-                _startDevMode2FA(context, auth);
-              } else {
-                _devCodeFailedAttempts++;
-                Navigator.pop(ctx);
-                if (_devCodeFailedAttempts >= 3) {
-                  _devCodeLockoutUntil =
-                      DateTime.now().add(const Duration(minutes: 5));
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Too many failed attempts. Locked for 5 minutes.'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Invalid access code (${3 - _devCodeFailedAttempts} attempts remaining)'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
-              }
-            },
-            child: const Text('Next'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Step 3: Send verification code to developer Gmail and show input dialog.
-  void _startDevMode2FA(BuildContext context, AuthService auth) async {
-    // Generate and store code
-    final code = auth.generateDevVerificationCode();
-
-    // Show loading dialog while sending email
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => const AlertDialog(
-        content: Row(
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(width: 16),
-            Expanded(child: Text('Sending verification code to your Gmail...')),
-          ],
-        ),
-      ),
-    );
-
-    // Send code via webhook — must succeed for security
-    final sent = await _sendDevVerificationEmail(code);
-
-    if (!mounted) return;
-    Navigator.pop(context); // dismiss loading
-
-    if (!sent) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Could not send verification email. Check internet connection and webhook deployment.'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
-    // Show code entry dialog
-    final verifyController = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Row(
-          children: [
-            Icon(Icons.email, color: Colors.blue),
-            SizedBox(width: 8),
-            Text('Email Verification'),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'Step 2 of 2: A 6-digit code was sent to your Gmail. '
-              'Enter it below to activate Developer Mode.',
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Code expires in 10 minutes.',
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: verifyController,
-              keyboardType: TextInputType.number,
-              maxLength: 6,
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 24, letterSpacing: 8),
-              decoration: InputDecoration(
-                labelText: 'Verification Code',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                prefixIcon: const Icon(Icons.pin),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              final error = auth.verifyDevCode(verifyController.text);
-              Navigator.pop(ctx);
-              if (error != null) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(error),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Developer mode activated!'),
-                    backgroundColor: Colors.green,
-                  ),
-                );
-              }
-            },
-            child: const Text('Verify'),
-          ),
-        ],
       ),
     );
   }
@@ -789,6 +462,7 @@ class _ModeCard extends StatelessWidget {
   final Color color;
   final bool locked;
   final VoidCallback onTap;
+  final Widget? progressWidget;
 
   const _ModeCard({
     required this.title,
@@ -797,6 +471,7 @@ class _ModeCard extends StatelessWidget {
     required this.color,
     required this.onTap,
     this.locked = false,
+    this.progressWidget,
   });
 
   @override
@@ -819,40 +494,110 @@ class _ModeCard extends StatelessWidget {
               end: Alignment.bottomRight,
             ),
           ),
-          child: Row(
+          child: Column(
             children: [
-              Icon(icon, size: 48, color: Colors.white.withOpacity(locked ? 0.6 : 1)),
-              const SizedBox(width: 20),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white.withOpacity(locked ? 0.7 : 1),
-                      ),
+              Row(
+                children: [
+                  Icon(icon, size: 48, color: Colors.white.withOpacity(locked ? 0.6 : 1)),
+                  const SizedBox(width: 20),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white.withOpacity(locked ? 0.7 : 1),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          subtitle,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.white.withOpacity(locked ? 0.5 : 0.9),
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.white.withOpacity(locked ? 0.5 : 0.9),
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                  Icon(
+                    locked ? Icons.lock : Icons.arrow_forward_ios,
+                    color: Colors.white.withOpacity(locked ? 0.6 : 1),
+                  ),
+                ],
               ),
-              Icon(
-                locked ? Icons.lock : Icons.arrow_forward_ios,
-                color: Colors.white.withOpacity(locked ? 0.6 : 1),
-              ),
+              if (progressWidget != null) ...[
+                const SizedBox(height: 12),
+                progressWidget!,
+              ],
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Shows lesson and quiz progress toward unlocking the next level.
+class _UnlockProgress extends StatelessWidget {
+  final int lessonsCompleted;
+  final int totalLessons;
+  final int quizzesPassed;
+  final int totalQuizzes;
+
+  const _UnlockProgress({
+    required this.lessonsCompleted,
+    required this.totalLessons,
+    required this.quizzesPassed,
+    required this.totalQuizzes,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final lessonsDone = lessonsCompleted >= totalLessons;
+    final quizzesDone = quizzesPassed >= totalQuizzes;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            lessonsDone ? Icons.check_circle : Icons.menu_book,
+            size: 16,
+            color: lessonsDone ? Colors.greenAccent : Colors.white70,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            'Lessons $lessonsCompleted/$totalLessons',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: lessonsDone ? Colors.greenAccent : Colors.white70,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Icon(
+            quizzesDone ? Icons.check_circle : Icons.quiz,
+            size: 16,
+            color: quizzesDone ? Colors.greenAccent : Colors.white70,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            'Quizzes $quizzesPassed/$totalQuizzes',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: quizzesDone ? Colors.greenAccent : Colors.white70,
+            ),
+          ),
+        ],
       ),
     );
   }

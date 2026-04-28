@@ -6,6 +6,8 @@ import 'package:awing_ai_learning/screens/beginner/tone_screen.dart';
 import 'package:awing_ai_learning/screens/beginner/pronunciation_screen.dart';
 import 'package:awing_ai_learning/screens/beginner/phrases_screen.dart';
 import 'package:awing_ai_learning/screens/beginner/numbers_screen.dart';
+import 'package:awing_ai_learning/screens/beginner/vocabulary_review_screen.dart';
+import 'package:awing_ai_learning/screens/games/beginner_picture_match.dart';
 import 'package:awing_ai_learning/services/pronunciation_service.dart';
 
 class BeginnerHome extends StatefulWidget {
@@ -97,7 +99,7 @@ class _BeginnerHomeState extends State<BeginnerHome> {
             ),
             const SizedBox(height: 12),
             _LessonTile(
-              title: 'Vocabulary',
+              title: 'Words',
               subtitle: 'Learn common Awing words',
               icon: Icons.menu_book,
               color: Colors.green.shade400,
@@ -108,10 +110,21 @@ class _BeginnerHomeState extends State<BeginnerHome> {
             ),
             const SizedBox(height: 12),
             _LessonTile(
+              title: 'Phrases & Greetings',
+              subtitle: 'Say hello, ask questions & more',
+              icon: Icons.chat,
+              color: Colors.green.shade500,
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const PhrasesScreen()),
+              ),
+            ),
+            const SizedBox(height: 12),
+            _LessonTile(
               title: 'Tones',
               subtitle: 'Hear how tone changes meaning',
               icon: Icons.music_note,
-              color: Colors.green.shade500,
+              color: const Color(0xFF66BB6A),
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const ToneScreen()),
@@ -122,21 +135,10 @@ class _BeginnerHomeState extends State<BeginnerHome> {
               title: 'Numbers',
               subtitle: 'Learn to count 1-10 in Awing',
               icon: Icons.looks_one,
-              color: const Color(0xFF66BB6A),
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const NumbersScreen()),
-              ),
-            ),
-            const SizedBox(height: 12),
-            _LessonTile(
-              title: 'Phrases & Greetings',
-              subtitle: 'Say hello, ask questions & more',
-              icon: Icons.chat,
               color: const Color(0xFF43A047),
               onTap: () => Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const PhrasesScreen()),
+                MaterialPageRoute(builder: (_) => const NumbersScreen()),
               ),
             ),
             const SizedBox(height: 12),
@@ -159,6 +161,28 @@ class _BeginnerHomeState extends State<BeginnerHome> {
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const QuizScreen()),
+              ),
+            ),
+            const SizedBox(height: 12),
+            _LessonTile(
+              title: 'Review',
+              subtitle: 'Practice words you are still learning',
+              icon: Icons.replay,
+              color: Colors.green.shade700,
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const VocabularyReviewScreen()),
+              ),
+            ),
+            const SizedBox(height: 12),
+            _LessonTile(
+              title: 'Games',
+              subtitle: 'Picture Match - drag words to pictures',
+              icon: Icons.extension,
+              color: Colors.green.shade800,
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const BeginnerPictureMatch()),
               ),
             ),
           ],

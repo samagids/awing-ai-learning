@@ -6,7 +6,7 @@ import 'package:awing_ai_learning/services/auth_service.dart';
 /// Parental gate that protects destructive actions from kids.
 ///
 /// Two modes:
-/// 1. If the account has a PIN set → asks for 4-digit PIN
+/// 1. If the account has a PIN set → asks for the account PIN (at least 6 digits)
 /// 2. If no PIN set → asks a simple math problem (e.g. "What is 7 + 5?")
 ///
 /// Use [ParentalGate.verify] to show the gate and get a bool result.
@@ -26,7 +26,7 @@ class ParentalGate {
     }
   }
 
-  /// PIN-based gate — asks for the 4-digit account PIN.
+  /// PIN-based gate — asks for the account PIN (at least 6 digits).
   static Future<bool> _showPinGate(
     BuildContext context,
     AuthService auth, {
@@ -53,12 +53,12 @@ class ParentalGate {
             TextField(
               controller: controller,
               keyboardType: TextInputType.number,
-              maxLength: 4,
+              maxLength: 8,
               obscureText: true,
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 28, letterSpacing: 12),
+              style: const TextStyle(fontSize: 28, letterSpacing: 8),
               decoration: InputDecoration(
-                labelText: 'Enter PIN',
+                labelText: 'Enter PIN (at least 6 digits)',
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -201,11 +201,11 @@ class ParentalGate {
               TextField(
                 controller: currentPinController,
                 keyboardType: TextInputType.number,
-                maxLength: 4,
+                maxLength: 8,
                 obscureText: true,
                 textAlign: TextAlign.center,
                 autofocus: true,
-                style: const TextStyle(fontSize: 24, letterSpacing: 12),
+                style: const TextStyle(fontSize: 24, letterSpacing: 8),
                 decoration: InputDecoration(
                   labelText: 'Current PIN',
                   border: OutlineInputBorder(
@@ -259,19 +259,19 @@ class ParentalGate {
           children: [
             Text(
               auth.hasAccountPin
-                  ? 'Enter your new 4-digit PIN.'
-                  : 'Set a 4-digit PIN to protect sign-out and profile deletion. '
+                  ? 'Enter your new PIN (at least 6 digits).'
+                  : 'Set a PIN (at least 6 digits) to protect sign-out and profile deletion. '
                     'Only share this with parents/guardians.',
             ),
             const SizedBox(height: 16),
             TextField(
               controller: controller,
               keyboardType: TextInputType.number,
-              maxLength: 4,
+              maxLength: 8,
               obscureText: true,
               textAlign: TextAlign.center,
               autofocus: true,
-              style: const TextStyle(fontSize: 24, letterSpacing: 12),
+              style: const TextStyle(fontSize: 24, letterSpacing: 8),
               decoration: InputDecoration(
                 labelText: 'New PIN',
                 border: OutlineInputBorder(
@@ -283,10 +283,10 @@ class ParentalGate {
             TextField(
               controller: confirmController,
               keyboardType: TextInputType.number,
-              maxLength: 4,
+              maxLength: 8,
               obscureText: true,
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 24, letterSpacing: 12),
+              style: const TextStyle(fontSize: 24, letterSpacing: 8),
               decoration: InputDecoration(
                 labelText: 'Confirm PIN',
                 border: OutlineInputBorder(
@@ -318,10 +318,10 @@ class ParentalGate {
                         TextField(
                           controller: pinController,
                           keyboardType: TextInputType.number,
-                          maxLength: 4,
+                          maxLength: 8,
                           obscureText: true,
                           textAlign: TextAlign.center,
-                          style: const TextStyle(fontSize: 24, letterSpacing: 12),
+                          style: const TextStyle(fontSize: 24, letterSpacing: 8),
                           decoration: InputDecoration(
                             labelText: 'Current PIN',
                             border: OutlineInputBorder(
@@ -370,10 +370,10 @@ class ParentalGate {
             onPressed: () {
               final pin = controller.text.trim();
               final confirm = confirmController.text.trim();
-              if (pin.length != 4) {
+              if (pin.length < 6) {
                 ScaffoldMessenger.of(ctx).showSnackBar(
                   const SnackBar(
-                    content: Text('PIN must be 4 digits'),
+                    content: Text('PIN must be at least 6 digits'),
                     backgroundColor: Colors.red,
                   ),
                 );

@@ -20,8 +20,8 @@ class ModelService {
       _interpreter = await Interpreter.fromAsset('model.tflite');
       _isLoaded = true;
     } catch (e) {
+      // Model file not bundled yet — AI scoring disabled until model is added.
       _isLoaded = false;
-      rethrow;
     }
   }
 

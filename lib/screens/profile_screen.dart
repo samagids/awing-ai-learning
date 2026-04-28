@@ -622,7 +622,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               Text(
                 hasPin
                     ? 'Your profile is protected. Others need your PIN to switch to your profile.'
-                    : 'Set a 4-digit PIN to protect your profile from others.',
+                    : 'Set a PIN (at least 6 digits) to protect your profile from others.',
                 style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
               ),
               const SizedBox(height: 12),
@@ -684,11 +684,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
               TextField(
                 controller: currentPinController,
                 keyboardType: TextInputType.number,
-                maxLength: 4,
+                maxLength: 8,
                 obscureText: true,
                 textAlign: TextAlign.center,
                 autofocus: true,
-                style: const TextStyle(fontSize: 28, letterSpacing: 12),
+                style: const TextStyle(fontSize: 28, letterSpacing: 8),
                 decoration: InputDecoration(
                   labelText: 'Current PIN',
                   border: OutlineInputBorder(
@@ -734,16 +734,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('Choose a 4-digit PIN to protect your profile.'),
+            const Text('Choose a PIN (at least 6 digits) to protect your profile.'),
             const SizedBox(height: 16),
             TextField(
               controller: newPinController,
               keyboardType: TextInputType.number,
-              maxLength: 4,
+              maxLength: 8,
               obscureText: true,
               textAlign: TextAlign.center,
               autofocus: true,
-              style: const TextStyle(fontSize: 28, letterSpacing: 12),
+              style: const TextStyle(fontSize: 28, letterSpacing: 8),
               decoration: InputDecoration(
                 labelText: 'New PIN',
                 border: OutlineInputBorder(
@@ -761,12 +761,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ElevatedButton(
             onPressed: () {
               final pin = newPinController.text;
-              if (pin.length == 4) {
+              if (pin.length >= 6) {
                 Navigator.pop(ctx, pin);
               } else {
                 ScaffoldMessenger.of(ctx).showSnackBar(
                   const SnackBar(
-                    content: Text('PIN must be exactly 4 digits'),
+                    content: Text('PIN must be at least 6 digits'),
                     backgroundColor: Colors.orange,
                   ),
                 );
@@ -782,7 +782,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
     );
 
-    if (newPin != null && newPin.length == 4 && mounted) {
+    if (newPin != null && newPin.length >= 6 && mounted) {
       auth.setProfilePin(profileId, newPin);
       setState(() {});
       ScaffoldMessenger.of(context).showSnackBar(
@@ -813,11 +813,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
             TextField(
               controller: controller,
               keyboardType: TextInputType.number,
-              maxLength: 4,
+              maxLength: 8,
               obscureText: true,
               textAlign: TextAlign.center,
               autofocus: true,
-              style: const TextStyle(fontSize: 28, letterSpacing: 12),
+              style: const TextStyle(fontSize: 28, letterSpacing: 8),
               decoration: InputDecoration(
                 labelText: 'Current PIN',
                 border: OutlineInputBorder(

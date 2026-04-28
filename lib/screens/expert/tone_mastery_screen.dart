@@ -243,14 +243,20 @@ class _ToneMasteryScreenState extends State<ToneMasteryScreen> {
                   padding: const EdgeInsets.all(20),
                   child: Column(
                     children: [
-                      Text(
-                        _exercises[_currentExerciseIndex]['word'],
-                        style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          _exercises[_currentExerciseIndex]['word'],
+                          style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                        ),
                       ),
                       const SizedBox(height: 8),
                       Text(
                         '(${_exercises[_currentExerciseIndex]['englishMeaning']})',
                         style: const TextStyle(fontSize: 14, color: Colors.grey),
+                        textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 24),
                       ElevatedButton.icon(

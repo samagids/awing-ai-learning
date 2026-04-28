@@ -1,0 +1,143 @@
+# Session 54: Real VITS fine-tuning with Coqui TTS
+# Use a SEPARATE venv (venv_coqui) — Coqui's PyTorch pins conflict with the
+# main venv that hosts Edge TTS and SDXL Turbo image generation.
+#
+# Create once:
+#   python -m venv venv_coqui
+#   venv_coqui\Scripts\pip install -r scripts\requirements_coqui.txt
+#
+# THEN: pin torch + torchaudio to the Coqui-compatible Blackwell-supporting
+# combo (see torchaudio comment block at the bottom of this file for the
+# four constraints this command satisfies):
+#   venv_coqui\Scripts\pip install --force-reinstall \
+#       "torch==2.7.0" "torchaudio==2.7.0" \
+#       --index-url https://download.pytorch.org/whl/cu128 --no-deps
+#
+# Verify before training:
+#   venv_coqui\Scripts\python -c "import torch, torchaudio; \
+#       print('torch:', torch.__version__, '/ torchaudio:', torchaudio.__version__); \
+#       print('CUDA:', torch.cuda.is_available(), \
+#             '/ cap:', torch.cuda.get_device_capability(0) if torch.cuda.is_available() else 'n/a'); \
+#       print('has info:', hasattr(torchaudio, 'info'))"
+# Want: 2.7.0+cu128 / 2.7.0+cu128, CUDA True, cap (12,0) (or your card's),
+#       has info True.
+#
+# Then run:
+#   python scripts\train_coqui_vits.py train
+#   python scripts\train_coqui_vits.py synthesize
+
+coqui-tts>=0.27.0
+# coqui-tts forked "coqpit" → "coqpit-config" in 0.27+. Pinning it
+# explicitly avoids the "you still have the original coqpit installed"
+# conflict when pip resolves transitive deps.
+coqpit-config>=0.2.0
+trainer>=0.0.36
+librosa>=0.10.0
+soundfile>=0.12.0
+Cython>=0.29.30
+
+# numpy 2.x breaks librosa/numba/several Coqui deps as of mid-2026
+numpy<2.0
+
+# scipy is already pulled in by Coqui but pin conservatively
+scipy>=1.11.0
+
+# transformers needs a NARROW window for coqui-tts ≥ 0.27 — bounded by
+# TWO symbol-availability constraints that coqui-tts 0.27 itself depends on:
+#
+#   LOWER BOUND: transformers 4.55 added `is_torchcodec_available` to
+#   transformers.utils.import_utils (new torchcodec audio backend).
+#   coqui-tts 0.27's TTS/__init__.py line 3 imports it directly:
+#     from transformers.utils.import_utils import (..., is_torchcodec_available)
+#   Anything older (e.g. 4.49) fails with:
+#     ImportError: cannot import name 'is_torchcodec_available' from
+#       'transformers.utils.import_utils'
+#
+#   UPPER BOUND: transformers 5.x REMOVED `isin_mps_friendly` from
+#   transformers.pytorch_utils (PyTorch MPS support is now native).
+#   coqui-tts 0.27's TTS/tts/layers/tortoise/autoregressive.py line 12
+#   still imports it. transformers 5.5.4 fails with:
+#     ImportError: cannot import name 'isin_mps_friendly' from
+#       'transformers.pytorch_utils'
+#
+# So coqui-tts 0.27 only works inside the intersection: 4.55 ≤ x < 5.0.
+# Surgical fix on an existing venv (safe — pure-Python wheel):
+#   venv_coqui\Scripts\pip install --force-reinstall \
+#       "transformers>=4.55.0,<5.0" --no-deps
+#
+# NOTE: bumping transformers may re-trigger the tokenizers and
+# huggingface_hub pin errors at NEW bounds — fix each one as it surfaces
+# using the same surgical --force-reinstall <pkg> --no-deps pattern.
+transformers>=4.55.0,<5.0
+
+# tokenizers must satisfy transformers 4.49's pin (>=0.21,<0.22).
+# Older venv may have 0.22+ from prior installs; surgical downgrade:
+#   venv_coqui\Scripts\pip install --force-reinstall \
+#       "tokenizers>=0.21,<0.22" --no-deps
+tokenizers>=0.21,<0.22
+
+# huggingface_hub must satisfy transformers 4.49's pin (>=0.26.0,<1.0).
+# A 1.x version may already be in the venv from prior installs:
+#   venv_coqui\Scripts\pip install --force-reinstall \
+#       "huggingface_hub>=0.26.0,<1.0" --no-deps
+huggingface_hub>=0.26.0,<1.0
+
+# torchaudio is a HARD transitive requirement: coqui-tts's TTS/__init__.py
+# unconditionally imports the XTTS config chain (xtts_config.py → xtts.py)
+# which does `import torchaudio` at module load. Even VITS-only callers
+# can't import `TTS.*` without it.
+#
+# CRITICAL: torchaudio's compiled libtorchaudio.pyd links against specific
+# torch DLLs at load time. THREE things must match between torch and
+# torchaudio or Windows reports
+#   "Could not find module ... libtorchaudio.pyd (or one of its dependencies)"
+# or "[WinError 127] The specified procedure could not be found" — both are
+# missing-symbol errors in the torch DLLs that torchaudio imports:
+#   1. MAJOR.MINOR.PATCH version (2.5.1 ≠ 2.4.1 ≠ 2.7.0 ≠ 2.11.0)
+#   2. Build flavor: +cpu vs +cu124 vs +cu128 (CPU torch CANNOT load CUDA
+#      torchaudio — they reference different DLL symbols entirely)
+#   3. Python version of the wheel (cp311 vs cp312)
+#
+# FOURTH constraint, learned the hard way in Session 54:
+#   coqui-tts 0.27 still calls `torchaudio.info(path).num_frames` from
+#   TTS/tts/datasets/dataset.py at module load of every training run.
+#   torchaudio 2.8+ refactored I/O around torchcodec and dropped `info`
+#   as a top-level attribute → AttributeError before step 0.
+#   So: torchaudio MUST be ≤ 2.7.x for any Coqui TTS training to start.
+#
+# FIFTH constraint, also Session 54:
+#   RTX 50-series (Blackwell, sm_120) needs CUDA 12.8 kernel images.
+#   Standard cu124 wheels only ship sm_50–sm_90. Result: torch loads,
+#   torch.cuda.is_available() returns True, but the FIRST kernel launch
+#   crashes with "no kernel image is available for execution on the
+#   device". cu128 builds added Blackwell support starting at torch 2.7.0.
+#
+# Pinning intersection that satisfies BOTH constraints (Coqui + Blackwell):
+#   torch 2.7.0+cu128 AND torchaudio 2.7.0+cu128
+#
+# Install procedure (always --no-deps to avoid OneDrive file-lock cascades
+# on the multi-GB torch wheel):
+#   pip install --force-reinstall "torch==2.7.0" "torchaudio==2.7.0" \
+#       --index-url https://download.pytorch.org/whl/cu128 --no-deps
+#
+# Verify all four properties in one shot:
+#   python -c "import torch, torchaudio; print('torch:', torch.__version__); \
+#       print('torchaudio:', torchaudio.__version__); \
+#       print('CUDA:', torch.cuda.is_available()); \
+#       print('Capability:', torch.cuda.get_device_capability(0)); \
+#       print('has info:', hasattr(torchaudio, 'info'))"
+#
+# Want: torch 2.7.0+cu128, torchaudio 2.7.0+cu128, CUDA True,
+#       Capability (12, 0) with NO sm_120 warning, has info True.
+#
+# Older / non-Blackwell GPU paths (kept for reference):
+#   torch 2.5.1+cu124   → torchaudio==2.5.1 from .../whl/cu124
+#   torch 2.6.0+cu124   → torchaudio==2.6.0 from .../whl/cu124
+#   torch 2.11.0+cpu    → torchaudio==2.11.0 from .../whl/cpu
+#                          (CPU-only — works but ~15× slower than GPU)
+#
+# Bare names below intentionally — pip --no-deps install above sets the
+# real version, and listing a hard pin here causes pip to RE-RESOLVE on
+# every plain `pip install -r` and clobber the cu128 build with cu124 or
+# cpu. Keep these unpinned so pip respects whatever's already installed.
+torchaudio

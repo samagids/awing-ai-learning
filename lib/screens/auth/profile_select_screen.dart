@@ -271,12 +271,12 @@ class _ProfileSelectScreenState extends State<ProfileSelectScreen> {
         content: TextField(
           controller: controller,
           keyboardType: TextInputType.number,
-          maxLength: 4,
+          maxLength: 8,
           obscureText: true,
           textAlign: TextAlign.center,
-          style: const TextStyle(fontSize: 28, letterSpacing: 12),
+          style: const TextStyle(fontSize: 28, letterSpacing: 8),
           decoration: InputDecoration(
-            labelText: 'Enter PIN',
+            labelText: 'Enter PIN (at least 6 digits)',
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
           ),
         ),

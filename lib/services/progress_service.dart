@@ -667,4 +667,34 @@ class ProgressService extends ChangeNotifier {
     _dailyStreak = 0;
     notifyListeners();
   }
+
+  /// Reset ONLY the child's learning progress (used by parent reset flow).
+  /// Unlike [clearAllProgress], this preserves authentication, profiles,
+  /// settings, and any other non-progress SharedPreferences keys. Wipes:
+  /// completed lessons, quiz scores, streaks, XP, badges, spaced-repetition
+  /// boxes, viewed letters/words, tried-difficulty tracking.
+  Future<void> resetChildProgress() async {
+    await _prefs.remove(_keyCompletedLessons);
+    await _prefs.remove(_keyQuizScores);
+    await _prefs.remove(_keyDailyStreak);
+    await _prefs.remove(_keyLastOpenDate);
+    await _prefs.remove(_keyWordsLearned);
+    await _prefs.remove(_keySpacedRepetition);
+    await _prefs.remove(_keyTotalXP);
+    await _prefs.remove(_keyBadges);
+    await _prefs.remove(_keyViewedLetters);
+    await _prefs.remove(_keyViewedWords);
+    await _prefs.remove(_keyTriedDifficultyLevels);
+
+    _completedLessons.clear();
+    _quizScores.clear();
+    _spacedRepetitionData.clear();
+    _totalXP = 0;
+    _viewedLetters.clear();
+    _viewedWords.clear();
+    _triedDifficultyLevels.clear();
+    _badges = _initializeBadges();
+    _dailyStreak = 0;
+    notifyListeners();
+  }
 }

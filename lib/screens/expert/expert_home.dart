@@ -4,6 +4,8 @@ import 'package:awing_ai_learning/screens/expert/allophones_screen.dart';
 import 'package:awing_ai_learning/screens/expert/elision_screen.dart';
 import 'package:awing_ai_learning/screens/expert/conversation_screen.dart';
 import 'package:awing_ai_learning/screens/expert/expert_quiz_screen.dart';
+import 'package:awing_ai_learning/screens/expert/numbers_expert_screen.dart';
+import 'package:awing_ai_learning/screens/games/expert_tone_hunt.dart';
 import 'package:awing_ai_learning/services/pronunciation_service.dart';
 
 class ExpertHome extends StatefulWidget {
@@ -117,8 +119,8 @@ class _ExpertHomeState extends State<ExpertHome> {
             ),
             const SizedBox(height: 12),
             _LessonTile(
-              title: 'Conversation',
-              subtitle: 'Real Awing dialogues',
+              title: 'Conversations',
+              subtitle: 'Real Awing dialogues & long sentences',
               icon: Icons.chat_bubble,
               color: Colors.red.shade500,
               onTap: () => Navigator.push(
@@ -128,13 +130,35 @@ class _ExpertHomeState extends State<ExpertHome> {
             ),
             const SizedBox(height: 12),
             _LessonTile(
+              title: 'Advanced Numbers',
+              subtitle: 'Hundreds, thousands & number patterns',
+              icon: Icons.pin,
+              color: Colors.red.shade500,
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const NumbersExpertScreen()),
+              ),
+            ),
+            const SizedBox(height: 12),
+            _LessonTile(
               title: 'Expert Quiz',
-              subtitle: 'The ultimate Awing challenge!',
+              subtitle: 'Paragraph fill-in-the-blank challenge!',
               icon: Icons.emoji_events,
               color: Colors.red.shade600,
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const ExpertQuizScreen()),
+              ),
+            ),
+            const SizedBox(height: 12),
+            _LessonTile(
+              title: 'Games',
+              subtitle: 'Tone Hunt - identify the correct tone',
+              icon: Icons.extension,
+              color: Colors.red.shade800,
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ExpertToneHunt()),
               ),
             ),
           ],

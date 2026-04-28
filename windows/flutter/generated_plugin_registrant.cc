@@ -8,8 +8,10 @@
 
 #include <audioplayers_windows/audioplayers_windows_plugin.h>
 #include <cloud_firestore/cloud_firestore_plugin_c_api.h>
+#include <firebase_auth/firebase_auth_plugin_c_api.h>
 #include <firebase_core/firebase_core_plugin_c_api.h>
 #include <flutter_tts/flutter_tts_plugin.h>
+#include <nsd_windows/nsd_windows_plugin_c_api.h>
 #include <record_windows/record_windows_plugin_c_api.h>
 #include <share_plus/share_plus_windows_plugin_c_api.h>
 #include <speech_to_text_windows/speech_to_text_windows.h>
@@ -20,10 +22,14 @@ void RegisterPlugins(flutter::PluginRegistry* registry) {
       registry->GetRegistrarForPlugin("AudioplayersWindowsPlugin"));
   CloudFirestorePluginCApiRegisterWithRegistrar(
       registry->GetRegistrarForPlugin("CloudFirestorePluginCApi"));
+  FirebaseAuthPluginCApiRegisterWithRegistrar(
+      registry->GetRegistrarForPlugin("FirebaseAuthPluginCApi"));
   FirebaseCorePluginCApiRegisterWithRegistrar(
       registry->GetRegistrarForPlugin("FirebaseCorePluginCApi"));
   FlutterTtsPluginRegisterWithRegistrar(
       registry->GetRegistrarForPlugin("FlutterTtsPlugin"));
+  NsdWindowsPluginCApiRegisterWithRegistrar(
+      registry->GetRegistrarForPlugin("NsdWindowsPluginCApi"));
   RecordWindowsPluginCApiRegisterWithRegistrar(
       registry->GetRegistrarForPlugin("RecordWindowsPluginCApi"));
   SharePlusWindowsPluginCApiRegisterWithRegistrar(

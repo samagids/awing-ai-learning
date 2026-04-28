@@ -31,7 +31,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.awing.awing_ai_learning"
+        applicationId = "com.awing.learning"
         minSdk = 26
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
@@ -49,6 +49,8 @@ android {
             }
         }
     }
+
+    assetPacks += listOf(":install_time_assets")
 
     buildTypes {
         release {
@@ -69,3 +71,4 @@ android {
 flutter {
     source = "../.."
 }
+

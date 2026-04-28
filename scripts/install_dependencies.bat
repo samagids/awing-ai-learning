@@ -1,16 +1,20 @@
 @echo off
-REM install_dependencies.bat v2.0.0
+REM install_dependencies.bat v3.1.0
 REM Complete auto-installer for Awing AI Learning - Windows 11
 REM Auto-installs all missing dependencies via winget + git clone
 REM
-REM Uses TWO Python virtual environments to avoid TensorFlow/PyTorch conflicts:
-REM   venv_tf    — TensorFlow only (model conversion: HuggingFace -> TFLite)
-REM   venv_torch — PyTorch + CUDA (audio generation, TTS training, OCR, Whisper)
+REM Python venv is used for: Edge TTS audio generation, image generation,
+REM contribution processing, Whisper ASR, and webhook deployment.
+REM
+REM Changelog:
+REM   v3.1.0 - Added openai-whisper (ASR for developer voice recordings),
+REM            sounddevice + soundfile (microphone recording).
+REM   v3.0.0 - Single venv (removed venv_tf / venv_torch split).
 
 setlocal enabledelayedexpansion
 
 echo =====================================================
-echo  Awing AI Learning - Full Dependency Installer v2.0.0
+echo  Awing AI Learning - Full Dependency Installer v3.1.0
 echo  Target: Windows 11 / Android + iOS
 echo =====================================================
 echo.
@@ -31,9 +35,7 @@ if !ERRORLEVEL! neq 0 exit /b 1
 
 call :step_platform_folders
 call :step_ffmpeg
-call :step_espeak
-call :step_venv_tf
-call :step_venv_torch
+call :step_venv
 call :step_flutter_packages
 if !ERRORLEVEL! neq 0 exit /b 1
 
@@ -65,7 +67,7 @@ exit /b 0
 REM -------------------------------------------------------
 :step_git
 REM -------------------------------------------------------
-echo [1/11] Checking Git...
+echo [1/9] Checking Git...
 where git >nul 2>nul
 if !ERRORLEVEL! equ 0 (
     for /f "tokens=3" %%v in ('git --version') do echo        Found Git %%v
@@ -94,7 +96,7 @@ exit /b 0
 REM -------------------------------------------------------
 :step_python
 REM -------------------------------------------------------
-echo [2/11] Checking Python 3.10+...
+echo [2/9] Checking Python 3.10+...
 where python >nul 2>nul
 if !ERRORLEVEL! equ 0 (
     for /f "tokens=2" %%v in ('python --version 2^>^&1') do echo        Found Python %%v
@@ -123,7 +125,7 @@ exit /b 0
 REM -------------------------------------------------------
 :step_android
 REM -------------------------------------------------------
-echo [3/11] Checking Android Studio / Android SDK...
+echo [3/9] Checking Android Studio / Android SDK...
 
 REM Find Android SDK path
 set "SDK_PATH="
@@ -204,7 +206,7 @@ exit /b 0
 REM -------------------------------------------------------
 :step_flutter
 REM -------------------------------------------------------
-echo [4/11] Checking Flutter SDK...
+echo [4/9] Checking Flutter SDK...
 
 set "FLUTTER_DIR=%USERPROFILE%\flutter"
 
@@ -243,17 +245,13 @@ echo        *** Add Flutter to your system PATH permanently ***
 echo        Run this in an admin terminal:
 echo          setx PATH "%%PATH%%;!FLUTTER_DIR!\bin"
 echo.
-echo        Or manually:
-echo          1. Press Win+S, search "Environment Variables"
-echo          2. Edit user PATH, add: !FLUTTER_DIR!\bin
-echo.
 pause
 exit /b 0
 
 REM -------------------------------------------------------
 :step_platform_folders
 REM -------------------------------------------------------
-echo [5/11] Ensuring Flutter platform folders exist...
+echo [5/9] Ensuring Flutter platform folders exist...
 
 if not exist "android" (
     echo        Generating android and ios platform projects...
@@ -268,7 +266,7 @@ exit /b 0
 REM -------------------------------------------------------
 :step_ffmpeg
 REM -------------------------------------------------------
-echo [6/11] Checking ffmpeg ^(required for audio processing^)...
+echo [6/9] Checking ffmpeg ^(required for audio processing^)...
 where ffmpeg >nul 2>nul
 if !ERRORLEVEL! equ 0 (
     echo        ffmpeg found.
@@ -281,7 +279,6 @@ winget install --id Gyan.FFmpeg -e --accept-source-agreements --accept-package-a
 if !ERRORLEVEL! neq 0 (
     echo WARNING: ffmpeg auto-install failed.
     echo          Install manually from: https://ffmpeg.org/download.html
-    echo          Or run: winget install ffmpeg
     exit /b 0
 )
 
@@ -290,126 +287,88 @@ echo.
 exit /b 0
 
 REM -------------------------------------------------------
-:step_espeak
+:step_venv
 REM -------------------------------------------------------
-echo [7/11] Checking eSpeak-NG ^(required for Awing TTS pronunciation^)...
-where espeak-ng >nul 2>nul
-if !ERRORLEVEL! equ 0 (
-    echo        eSpeak-NG found.
-    echo.
-    exit /b 0
-)
+echo [7/9] Setting up Python virtual environment...
+echo.
 
-echo        eSpeak-NG not found. Installing via winget...
-winget install --id espeak-ng.espeak-ng -e --accept-source-agreements --accept-package-agreements
-if !ERRORLEVEL! neq 0 (
-    echo WARNING: eSpeak-NG auto-install via winget failed.
-    echo          Trying alternative install...
-    winget install --id "eSpeak NG" -e --accept-source-agreements --accept-package-agreements
+if not exist "venv" (
+    echo        Creating virtual environment: venv
+    python -m venv venv
     if !ERRORLEVEL! neq 0 (
-        echo WARNING: eSpeak-NG install failed.
-        echo          Download manually from: https://github.com/espeak-ng/espeak-ng/releases
-        echo          Install the .msi package for Windows.
-        exit /b 0
-    )
-)
-
-echo        eSpeak-NG installed. You may need to restart your terminal for PATH update.
-echo.
-
-REM Setup Awing language files
-echo        Setting up Awing language in eSpeak-NG...
-python scripts\generate_audio_espeak.py setup
-echo.
-exit /b 0
-
-REM -------------------------------------------------------
-:step_venv_tf
-REM -------------------------------------------------------
-echo [8/11] Setting up venv_tf ^(TensorFlow — model conversion^)...
-echo.
-
-if not exist "venv_tf" (
-    echo        Creating virtual environment: venv_tf
-    python -m venv venv_tf
-    if !ERRORLEVEL! neq 0 (
-        echo ERROR: Failed to create venv_tf.
+        echo ERROR: Failed to create venv.
         exit /b 1
     )
 )
 
-call venv_tf\Scripts\activate.bat
+call venv\Scripts\activate.bat
 
 echo        Upgrading pip...
 python -m pip install --upgrade pip >nul 2>nul
 
-echo        Installing packages...
-python -m pip install -r scripts\requirements_tf.txt
+echo        Installing core packages: edge-tts, Pillow, pydub, sounddevice, soundfile...
+python -m pip install edge-tts Pillow pydub sounddevice soundfile
 if !ERRORLEVEL! neq 0 (
-    echo WARNING: Some TensorFlow packages failed to install.
+    echo WARNING: Some core packages failed to install.
 )
 
-echo        Verifying TensorFlow...
-python -c "import tensorflow as tf; print(f'        TensorFlow {tf.__version__}')"
-
-call deactivate
-echo.
-echo        venv_tf ready.
-echo.
-exit /b 0
-
-REM -------------------------------------------------------
-:step_venv_torch
-REM -------------------------------------------------------
-echo [9/11] Setting up venv_torch ^(PyTorch + CUDA — audio, training, TTS, image generation^)...
-echo.
-
-if not exist "venv_torch" (
-    echo        Creating virtual environment: venv_torch
-    python -m venv venv_torch
-    if !ERRORLEVEL! neq 0 (
-        echo ERROR: Failed to create venv_torch.
-        exit /b 1
-    )
-)
-
-call venv_torch\Scripts\activate.bat
-
-echo        Upgrading pip...
-python -m pip install --upgrade pip >nul 2>nul
-
-REM Install PyTorch with CUDA FIRST (cu124 is more stable than cu128 for cuDNN)
-echo        Installing PyTorch with CUDA 12.4...
-python -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
+REM Install PyTorch with CUDA for image generation (SDXL Turbo) + Whisper.
+REM Try cu128 first (covers RTX 50-series Blackwell sm_120 + everything older
+REM that PyTorch still ships kernels for). Fall back to cu124 (broad
+REM compatibility for Ampere/Ada). Last resort: CPU-only.
+echo        Installing PyTorch with CUDA 12.8 ^(supports RTX 50-series + older^)...
+python -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
 if !ERRORLEVEL! neq 0 (
-    echo        CUDA 12.4 failed. Trying CUDA 12.8...
-    python -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
+    echo        CUDA 12.8 failed. Trying CUDA 12.4...
+    python -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
     if !ERRORLEVEL! neq 0 (
-        echo        WARNING: CUDA PyTorch failed. Falling back to CPU-only...
+        echo        CUDA 12.4 failed. Falling back to CPU-only PyTorch.
+        echo        WARNING: Image generation ^(SDXL Turbo^) will not work on CPU.
         python -m pip install torch torchvision torchaudio
     )
 )
 
-REM Install everything else (torch already satisfied, pip won't replace it)
-echo        Installing all other packages...
-python -m pip install -r scripts\requirements_torch.txt
+echo        Installing diffusers + accelerate ^(for SDXL Turbo image generation^)...
+python -m pip install diffusers transformers accelerate
 if !ERRORLEVEL! neq 0 (
-    echo WARNING: Some PyTorch packages failed to install.
+    echo WARNING: diffusers install failed. Image generation will use emoji fallback.
 )
 
-echo        Verifying PyTorch...
-python -c "import torch; print(f'        PyTorch {torch.__version__} - CUDA: {torch.cuda.is_available()}')"
+echo        Installing openai-whisper ^(ASR for developer voice recordings^)...
+python -m pip install openai-whisper
+if !ERRORLEVEL! neq 0 (
+    echo WARNING: openai-whisper install failed. apply_contributions.py will fall
+    echo          back to pronunciationGuide or raw text for speakable_override.
+)
+
+echo        Verifying edge-tts...
+python -c "import edge_tts; print('        edge-tts OK')" 2>nul
+if !ERRORLEVEL! neq 0 (
+    echo WARNING: edge-tts not available.
+)
+
+echo        Verifying openai-whisper...
+python -c "import whisper; print('        whisper OK')" 2>nul
+if !ERRORLEVEL! neq 0 (
+    echo WARNING: openai-whisper not available.
+)
+
+echo        Verifying torch...
+python -c "import torch; cuda='CUDA' if torch.cuda.is_available() else 'CPU-only'; print('        torch OK (' + cuda + ')')" 2>nul
+if !ERRORLEVEL! neq 0 (
+    echo WARNING: torch not available.
+)
 
 call deactivate
 echo.
-echo        venv_torch ready.
+echo        venv ready.
 echo.
 exit /b 0
 
 REM -------------------------------------------------------
 :step_flutter_packages
 REM -------------------------------------------------------
-echo [10/11] Installing Flutter packages from pubspec.yaml...
+echo [8/9] Installing Flutter packages from pubspec.yaml...
 call flutter pub get
 
 REM flutter pub get may return non-zero due to symlink warnings (Developer Mode).
@@ -428,7 +387,7 @@ exit /b 0
 REM -------------------------------------------------------
 :step_finalize
 REM -------------------------------------------------------
-echo [11/11] Finalizing setup...
+echo [9/9] Finalizing setup...
 
 echo        Accepting Android SDK licenses via Flutter...
 REM Generate a temp file with 20 "y" lines to auto-accept all license prompts
@@ -464,28 +423,26 @@ if !ERRORLEVEL! equ 0 ( echo  [OK] Git ) else ( echo  [!!] Git - MISSING )
 where python >nul 2>nul
 if !ERRORLEVEL! equ 0 ( echo  [OK] Python ) else ( echo  [!!] Python - MISSING )
 
-if exist "venv_tf\Scripts\python.exe" (
-    echo  [OK] venv_tf ^(TensorFlow — model conversion^)
-) else (
-    echo  [!!] venv_tf - MISSING
-)
-
-if exist "venv_torch\Scripts\python.exe" (
-    venv_torch\Scripts\python.exe -c "import torch; assert torch.cuda.is_available(); print('CUDA_OK')" 2>nul | findstr "CUDA_OK" >nul
+if exist "venv\Scripts\python.exe" (
+    echo  [OK] Python venv ^(Edge TTS, image generation, contributions^)
+    REM Check key packages individually inside the venv
+    call venv\Scripts\python.exe -c "import edge_tts" >nul 2>nul
+    if !ERRORLEVEL! equ 0 ( echo  [OK]   edge-tts ) else ( echo  [!!]   edge-tts - MISSING )
+    call venv\Scripts\python.exe -c "import whisper" >nul 2>nul
+    if !ERRORLEVEL! equ 0 ( echo  [OK]   openai-whisper ) else ( echo  [--]   openai-whisper - optional, speakable_override falls back )
+    call venv\Scripts\python.exe -c "import torch" >nul 2>nul
     if !ERRORLEVEL! equ 0 (
-        echo  [OK] venv_torch ^(PyTorch with CUDA GPU^)
-    ) else (
-        echo  [!!] venv_torch ^(PyTorch installed but CUDA GPU not available — training will be slow^)
-    )
+        call venv\Scripts\python.exe -c "import torch; exit(0 if torch.cuda.is_available() else 1)" >nul 2>nul
+        if !ERRORLEVEL! equ 0 ( echo  [OK]   torch ^(CUDA^) ) else ( echo  [--]   torch ^(CPU-only^) )
+    ) else ( echo  [!!]   torch - MISSING )
+    call venv\Scripts\python.exe -c "import diffusers" >nul 2>nul
+    if !ERRORLEVEL! equ 0 ( echo  [OK]   diffusers ) else ( echo  [!!]   diffusers - MISSING )
 ) else (
-    echo  [!!] venv_torch - MISSING
+    echo  [!!] Python venv - MISSING
 )
 
 where ffmpeg >nul 2>nul
 if !ERRORLEVEL! equ 0 ( echo  [OK] ffmpeg ) else ( echo  [!!] ffmpeg - MISSING )
-
-where espeak-ng >nul 2>nul
-if !ERRORLEVEL! equ 0 ( echo  [OK] eSpeak-NG ^(Awing TTS^) ) else ( echo  [!!] eSpeak-NG - MISSING ^(download from github.com/espeak-ng/espeak-ng/releases^) )
 
 where flutter >nul 2>nul
 if !ERRORLEVEL! equ 0 ( echo  [OK] Flutter SDK ) else ( echo  [!!] Flutter SDK - MISSING )
@@ -502,15 +459,10 @@ if "!SDK_OK!"=="1" ( echo  [OK] Android SDK ) else ( echo  [!!] Android SDK - Op
 
 echo  [--] iOS builds require macOS with Xcode 15+
 echo.
-echo  Virtual environments:
-echo    venv_tf    — for: scripts\convert_model.py
-echo    venv_torch — for: all other scripts ^(audio, training, TTS^)
-echo.
 echo  Next steps:
 echo    1. If any items show [!!], fix them and re-run this script
 echo    2. Connect an Android device or start an emulator
-echo    3. Run: flutter run
-echo    4. Or use: scripts\build_and_run.bat
+echo    3. Run: scripts\build_and_run.bat
 echo.
 echo =====================================================
 exit /b 0

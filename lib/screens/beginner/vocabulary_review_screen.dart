@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:awing_ai_learning/services/progress_service.dart';
 import 'package:awing_ai_learning/data/awing_vocabulary.dart';
 import 'package:awing_ai_learning/services/pronunciation_service.dart';
-import 'package:awing_ai_learning/services/image_service.dart';
+import 'package:awing_ai_learning/components/pack_image.dart';
 
 class VocabularyReviewScreen extends StatefulWidget {
   const VocabularyReviewScreen({Key? key}) : super(key: key);
@@ -344,10 +344,11 @@ class _VocabularyReviewScreenState extends State<VocabularyReviewScreen> {
                               borderRadius: const BorderRadius.only(
                                 topLeft: Radius.circular(16),
                               ),
-                              child: Image.asset(
-                                ImageService.assetPath(currentWord.word),
+                              child: PackImage(
+                                awingWord: currentWord.word,
+                                english: english ?? '',
                                 fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => Container(
+                                errorWidget: Container(
                                   color: Colors.green.shade50,
                                   child: Icon(Icons.image_outlined, size: 48, color: Colors.green.shade200),
                                 ),
@@ -360,14 +361,23 @@ class _VocabularyReviewScreenState extends State<VocabularyReviewScreen> {
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Text(
-                                  currentWord.word,
-                                  style: const TextStyle(
-                                    fontSize: 42,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.green,
+                                // Auto-shrink Awing word to fit narrow phones
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8),
+                                  child: FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    child: Text(
+                                      currentWord.word,
+                                      style: const TextStyle(
+                                        fontSize: 42,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.green,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                      maxLines: 2,
+                                    ),
                                   ),
-                                  textAlign: TextAlign.center,
                                 ),
                                 const SizedBox(height: 16),
                                 ElevatedButton.icon(
@@ -400,7 +410,7 @@ class _VocabularyReviewScreenState extends State<VocabularyReviewScreen> {
                       if (!answerRevealed)
                         Column(
                           children: [
-                            const Text(
+                            Text(
                               'Do you remember the translation?',
                               style: TextStyle(
                                 fontSize: 16,
@@ -443,7 +453,7 @@ class _VocabularyReviewScreenState extends State<VocabularyReviewScreen> {
                               ),
                             ),
                             const SizedBox(height: 16),
-                            const Text(
+                            Text(
                               'How did you do?',
                               style: TextStyle(
                                 fontSize: 16,

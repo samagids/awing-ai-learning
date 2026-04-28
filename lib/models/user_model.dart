@@ -13,7 +13,7 @@ class UserProfile {
   Map<String, bool> lessonsCompleted; // lessonId → completed
   Map<String, int> quizBestScores; // quizId → best score (0-100)
   int totalXP;
-  String? pin; // optional 4-digit PIN to protect this profile
+  String? pin; // optional PIN (at least 6 digits) to protect this profile
   DateTime createdAt;
   DateTime lastActiveAt;
 
@@ -37,7 +37,7 @@ class UserProfile {
         lastActiveAt = lastActiveAt ?? DateTime.now();
 
   /// Whether this profile has a PIN set.
-  bool get hasPin => pin != null && pin!.length == 4;
+  bool get hasPin => pin != null && pin!.length >= 6;
 
   /// Verify a PIN attempt. Returns true if no PIN set or if PIN matches.
   bool verifyPin(String attempt) {
@@ -49,10 +49,34 @@ class UserProfile {
   static const beginnerLessonIds = [
     'beginner_alphabet',
     'beginner_vocabulary',
+    'beginner_phrases',
     'beginner_tones',
     'beginner_numbers',
-    'beginner_phrases',
     'beginner_pronunciation',
+  ];
+
+  /// Beginner quiz IDs (20 quizzes, all must score >= 90%)
+  static const beginnerQuizIds = [
+    'beginner_quiz_1',
+    'beginner_quiz_2',
+    'beginner_quiz_3',
+    'beginner_quiz_4',
+    'beginner_quiz_5',
+    'beginner_quiz_6',
+    'beginner_quiz_7',
+    'beginner_quiz_8',
+    'beginner_quiz_9',
+    'beginner_quiz_10',
+    'beginner_quiz_11',
+    'beginner_quiz_12',
+    'beginner_quiz_13',
+    'beginner_quiz_14',
+    'beginner_quiz_15',
+    'beginner_quiz_16',
+    'beginner_quiz_17',
+    'beginner_quiz_18',
+    'beginner_quiz_19',
+    'beginner_quiz_20',
   ];
 
   /// Medium lessons the user must complete to unlock Expert
@@ -61,32 +85,92 @@ class UserProfile {
     'medium_vowels',
     'medium_noun_classes',
     'medium_sentences',
+    'medium_numbers',
   ];
 
-  /// Check if all beginner lessons are done AND quiz >= 90%
+  /// Medium quiz IDs (writing quiz must score >= 90%)
+  static const mediumQuizIds = [
+    'medium_writing_quiz',
+  ];
+
+  /// Expert lessons (for tracking completion)
+  static const expertLessonIds = [
+    'expert_tone_mastery',
+    'expert_allophones',
+    'expert_elision',
+    'expert_conversation',
+    'expert_numbers',
+  ];
+
+  /// Expert quiz IDs (20 quizzes, all must score >= 90%)
+  static const expertQuizIds = [
+    'expert_quiz_1',
+    'expert_quiz_2',
+    'expert_quiz_3',
+    'expert_quiz_4',
+    'expert_quiz_5',
+    'expert_quiz_6',
+    'expert_quiz_7',
+    'expert_quiz_8',
+    'expert_quiz_9',
+    'expert_quiz_10',
+    'expert_quiz_11',
+    'expert_quiz_12',
+    'expert_quiz_13',
+    'expert_quiz_14',
+    'expert_quiz_15',
+    'expert_quiz_16',
+    'expert_quiz_17',
+    'expert_quiz_18',
+    'expert_quiz_19',
+    'expert_quiz_20',
+  ];
+
+  /// Check if all beginner lessons are done AND all 10 quizzes >= 90%
   bool get canUnlockMedium {
     final allLessons = beginnerLessonIds.every(
       (id) => lessonsCompleted[id] == true,
     );
-    final quizScore = quizBestScores['beginner_quiz'] ?? 0;
-    return allLessons && quizScore >= 90;
+    final allQuizzesPassed = beginnerQuizIds.every(
+      (id) => (quizBestScores[id] ?? 0) >= 90,
+    );
+    return allLessons && allQuizzesPassed;
   }
 
-  /// Check if all medium lessons are done AND quiz >= 90%
+  /// Check if all medium lessons are done AND writing quiz >= 90%
   bool get canUnlockExpert {
     final allLessons = mediumLessonIds.every(
       (id) => lessonsCompleted[id] == true,
     );
-    final quizScore = quizBestScores['medium_writing_quiz'] ?? 0;
-    return allLessons && quizScore >= 90;
+    final allQuizzesPassed = mediumQuizIds.every(
+      (id) => (quizBestScores[id] ?? 0) >= 90,
+    );
+    return allLessons && allQuizzesPassed;
   }
 
-  /// Get completion count for a level
+  /// Count of beginner lessons completed
   int beginnerLessonsCompleted() =>
       beginnerLessonIds.where((id) => lessonsCompleted[id] == true).length;
 
+  /// Count of beginner quizzes passed (>= 90%)
+  int beginnerQuizzesPassed() =>
+      beginnerQuizIds.where((id) => (quizBestScores[id] ?? 0) >= 90).length;
+
+  /// Count of medium lessons completed
   int mediumLessonsCompleted() =>
       mediumLessonIds.where((id) => lessonsCompleted[id] == true).length;
+
+  /// Count of medium quizzes passed (>= 90%)
+  int mediumQuizzesPassed() =>
+      mediumQuizIds.where((id) => (quizBestScores[id] ?? 0) >= 90).length;
+
+  /// Count of expert lessons completed
+  int expertLessonsCompleted() =>
+      expertLessonIds.where((id) => lessonsCompleted[id] == true).length;
+
+  /// Count of expert quizzes passed (>= 90%)
+  int expertQuizzesPassed() =>
+      expertQuizIds.where((id) => (quizBestScores[id] ?? 0) >= 90).length;
 
   Map<String, dynamic> toJson() => {
         'id': id,
@@ -135,7 +219,7 @@ class UserAccount {
   String? whatsappNumber; // Parent WhatsApp number for activity reports
   bool sendQuizNotifications; // Send WhatsApp message after each quiz
   bool sendWeeklySummary; // Send weekly activity summary via WhatsApp
-  String? accountPin; // 4-digit PIN required to sign out or delete profiles
+  String? accountPin; // PIN (at least 6 digits) required to sign out or delete profiles
   List<UserProfile> profiles;
   DateTime createdAt;
 
@@ -154,7 +238,7 @@ class UserAccount {
         createdAt = createdAt ?? DateTime.now();
 
   /// Whether this account has a parent PIN set.
-  bool get hasAccountPin => accountPin != null && accountPin!.length == 4;
+  bool get hasAccountPin => accountPin != null && accountPin!.length >= 6;
 
   /// Verify the account-level PIN. Returns true if no PIN set or if correct.
   bool verifyAccountPin(String attempt) {

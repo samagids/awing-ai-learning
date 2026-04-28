@@ -4,6 +4,9 @@ import 'package:awing_ai_learning/screens/medium/vowels_screen.dart';
 import 'package:awing_ai_learning/screens/medium/noun_classes_screen.dart';
 import 'package:awing_ai_learning/screens/medium/sentences_screen.dart';
 import 'package:awing_ai_learning/screens/medium/writing_quiz_screen.dart';
+import 'package:awing_ai_learning/screens/medium/numbers_medium_screen.dart';
+import 'package:awing_ai_learning/screens/beginner/vocabulary_screen.dart';
+import 'package:awing_ai_learning/screens/games/medium_sentence_build.dart';
 import 'package:awing_ai_learning/services/pronunciation_service.dart';
 
 class MediumHome extends StatefulWidget {
@@ -84,10 +87,21 @@ class _MediumHomeState extends State<MediumHome> {
             ),
             const SizedBox(height: 16),
             _LessonTile(
-              title: 'Consonant Clusters',
-              subtitle: 'Learn prenasalized, palatalized & labialized sounds',
-              icon: Icons.record_voice_over,
+              title: 'Short Sentences',
+              subtitle: 'Learn everyday Awing sentences',
+              icon: Icons.short_text,
               color: Colors.orange.shade300,
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SentencesScreen()),
+              ),
+            ),
+            const SizedBox(height: 12),
+            _LessonTile(
+              title: 'Consonant Clusters',
+              subtitle: 'Prenasalized, palatalized & labialized sounds',
+              icon: Icons.record_voice_over,
+              color: const Color(0xFFFF9800),
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const ClustersScreen()),
@@ -98,7 +112,7 @@ class _MediumHomeState extends State<MediumHome> {
               title: 'Vowels & Syllables',
               subtitle: '9 vowels, long vowels & syllable types',
               icon: Icons.circle_outlined,
-              color: const Color(0xFFFF9800),
+              color: Colors.orange.shade400,
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const VowelsScreen()),
@@ -109,7 +123,7 @@ class _MediumHomeState extends State<MediumHome> {
               title: 'Noun Classes',
               subtitle: 'Singular & plural patterns',
               icon: Icons.category,
-              color: Colors.orange.shade400,
+              color: Colors.orange.shade500,
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const NounClassesScreen()),
@@ -118,9 +132,9 @@ class _MediumHomeState extends State<MediumHome> {
             const SizedBox(height: 12),
             _LessonTile(
               title: 'Sentence Building',
-              subtitle: 'Build simple Awing sentences',
+              subtitle: 'Build your own Awing sentences',
               icon: Icons.chat_bubble_outline,
-              color: Colors.orange.shade500,
+              color: const Color(0xFFEF6C00),
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const SentencesScreen()),
@@ -128,13 +142,46 @@ class _MediumHomeState extends State<MediumHome> {
             ),
             const SizedBox(height: 12),
             _LessonTile(
+              title: 'Difficult Words',
+              subtitle: 'Learn more challenging vocabulary',
+              icon: Icons.menu_book,
+              color: const Color(0xFFE65100),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const VocabularyScreen()),
+              ),
+            ),
+            const SizedBox(height: 12),
+            _LessonTile(
+              title: 'Numbers 11-100',
+              subtitle: 'Teens, tens & big numbers',
+              icon: Icons.pin,
+              color: const Color(0xFFE65100),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const NumbersMediumScreen()),
+              ),
+            ),
+            const SizedBox(height: 12),
+            _LessonTile(
               title: 'Writing Quiz',
-              subtitle: 'Test your writing knowledge!',
+              subtitle: 'Fill in the blank sentences',
               icon: Icons.edit_note,
               color: Colors.orange.shade600,
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const WritingQuizScreen()),
+              ),
+            ),
+            const SizedBox(height: 12),
+            _LessonTile(
+              title: 'Games',
+              subtitle: 'Sentence Build - arrange words in order',
+              icon: Icons.extension,
+              color: Colors.orange.shade800,
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const MediumSentenceBuild()),
               ),
             ),
           ],

@@ -16,7 +16,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// Events are always persisted locally in SharedPreferences.
 class AnalyticsService {
 
-  static const String _appVersion = '1.2.0';
+  // Keep this in sync with AboutScreen.appVersion in lib/screens/about_screen.dart.
+  // Cannot import AboutScreen here without circular deps, so it's a manual mirror.
+  static const String _appVersion = '1.11.0';
   static const int _batchSize = 20;
   static const Duration _flushInterval = Duration(minutes: 5);
   static const String _keyDeviceId = 'analytics_device_id';
@@ -284,6 +286,9 @@ class AnalyticsService {
 
   /// Send pending events to the Google Apps Script webhook.
   /// Events are cleared from local storage after successful send.
+  ///
+  /// Google Apps Script returns 302 on POST — the redirect means the
+  /// server processed the request. We treat 302 as success.
   Future<void> _sendToCloud() async {
     if (_webhookUrl == null) return;
 
@@ -292,22 +297,25 @@ class AnalyticsService {
       if (events.isEmpty) continue;
 
       try {
-        // Use dart:io HttpClient to avoid adding http package dependency
         final uri = Uri.parse(_webhookUrl!);
         final client = HttpClient();
+        client.connectionTimeout = const Duration(seconds: 10);
         final request = await client.postUrl(uri);
         request.headers.set('Content-Type', 'application/json');
+        request.followRedirects = false;
         request.write(jsonEncode({
           'sheet': category,
           'data': events,
         }));
         final response = await request.close();
+        await response.drain<void>();
 
-        if (response.statusCode == 200) {
-          // Clear sent events
+        // 302 = Apps Script processed the POST and redirects to result page
+        // 200 = direct success (unlikely for Apps Script but handle it)
+        if (response.statusCode == 200 || response.statusCode == 302 || response.statusCode == 301) {
           events.clear();
           _savePending();
-          if (kDebugMode) print('Analytics: Sent $category events to cloud');
+          if (kDebugMode) print('Analytics: Sent $category events to cloud (${response.statusCode})');
         }
         client.close();
       } catch (e) {

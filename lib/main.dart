@@ -40,27 +40,26 @@ void main() async {
   runApp(const AwingApp());
 }
 
-/// ThemeNotifier manages light/dark mode theme switching with persistence
+/// ThemeNotifier manages light/dark mode theme switching with persistence.
+///
+/// NOTE: Dark mode is temporarily disabled in v1.2.1 because many screens
+/// have hardcoded colors that become invisible on dark backgrounds. The
+/// toggle is a no-op until we complete a full dark-mode color audit. The
+/// getter always returns `false` so the UI shows the light-mode icon.
 class ThemeNotifier extends ChangeNotifier {
+  // ignore: unused_field
   static const String _themeKey = 'isDarkMode';
-  bool _isDarkMode = false;
 
-  bool get isDarkMode => _isDarkMode;
+  bool get isDarkMode => false;
 
-  /// Initialize theme from SharedPreferences
-  Future<void> initialize() async {
-    final prefs = await SharedPreferences.getInstance();
-    _isDarkMode = prefs.getBool(_themeKey) ?? false;
-    notifyListeners();
-  }
+  /// Initialize — no-op while dark mode is disabled.
+  Future<void> initialize() async {}
 
-  /// Toggle between light and dark mode
+  /// Toggle — no-op while dark mode is disabled.
   Future<void> toggle() => toggleTheme();
 
   Future<void> toggleTheme() async {
-    _isDarkMode = !_isDarkMode;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_themeKey, _isDarkMode);
+    // Dark mode is disabled until full color audit is complete.
     notifyListeners();
   }
 

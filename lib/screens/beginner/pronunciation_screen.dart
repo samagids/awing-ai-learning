@@ -1,12 +1,31 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'dart:io';
 import 'dart:math' as math;
-import 'dart:async';
+import 'package:path_provider/path_provider.dart';
+import 'package:record/record.dart';
+import 'package:audioplayers/audioplayers.dart';
 import 'package:awing_ai_learning/data/awing_vocabulary.dart';
+import 'package:awing_ai_learning/components/pack_image.dart';
 import 'package:awing_ai_learning/services/pronunciation_service.dart';
-import 'package:awing_ai_learning/services/speech_service.dart';
 import 'package:awing_ai_learning/services/auth_service.dart';
 
+/// Pronunciation practice — kid-friendly flow:
+///
+///   1. See the word + picture + English meaning.
+///   2. Tap "Hear it" to listen to the correct Awing pronunciation.
+///   3. Tap the big mic to record yourself saying it.
+///   4. Tap again to stop — playback buttons appear.
+///   5. Tap "Play mine" to hear your own recording.
+///   6. Tap "Hear it" again to compare with the reference.
+///   7. Decide for yourself whether to move on or try again.
+///
+/// The previous version used speech-to-text to generate a fake "% match"
+/// score, but Android's speech recognizer is English-trained — it was
+/// guessing English words that *sounded* like what the kid said, then
+/// scoring against that guess. This is honest, educational, and actually
+/// helps kids hear their own pronunciation vs the reference.
 class PronunciationScreen extends StatefulWidget {
   const PronunciationScreen({Key? key}) : super(key: key);
 
@@ -17,17 +36,20 @@ class PronunciationScreen extends StatefulWidget {
 class _PronunciationScreenState extends State<PronunciationScreen>
     with TickerProviderStateMixin {
   final PronunciationService _pronunciation = PronunciationService();
-  final SpeechService _speechService = SpeechService();
+  final AudioRecorder _recorder = AudioRecorder();
+  final AudioPlayer _player = AudioPlayer();
 
   late AnimationController _pulseController;
   late AwingWord _currentWord;
-  String? _spokenText;
-  double? _similarityScore;
-  bool _isRecording = false;
-  int _wordsLearned = 0;
-  double _totalScore = 0.0;
-
   late List<AwingWord> _vocabulary;
+
+  static const int _maxRecordSeconds = 10;
+  bool _isRecording = false;
+  bool _isPlayingMine = false;
+  String? _myRecordingPath;
+  int _wordsPracticed = 0;
+  Timer? _recordingTimer;
+  int _recordingSecondsLeft = _maxRecordSeconds;
 
   @override
   void initState() {
@@ -36,12 +58,15 @@ class _PronunciationScreenState extends State<PronunciationScreen>
     _currentWord = _getRandomWord();
 
     _pulseController = AnimationController(
-      duration: const Duration(milliseconds: 1500),
+      duration: const Duration(milliseconds: 1200),
       vsync: this,
     );
 
     _pronunciation.init();
-    _speechService.init();
+    _player.onPlayerComplete.listen((_) {
+      if (mounted) setState(() => _isPlayingMine = false);
+    });
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<AuthService>().completeLesson('beginner_pronunciation');
     });
@@ -49,165 +74,122 @@ class _PronunciationScreenState extends State<PronunciationScreen>
 
   @override
   void dispose() {
+    _recordingTimer?.cancel();
     _pulseController.dispose();
-    _speechService.stopListening();
+    _recorder.dispose();
+    _player.dispose();
     super.dispose();
   }
 
   AwingWord _getRandomWord() {
-    return _vocabulary[math.Random().nextInt(_vocabulary.length)];
-  }
-
-  /// Normalize text for comparison (lowercase, remove diacritics, trim)
-  String _normalize(String text) {
-    // Remove common diacritics
-    final replacements = {
-      'á': 'a',
-      'à': 'a',
-      'â': 'a',
-      'ǎ': 'a',
-      'ã': 'a',
-      'é': 'e',
-      'è': 'e',
-      'ê': 'e',
-      'ě': 'e',
-      'ĩ': 'i',
-      'í': 'i',
-      'ì': 'i',
-      'î': 'i',
-      'ǐ': 'i',
-      'ó': 'o',
-      'ò': 'o',
-      'ô': 'o',
-      'ǒ': 'o',
-      'õ': 'o',
-      'ú': 'u',
-      'ù': 'u',
-      'û': 'u',
-      'ǔ': 'u',
-      'ũ': 'u',
-      'ɛ': 'e',
-      'ə': 'a',
-      'ɨ': 'i',
-      'ɔ': 'o',
-      'ŋ': 'n',
-      "'": '',
-    };
-
-    var result = text.toLowerCase();
-    replacements.forEach((key, value) {
-      result = result.replaceAll(key, value);
-    });
-    return result.trim();
-  }
-
-  /// Calculate similarity between two strings (0.0 to 1.0)
-  /// Uses character matching approach similar to Levenshtein distance
-  double _calculateSimilarity(String str1, String str2) {
-    final normalized1 = _normalize(str1);
-    final normalized2 = _normalize(str2);
-
-    if (normalized1.isEmpty && normalized2.isEmpty) return 1.0;
-    if (normalized1.isEmpty || normalized2.isEmpty) return 0.0;
-
-    // Count matching characters at same positions
-    int matches = 0;
-    final minLen = math.min(normalized1.length, normalized2.length);
-    final maxLen = math.max(normalized1.length, normalized2.length);
-
-    for (int i = 0; i < minLen; i++) {
-      if (normalized1[i] == normalized2[i]) matches++;
-    }
-
-    // Similarity is: matches / max_length
-    // This rewards correct characters in order but penalizes length mismatches
-    return matches / maxLen;
-  }
-
-  /// Get feedback based on similarity score
-  String _getFeedbackText(double score) {
-    if (score >= 0.7) {
-      return 'Great job!';
-    } else if (score >= 0.4) {
-      return 'Good try!';
-    } else {
-      return 'Try again!';
-    }
-  }
-
-  /// Get feedback color based on similarity score
-  Color _getFeedbackColor(double score) {
-    if (score >= 0.7) {
-      return Colors.green.shade600;
-    } else if (score >= 0.4) {
-      return Colors.amber.shade600;
-    } else {
-      return Colors.red.shade600;
-    }
-  }
-
-  /// Convert score (0.0-1.0) to star rating (1-5)
-  int _getStarRating(double score) {
-    if (score >= 0.9) return 5;
-    if (score >= 0.7) return 4;
-    if (score >= 0.5) return 3;
-    if (score >= 0.3) return 2;
-    return 1;
+    // Only practice with difficulty-1 words (beginner friendly).
+    final pool = _vocabulary.where((w) => w.difficulty <= 1).toList();
+    if (pool.isEmpty) return _vocabulary.first;
+    return pool[math.Random().nextInt(pool.length)];
   }
 
   Future<void> _startRecording() async {
-    setState(() {
-      _isRecording = true;
-      _spokenText = null;
-      _similarityScore = null;
-    });
+    try {
+      final hasPerm = await _recorder.hasPermission();
+      if (!hasPerm) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                  'Microphone permission is needed to record yourself.'),
+            ),
+          );
+        }
+        return;
+      }
 
-    _pulseController.repeat();
+      final dir = await getTemporaryDirectory();
+      final path =
+          '${dir.path}/awing_practice_${DateTime.now().millisecondsSinceEpoch}.m4a';
 
-    await _speechService.startListening((result) {
-      setState(() {
-        _spokenText = result;
+      await _recorder.start(
+        const RecordConfig(
+          encoder: AudioEncoder.aacLc,
+          bitRate: 64000,
+          sampleRate: 22050,
+        ),
+        path: path,
+      );
+
+      _pulseController.repeat();
+      _recordingSecondsLeft = _maxRecordSeconds;
+      _recordingTimer?.cancel();
+      _recordingTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+        if (!mounted) {
+          timer.cancel();
+          return;
+        }
+        setState(() {
+          _recordingSecondsLeft--;
+        });
+        if (_recordingSecondsLeft <= 0) {
+          timer.cancel();
+          _stopRecording();
+        }
       });
-    });
-
-    // Auto-stop after 5 seconds
-    await Future.delayed(const Duration(seconds: 5));
-    await _stopRecording();
+      setState(() {
+        _isRecording = true;
+        _myRecordingPath = null;
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not start recording: $e')),
+        );
+      }
+    }
   }
 
   Future<void> _stopRecording() async {
-    _pulseController.stop();
-    _speechService.stopListening();
-
-    if (_spokenText != null && _spokenText!.isNotEmpty) {
-      final score = _calculateSimilarity(_spokenText!, _currentWord.awing);
+    _recordingTimer?.cancel();
+    _recordingTimer = null;
+    try {
+      final path = await _recorder.stop();
+      _pulseController.stop();
+      _pulseController.value = 0;
       setState(() {
         _isRecording = false;
-        _similarityScore = score;
-        _wordsLearned++;
-        _totalScore += score;
+        _myRecordingPath = path;
+        if (path != null) _wordsPracticed++;
       });
-    } else {
+    } catch (e) {
+      _pulseController.stop();
+      _pulseController.value = 0;
       setState(() {
         _isRecording = false;
       });
     }
+  }
+
+  Future<void> _playMyRecording() async {
+    final path = _myRecordingPath;
+    if (path == null) return;
+    try {
+      setState(() => _isPlayingMine = true);
+      await _player.play(DeviceFileSource(path));
+    } catch (_) {
+      if (mounted) setState(() => _isPlayingMine = false);
+    }
+  }
+
+  Future<void> _hearReference() async {
+    await _pronunciation.speakAwing(_currentWord.awing);
   }
 
   void _nextWord() {
     setState(() {
       _currentWord = _getRandomWord();
-      _spokenText = null;
-      _similarityScore = null;
+      _myRecordingPath = null;
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final stars = _similarityScore != null ? _getStarRating(_similarityScore!) : 0;
-    final avgScore =
-        _wordsLearned > 0 ? (_totalScore / _wordsLearned * 100).round() : 0;
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Pronunciation Practice'),
@@ -216,83 +198,116 @@ class _PronunciationScreenState extends State<PronunciationScreen>
       ),
       body: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Session stats
+              // Session stat — just a positive count, no fake score.
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 18, vertical: 12),
                 decoration: BoxDecoration(
                   color: Colors.green.shade50,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(24),
                   border: Border.all(color: Colors.green.shade200),
                 ),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Column(
-                      children: [
-                        Text(
-                          'Words Practiced',
-                          style: TextStyle(color: Colors.grey.shade700),
-                        ),
-                        Text(
-                          _wordsLearned.toString(),
-                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                            color: Colors.green.shade700,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                    Column(
-                      children: [
-                        Text(
-                          'Average Score',
-                          style: TextStyle(color: Colors.grey.shade700),
-                        ),
-                        Text(
-                          '$avgScore%',
-                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                            color: Colors.green.shade700,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
+                    Icon(Icons.emoji_events, color: Colors.green.shade700),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Words practiced: $_wordsPracticed',
+                      style: TextStyle(
+                        color: Colors.green.shade900,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 15,
+                      ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 20),
 
-              // Current word display
-              Text(
-                _currentWord.awing,
-                style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                  color: Colors.green.shade700,
-                  fontWeight: FontWeight.bold,
-                ),
-                textAlign: TextAlign.center,
+              // Picture of the current word — responsive to device width.
+              Builder(
+                builder: (context) {
+                  final imageSize = (MediaQuery.of(context).size.width * 0.5)
+                      .clamp(120.0, 200.0);
+                  return Center(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(20),
+                      child: SizedBox(
+                        width: imageSize,
+                        height: imageSize,
+                        child: PackImage(
+                          awingWord: _currentWord.awing,
+                          english: _currentWord.english,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
+                  );
+                },
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
+
+              // Awing word (big) — auto-shrink to fit narrow phones.
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    _currentWord.awing,
+                    style: Theme.of(context)
+                        .textTheme
+                        .displaySmall
+                        ?.copyWith(
+                          color: Colors.green.shade800,
+                          fontWeight: FontWeight.bold,
+                        ),
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 6),
               Text(
                 _currentWord.english,
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  color: Colors.grey.shade700,
-                ),
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: Colors.grey.shade700,
+                    ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 20),
 
-              // Microphone button with pulsing animation
+              // Step 1: Hear the reference.
+              ElevatedButton.icon(
+                onPressed: _isRecording ? null : _hearReference,
+                icon: const Icon(Icons.volume_up),
+                label: const Text('Hear it'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green.shade600,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 26, vertical: 12),
+                  textStyle: const TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.w600),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Step 2: Big mic — tap to start/stop recording.
               Center(
                 child: AnimatedBuilder(
                   animation: _pulseController,
                   builder: (context, child) {
                     return Transform.scale(
                       scale: _isRecording
-                          ? 1.0 + (_pulseController.value * 0.1)
+                          ? 1.0 + (_pulseController.value * 0.12)
                           : 1.0,
                       child: Container(
                         decoration: BoxDecoration(
@@ -300,24 +315,30 @@ class _PronunciationScreenState extends State<PronunciationScreen>
                           boxShadow: [
                             if (_isRecording)
                               BoxShadow(
-                                color: Colors.green.withOpacity(
+                                color: Colors.red.withOpacity(
                                     0.3 + (_pulseController.value * 0.3)),
-                                blurRadius: 20 + (_pulseController.value * 10),
+                                blurRadius:
+                                    20 + (_pulseController.value * 10),
                                 spreadRadius:
-                                    10 + (_pulseController.value * 5),
+                                    8 + (_pulseController.value * 5),
                               ),
                           ],
                         ),
-                        child: FloatingActionButton(
-                          heroTag: 'mic',
-                          backgroundColor: _isRecording
-                              ? Colors.red.shade600
-                              : Colors.green.shade600,
-                          onPressed: _isRecording ? _stopRecording : _startRecording,
-                          child: Icon(
-                            _isRecording ? Icons.stop : Icons.mic,
-                            size: 32,
-                            color: Colors.white,
+                        child: SizedBox(
+                          width: 96,
+                          height: 96,
+                          child: FloatingActionButton(
+                            heroTag: 'mic',
+                            backgroundColor: _isRecording
+                                ? Colors.red.shade600
+                                : Colors.blue.shade600,
+                            onPressed:
+                                _isRecording ? _stopRecording : _startRecording,
+                            child: Icon(
+                              _isRecording ? Icons.stop : Icons.mic,
+                              size: 42,
+                              color: Colors.white,
+                            ),
                           ),
                         ),
                       ),
@@ -325,130 +346,101 @@ class _PronunciationScreenState extends State<PronunciationScreen>
                   },
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
               Text(
-                _isRecording ? 'Listening...' : 'Tap to speak',
-                style: TextStyle(color: Colors.grey.shade600),
+                _isRecording
+                    ? 'Recording… $_recordingSecondsLeft s left'
+                    : _myRecordingPath == null
+                        ? 'Tap the mic and say the word'
+                        : 'Recorded! Listen to yourself below.',
+                style: TextStyle(color: _isRecording && _recordingSecondsLeft <= 3 ? Colors.red.shade700 : Colors.grey.shade700),
+                textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 20),
 
-              // Spoken text feedback
-              if (_spokenText != null && _spokenText!.isNotEmpty) ...[
+              // Step 3: Playback controls — appear once there's a recording.
+              if (_myRecordingPath != null) ...[
                 Container(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
                     color: Colors.blue.shade50,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(14),
                     border: Border.all(color: Colors.blue.shade200),
                   ),
                   child: Column(
                     children: [
-                      Text(
-                        'You said:',
+                      const Text(
+                        'Compare the two:',
                         style: TextStyle(
-                          color: Colors.grey.shade700,
-                          fontWeight: FontWeight.w500,
-                        ),
+                            fontWeight: FontWeight.w600, fontSize: 14),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          ElevatedButton.icon(
+                            onPressed: _hearReference,
+                            icon: const Icon(Icons.volume_up),
+                            label: const Text('Hear it'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.green.shade600,
+                              foregroundColor: Colors.white,
+                            ),
+                          ),
+                          ElevatedButton.icon(
+                            onPressed: _isPlayingMine ? null : _playMyRecording,
+                            icon: Icon(_isPlayingMine
+                                ? Icons.graphic_eq
+                                : Icons.play_circle),
+                            label: Text(_isPlayingMine ? 'Playing…' : 'Play mine'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.blue.shade600,
+                              foregroundColor: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
                       Text(
-                        _spokenText!,
-                        style: Theme.of(context).textTheme.bodyLarge,
+                        'Listen to both. Do they sound the same? You decide!',
+                        style: TextStyle(
+                            fontSize: 12, color: Colors.blue.shade900),
                         textAlign: TextAlign.center,
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 24),
-              ],
+                const SizedBox(height: 18),
 
-              // Similarity score feedback
-              if (_similarityScore != null) ...[
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: _getFeedbackColor(_similarityScore!).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: _getFeedbackColor(_similarityScore!),
-                      width: 2,
-                    ),
-                  ),
-                  child: Column(
-                    children: [
-                      Text(
-                        _getFeedbackText(_similarityScore!),
-                        style:
-                            Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          color: _getFeedbackColor(_similarityScore!),
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      // Star rating
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: List.generate(5, (index) {
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 4),
-                            child: Icon(
-                              index < stars ? Icons.star : Icons.star_outline,
-                              color: Colors.amber.shade600,
-                              size: 32,
-                            ),
-                          );
-                        }),
-                      ),
-                      const SizedBox(height: 16),
-                      // Percentage score
-                      Text(
-                        '${(_similarityScore! * 100).round()}% Match',
-                        style:
-                            Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          color: _getFeedbackColor(_similarityScore!),
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
-              ],
-
-              // Action buttons
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  ElevatedButton.icon(
-                    onPressed: () =>
-                        _pronunciation.speakAwing(_currentWord.awing),
-                    icon: const Icon(Icons.volume_up),
-                    label: const Text('Hear it'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green.shade400,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 12,
+                // Action row.
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    OutlinedButton.icon(
+                      onPressed: _startRecording,
+                      icon: const Icon(Icons.replay),
+                      label: const Text('Try again'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.orange.shade700,
+                        side: BorderSide(color: Colors.orange.shade300),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 22, vertical: 12),
                       ),
                     ),
-                  ),
-                  if (_similarityScore != null)
                     ElevatedButton.icon(
                       onPressed: _nextWord,
                       icon: const Icon(Icons.arrow_forward),
-                      label: const Text('Next Word'),
+                      label: const Text('Next word'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue.shade400,
+                        backgroundColor: Colors.indigo,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 12,
-                        ),
+                            horizontal: 22, vertical: 12),
                       ),
                     ),
-                ],
-              ),
+                  ],
+                ),
+              ],
             ],
           ),
         ),

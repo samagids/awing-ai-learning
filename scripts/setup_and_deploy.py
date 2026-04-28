@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-setup_and_deploy.py v3.0.0
+setup_and_deploy.py v3.1.0
 Fully automated deploy pipeline: webhooks, authorization, build, install.
 
 Smart automation:
@@ -12,6 +12,7 @@ Smart automation:
 Usage:
   python scripts/setup_and_deploy.py              # Smart full pipeline (DEFAULT)
   python scripts/setup_and_deploy.py --webhooks   # Only redeploy webhooks
+  python scripts/setup_and_deploy.py --verify     # Check if deployed URL supports fetch_all
   python scripts/setup_and_deploy.py --test       # Only test webhook connectivity
   python scripts/setup_and_deploy.py --authorize  # Force open Apps Script editor
   python scripts/setup_and_deploy.py --sha1       # Only show SHA-1 fingerprint
@@ -106,6 +107,162 @@ def load_webhooks():
     return {}
 
 
+def _existing_deployment_id(config_key):
+    """Return the AKfycb... deployment ID currently pointed at by webhooks.json.
+
+    `config_key` is e.g. 'contributions' or 'analytics' — we look up
+    '{config_key}_url' and extract the deployment ID from the URL.
+
+    This is the ID we want to UPDATE IN PLACE. Every shipped APK has this
+    exact URL compiled into it (via assets/config/webhooks.json), so a fresh
+    `clasp deploy` with no --deploymentId creates a NEW URL and strands
+    every already-installed APK on the old deployment's code.
+
+    Returns None if no URL is known yet (fresh install, no existing APK
+    to worry about).
+    """
+    config = load_webhooks()
+    url = config.get(f"{config_key}_url", "")
+    if not url:
+        return None
+    m = re.search(r'/macros/s/(AKfycb[A-Za-z0-9_-]+)/exec', url)
+    return m.group(1) if m else None
+
+
+def verify_contributions_webhook(url):
+    """POST action=fetch_all to a webhook URL and check the response.
+
+    Returns True if the server responds with {status: 'ok', contributions: [...]}
+    (meaning the deployment supports fetch_all). Returns False if the server
+    returns Unknown action or any non-ok status — that indicates the URL points
+    at a stale deployment that predates the fetch_all handler.
+    """
+    try:
+        data = json.dumps({"action": "fetch_all"}).encode('utf-8')
+        req = Request(url, data=data, headers={
+            'Content-Type': 'application/json; charset=utf-8',
+        })
+        resp = urlopen(req, timeout=20)
+        body = resp.read().decode('utf-8', errors='replace')
+        result = json.loads(body)
+        if result.get('status') != 'ok':
+            msg = result.get('message', '')
+            print(f"    Server said: {result.get('status')} - {msg}")
+            return False
+        if 'contributions' not in result:
+            print(f"    Server returned status=ok but no 'contributions' field.")
+            return False
+        return True
+    except HTTPError as e:
+        print(f"    HTTP error during verify: {e.code}")
+        return False
+    except URLError as e:
+        print(f"    Network error during verify: {e.reason}")
+        return False
+    except (json.JSONDecodeError, ValueError) as e:
+        print(f"    Could not decode JSON response: {e}")
+        return False
+    except Exception as e:
+        print(f"    Verify failed: {e}")
+        return False
+
+
+def find_newest_deployment(project_dir, exclude=None):
+    """List all deployments and return the one with the highest version number.
+
+    `clasp deployments` prints one line per deployment, each like:
+        - AKfycbxxx @42 - Description
+        - AKfycbyyy @HEAD - @HEAD
+
+    We want the highest versioned (non-HEAD) deployment that isn't `exclude`.
+    """
+    rc, stdout, stderr = run("clasp deployments", cwd=project_dir, quiet=True)
+    text = stdout + "\n" + stderr
+    best_id = None
+    best_version = -1
+    for line in text.split('\n'):
+        m = re.search(r'(AKfycb[A-Za-z0-9_-]{30,})\s+@(\d+)', line)
+        if not m:
+            continue
+        dep_id = m.group(1)
+        version = int(m.group(2))
+        if dep_id == exclude:
+            continue
+        if version > best_version:
+            best_version = version
+            best_id = dep_id
+    return best_id
+
+
+def list_deployments(project_dir):
+    """Return (head_id, [(version, dep_id), ...]) parsed from `clasp deployments`.
+
+    The list is sorted by version descending (newest first). head_id is the
+    @HEAD deployment ID — that URL always serves the latest pushed code, so
+    it's the truth source for whether `clasp push` actually uploaded our
+    Code.js.
+    """
+    rc, stdout, stderr = run("clasp deployments", cwd=project_dir, quiet=True)
+    text = stdout + "\n" + stderr
+    head_id = None
+    versioned = []
+    for line in text.split('\n'):
+        m_head = re.search(r'(AKfycb[A-Za-z0-9_-]{30,})\s+@HEAD', line)
+        if m_head:
+            head_id = m_head.group(1)
+            continue
+        m_ver = re.search(r'(AKfycb[A-Za-z0-9_-]{30,})\s+@(\d+)', line)
+        if m_ver:
+            versioned.append((int(m_ver.group(2)), m_ver.group(1)))
+    versioned.sort(reverse=True)
+    return head_id, versioned
+
+
+def cleanup_old_deployments(project_dir, keep=4):
+    """Undeploy old versioned deployments, keeping only the newest `keep`.
+
+    Apps Script caps at 20 versioned web-app deployments per script. Once
+    at the cap, `clasp deploy` silently fails (or returns no parseable
+    deployment ID), and the calling code falls back to picking a stale
+    deployment. Stay well under the cap so a fresh deploy always succeeds.
+    """
+    head_id, versioned = list_deployments(project_dir)
+    if len(versioned) <= keep:
+        return 0
+    to_remove = versioned[keep:]
+    print(f"  Cleaning up {len(to_remove)} old deployment(s) "
+          f"(keeping newest {keep} of {len(versioned)})...")
+    removed = 0
+    for version, dep_id in to_remove:
+        rc, _, _ = run(f"clasp undeploy {dep_id}", cwd=project_dir, quiet=True)
+        if rc == 0:
+            removed += 1
+    print(f"  Removed {removed} old deployment(s).")
+    return removed
+
+
+def parse_new_deploy_id(text):
+    """Extract the newly-created deployment ID from `clasp deploy` output.
+
+    `clasp deploy` typically prints something like:
+        Created version 42.
+        - AKfycb... @42 - description
+    or
+        Deployed AKfycb... @42 - description
+
+    Extract the AKfycb token that's NOT on a @HEAD line. Distinct from
+    extract_deployment_id() which scans `clasp deployments` output and may
+    return a stale ID — this one only parses fresh `clasp deploy` output.
+    """
+    for line in text.split('\n'):
+        if '@HEAD' in line:
+            continue
+        m = re.search(r'(AKfycb[A-Za-z0-9_-]{30,})', line)
+        if m:
+            return m.group(1)
+    return None
+
+
 def get_script_id(name):
     """Get Apps Script ID from clasp project."""
     project_dir = ANALYTICS_DIR if name == "analytics" else CONTRIBUTIONS_DIR
@@ -165,28 +322,100 @@ def deploy_webhooks():
         # Push
         rc, stdout, stderr = run("clasp push --force", cwd=project_dir)
         if rc != 0:
-            print(f"  ERROR: Push failed for {name}")
+            print(f"  ERROR: clasp push failed for {name}. Aborting this webhook.")
             continue
 
-        # Deploy
-        rc, stdout, stderr = run(
-            f'clasp deploy --description "{description}"',
-            cwd=project_dir,
-        )
-        deploy_output = stdout + "\n" + stderr
-        deploy_id = extract_deployment_id(deploy_output)
+        # NOTE: We deliberately do NOT probe the @HEAD URL to verify push.
+        # Apps Script @HEAD URLs are not guaranteed to honor the
+        # ANYONE_ANONYMOUS access setting — they frequently return 401 to
+        # unauthenticated probes even when the corresponding versioned
+        # deployment would serve the same code publicly. Instead, we trust
+        # `clasp push`'s exit code and verify the newly-created versioned
+        # deployment URL below, which is the URL actually used by the app.
 
-        if not deploy_id:
-            print("  Checking deployments list...")
-            rc2, stdout2, stderr2 = run("clasp deployments", cwd=project_dir)
-            deploy_id = extract_deployment_id(stdout2 + "\n" + stderr2)
+        # Stay under Apps Script's 20-versioned-deployment cap so the
+        # next `clasp deploy` doesn't silently fail for quota reasons.
+        # We keep the 4 newest and undeploy the rest — plenty for rollback
+        # diagnostics, well below the 20 cap.
+        cleanup_old_deployments(project_dir, keep=4)
 
-        if deploy_id:
-            url = f"https://script.google.com/macros/s/{deploy_id}/exec"
-            urls[f"{name}_url"] = url
-            print(f"  OK: {url}")
-        else:
-            print(f"  WARNING: Could not extract deployment ID for {name}")
+        # Prefer UPDATING the existing deployment in place over creating a
+        # new one. Every shipped APK has the existing URL compiled in; a
+        # fresh deploy (no --deploymentId) mints a NEW URL and strands every
+        # already-installed APK on the old deployment's (stale) code. Using
+        # --deploymentId keeps the same URL but makes it serve the newly
+        # pushed code — both fresh and already-installed APKs stay in sync.
+        existing_id = _existing_deployment_id(name)
+        deploy_id = None
+        deploy_output = ""
+
+        if existing_id:
+            print(f"  Updating existing deployment {existing_id} in place "
+                  f"(preserves URL)...")
+            rc, stdout, stderr = run(
+                f'clasp deploy --deploymentId {existing_id} '
+                f'--description "{description}"',
+                cwd=project_dir,
+            )
+            deploy_output = stdout + "\n" + stderr
+            if rc == 0:
+                deploy_id = existing_id
+            else:
+                # Most likely cause: the existing deployment was manually
+                # undeployed/archived. Fall through to a fresh deploy.
+                print(f"  In-place update failed (exit {rc}). Falling back "
+                      f"to a fresh deploy...")
+
+        if deploy_id is None:
+            # Fresh deploy — mints a new URL. Safe for first-time deploys or
+            # when the old deployment was manually removed. Any existing APKs
+            # in the wild will remain stranded on the old URL until they're
+            # rebuilt + reinstalled.
+            rc, stdout, stderr = run(
+                f'clasp deploy --description "{description}"',
+                cwd=project_dir,
+            )
+            deploy_output = stdout + "\n" + stderr
+            if rc != 0:
+                print(f"  ERROR: clasp deploy failed for {name} (exit {rc}).")
+                print(f"         Check the output above for the real error.")
+                continue
+
+            deploy_id = parse_new_deploy_id(deploy_output)
+            if not deploy_id:
+                print(f"  ERROR: clasp deploy succeeded but could not parse")
+                print(f"         new deployment ID from its output. Aborting.")
+                continue
+
+        url = f"https://script.google.com/macros/s/{deploy_id}/exec"
+
+        # Final verify on the new versioned URL. Apps Script sometimes
+        # takes ~5-15s to propagate a fresh deployment (especially right
+        # after an undeploy cleanup), so retry a few times before failing.
+        if name == "contributions":
+            import time
+            print(f"  Verifying new deployment at {url} ...")
+            verified = False
+            for attempt, wait in enumerate([0, 5, 10, 15], start=1):
+                if wait:
+                    print(f"  Not yet propagated — waiting {wait}s "
+                          f"(attempt {attempt}/4)...")
+                    time.sleep(wait)
+                if verify_contributions_webhook(url):
+                    verified = True
+                    break
+            if not verified:
+                print(f"  ERROR: New deployment at {url}")
+                print(f"         does not support fetch_all even after 30s of")
+                print(f"         retries. The pushed code may be missing the")
+                print(f"         fetch_all handler, or clasp is pushing to the")
+                print(f"         wrong scriptId. Check:")
+                print(f"           scripts/{gs_file.name} -> case 'fetch_all':")
+                print(f"           {project_dir}/.clasp.json -> scriptId")
+                continue
+
+        urls[f"{name}_url"] = url
+        print(f"  OK: {url}")
 
     # Save to webhooks.json
     if urls:
@@ -199,6 +428,13 @@ def deploy_webhooks():
             json.dump(existing, f, indent=2)
 
         print(f"\n  Saved to {WEBHOOKS_FILE}")
+
+        # Treat the contributions webhook as required: a missing or unverified
+        # contributions_url is a hard failure (Developer Mode Review tab depends
+        # on fetch_all). Analytics-only success is not enough.
+        if 'contributions_url' not in urls:
+            print("\n  ERROR: contributions_url was not deployed/verified.")
+            return False
         return True
     else:
         print("\n  No webhooks were deployed successfully.")
@@ -541,7 +777,7 @@ def main():
     args = set(sys.argv[1:])
 
     print("=" * 60)
-    print("  Awing AI Learning — Setup & Deploy v3.0.0")
+    print("  Awing AI Learning — Setup & Deploy v3.1.0")
     print("=" * 60)
 
     if '--help' in args or '-h' in args:
@@ -550,12 +786,36 @@ def main():
 
     # Individual commands
     if '--webhooks' in args:
-        deploy_webhooks()
-        return
+        ok = deploy_webhooks()
+        sys.exit(0 if ok else 1)
 
     if '--test' in args:
         test_and_authorize()
         return
+
+    if '--verify' in args:
+        # Probe the deployed contributions webhook for fetch_all support.
+        # Use this when the app shows "Sync error" in Developer Mode to find
+        # out whether the deployed URL is stale.
+        config = load_webhooks()
+        url = config.get('contributions_url', '')
+        if not url:
+            print("\n  No contributions_url in config/webhooks.json.")
+            print("  Run: python scripts/setup_and_deploy.py --webhooks")
+            sys.exit(1)
+        print(f"\n  Testing: {url}")
+        print("  POST action=fetch_all ...")
+        if verify_contributions_webhook(url):
+            print("\n  OK: Deployment supports fetch_all.")
+            print("  If the app still shows a sync error, make sure the APK")
+            print("  was rebuilt AFTER webhooks.json was updated.")
+            sys.exit(0)
+        else:
+            print("\n  FAIL: Deployed URL does not support fetch_all.")
+            print("  The webhooks.json URL is pointing at a stale deployment.")
+            print("  Fix: python scripts/setup_and_deploy.py --webhooks")
+            print("       (then rebuild APK)")
+            sys.exit(1)
 
     if '--authorize' in args:
         force_authorize()

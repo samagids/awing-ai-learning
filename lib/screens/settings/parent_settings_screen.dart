@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:awing_ai_learning/services/auth_service.dart';
 import 'package:awing_ai_learning/services/parent_notification_service.dart';
+import 'package:awing_ai_learning/services/progress_service.dart';
 import 'package:awing_ai_learning/screens/settings/backup_screen.dart';
 
 /// Settings screen for parents to manage WhatsApp notifications,
@@ -60,6 +62,372 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Settings saved'),
+        backgroundColor: Colors.green,
+      ),
+    );
+  }
+
+  // ==================== Parent Controls ====================
+
+  /// Show a dialog to set or change the parent PIN.
+  /// PIN must be at least 6 digits.
+  Future<void> _showPinSetupDialog(AuthService auth, bool isChange) async {
+    final currentPinController = TextEditingController();
+    final newPinController = TextEditingController();
+    final confirmPinController = TextEditingController();
+    String? errorText;
+
+    final result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setDialogState) {
+            return AlertDialog(
+              title: Text(isChange ? 'Change Parent PIN' : 'Set Parent PIN'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      isChange
+                          ? 'Enter your current PIN, then choose a new 6+ digit PIN.'
+                          : 'Choose a 6+ digit PIN. You\'ll need it to reset your child\'s progress.',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey.shade700,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    if (isChange) ...[
+                      TextField(
+                        controller: currentPinController,
+                        keyboardType: TextInputType.number,
+                        obscureText: true,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                          LengthLimitingTextInputFormatter(12),
+                        ],
+                        decoration: const InputDecoration(
+                          labelText: 'Current PIN',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                    TextField(
+                      controller: newPinController,
+                      keyboardType: TextInputType.number,
+                      obscureText: true,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                        LengthLimitingTextInputFormatter(12),
+                      ],
+                      decoration: const InputDecoration(
+                        labelText: 'New PIN (6+ digits)',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: confirmPinController,
+                      keyboardType: TextInputType.number,
+                      obscureText: true,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                        LengthLimitingTextInputFormatter(12),
+                      ],
+                      decoration: const InputDecoration(
+                        labelText: 'Confirm new PIN',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    if (errorText != null) ...[
+                      const SizedBox(height: 12),
+                      Text(
+                        errorText!,
+                        style: TextStyle(
+                          color: Colors.red.shade700,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF006432),
+                    foregroundColor: Colors.white,
+                  ),
+                  onPressed: () {
+                    final newPin = newPinController.text.trim();
+                    final confirmPin = confirmPinController.text.trim();
+
+                    if (isChange) {
+                      final currentPin = currentPinController.text.trim();
+                      if (!auth.verifyAccountPin(currentPin)) {
+                        setDialogState(() {
+                          errorText = 'Current PIN is incorrect.';
+                        });
+                        return;
+                      }
+                    }
+                    if (newPin.length < 6) {
+                      setDialogState(() {
+                        errorText = 'PIN must be at least 6 digits.';
+                      });
+                      return;
+                    }
+                    if (newPin != confirmPin) {
+                      setDialogState(() {
+                        errorText = 'PINs do not match.';
+                      });
+                      return;
+                    }
+                    auth.setAccountPin(newPin);
+                    Navigator.pop(ctx, true);
+                  },
+                  child: Text(isChange ? 'Change PIN' : 'Set PIN'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    currentPinController.dispose();
+    newPinController.dispose();
+    confirmPinController.dispose();
+
+    if (result == true && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(isChange ? 'Parent PIN updated' : 'Parent PIN set'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    }
+  }
+
+  /// Verify the parent PIN and, on success, confirm + reset child progress.
+  Future<void> _showResetFlow(AuthService auth) async {
+    final profile = auth.currentProfile;
+    if (profile == null) return;
+
+    // If no PIN is set, require the parent to set one first.
+    if (!auth.hasAccountPin) {
+      final setNow = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Set Parent PIN First'),
+          content: const Text(
+            'You need a parent PIN before resetting a child\'s progress. '
+            'Would you like to set one now?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Not now'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF006432),
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Set PIN'),
+            ),
+          ],
+        ),
+      );
+      if (setNow != true || !mounted) return;
+      await _showPinSetupDialog(auth, false);
+      if (!auth.hasAccountPin) return;
+    }
+
+    // Verify the PIN.
+    final pinController = TextEditingController();
+    String? pinError;
+    final verified = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setDialogState) {
+            return AlertDialog(
+              title: const Text('Enter Parent PIN'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Enter your parent PIN to reset ${profile.displayName}\'s progress.',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.grey.shade700,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: pinController,
+                    keyboardType: TextInputType.number,
+                    obscureText: true,
+                    autofocus: true,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                      LengthLimitingTextInputFormatter(12),
+                    ],
+                    decoration: const InputDecoration(
+                      labelText: 'Parent PIN',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  if (pinError != null) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      pinError!,
+                      style: TextStyle(
+                        color: Colors.red.shade700,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    if (auth.verifyAccountPin(pinController.text.trim())) {
+                      Navigator.pop(ctx, true);
+                    } else {
+                      setDialogState(() {
+                        pinError = 'Incorrect PIN.';
+                      });
+                    }
+                  },
+                  child: const Text('Verify'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+    pinController.dispose();
+    if (verified != true || !mounted) return;
+
+    // Destructive confirmation — require typing RESET.
+    final confirmController = TextEditingController();
+    String? confirmError;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setDialogState) {
+            return AlertDialog(
+              title: Row(
+                children: [
+                  Icon(Icons.warning_amber_rounded,
+                      color: Colors.red.shade700),
+                  const SizedBox(width: 8),
+                  const Text('Reset Progress?'),
+                ],
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'This will wipe ${profile.displayName}\'s XP, completed '
+                    'lessons, quiz scores, streaks, badges, and level unlocks. '
+                    'This cannot be undone.',
+                    style: const TextStyle(fontSize: 14),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Type RESET to confirm:',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: confirmController,
+                    autofocus: true,
+                    textCapitalization: TextCapitalization.characters,
+                    decoration: const InputDecoration(
+                      hintText: 'RESET',
+                      border: OutlineInputBorder(),
+                    ),
+                    onChanged: (_) {
+                      if (confirmError != null) {
+                        setDialogState(() {
+                          confirmError = null;
+                        });
+                      }
+                    },
+                  ),
+                  if (confirmError != null) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      confirmError!,
+                      style: TextStyle(
+                        color: Colors.red.shade700,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red.shade700,
+                    foregroundColor: Colors.white,
+                  ),
+                  onPressed: () {
+                    if (confirmController.text.trim().toUpperCase() ==
+                        'RESET') {
+                      Navigator.pop(ctx, true);
+                    } else {
+                      setDialogState(() {
+                        confirmError = 'Please type RESET exactly.';
+                      });
+                    }
+                  },
+                  child: const Text('Reset'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+    confirmController.dispose();
+    if (confirmed != true || !mounted) return;
+
+    // Perform the reset.
+    auth.resetProfileProgress(profile.id);
+    await context.read<ProgressService>().resetChildProgress();
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('${profile.displayName}\'s progress has been reset.'),
         backgroundColor: Colors.green,
       ),
     );
@@ -337,6 +705,68 @@ class _ParentSettingsScreenState extends State<ParentSettingsScreen> {
                     );
                   },
                 ),
+
+                // Parent Controls — PIN + reset child progress
+                _SectionCard(
+                  title: 'Parent Controls',
+                  icon: Icons.shield_outlined,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Protect settings with a parent PIN and reset your child\'s learning progress when needed.',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      ListTile(
+                        leading: Icon(
+                          account.hasAccountPin
+                              ? Icons.lock
+                              : Icons.lock_open_outlined,
+                          color: account.hasAccountPin
+                              ? Colors.green.shade700
+                              : Colors.orange.shade700,
+                        ),
+                        title: Text(
+                          account.hasAccountPin
+                              ? 'Change Parent PIN'
+                              : 'Set Parent PIN',
+                        ),
+                        subtitle: Text(
+                          account.hasAccountPin
+                              ? 'PIN is set — required to reset progress.'
+                              : 'No PIN set — tap to create one.',
+                        ),
+                        contentPadding: EdgeInsets.zero,
+                        onTap: () => _showPinSetupDialog(auth, account.hasAccountPin),
+                      ),
+                      const Divider(),
+                      ListTile(
+                        leading: Icon(
+                          Icons.restart_alt,
+                          color: Colors.red.shade700,
+                        ),
+                        title: const Text(
+                          'Reset Child Progress',
+                          style: TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        subtitle: Text(
+                          auth.currentProfile == null
+                              ? 'No profile selected.'
+                              : 'Wipe ${auth.currentProfile!.displayName}\'s XP, lessons, quizzes, and level unlocks.',
+                        ),
+                        contentPadding: EdgeInsets.zero,
+                        onTap: auth.currentProfile == null
+                            ? null
+                            : () => _showResetFlow(auth),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
 
                 // Cloud Backup
                 _SectionCard(

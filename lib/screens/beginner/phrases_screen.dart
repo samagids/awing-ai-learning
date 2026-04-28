@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:awing_ai_learning/data/awing_vocabulary.dart';
 import 'package:awing_ai_learning/services/pronunciation_service.dart';
+import 'package:awing_ai_learning/services/auth_service.dart';
+import 'package:awing_ai_learning/services/image_service.dart';
+import 'package:awing_ai_learning/components/pack_image.dart';
 
 /// Beginner-level screen for learning common Awing phrases & greetings.
 class PhrasesScreen extends StatefulWidget {
@@ -27,6 +31,9 @@ class _PhrasesScreenState extends State<PhrasesScreen> {
   void initState() {
     super.initState();
     _pronunciation.init();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<AuthService>().completeLesson('beginner_phrases');
+    });
   }
 
   List<AwingPhrase> get _phrases {
@@ -187,10 +194,27 @@ class _PhraseCardState extends State<_PhraseCard> {
               // Header row
               Row(
                 children: [
-                  CircleAvatar(
-                    radius: 20,
-                    backgroundColor: color.withOpacity(0.2),
-                    child: Icon(_categoryIcon(phrase.category), color: color, size: 22),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: PackImage.path(
+                      packPath: ImageService.phrasePackPath(phrase.awing),
+                      width: 56,
+                      height: 56,
+                      fit: BoxFit.cover,
+                      placeholder: Container(
+                        width: 56,
+                        height: 56,
+                        color: color.withOpacity(0.15),
+                      ),
+                      errorWidget: Container(
+                        width: 56,
+                        height: 56,
+                        color: color.withOpacity(0.2),
+                        alignment: Alignment.center,
+                        child: Icon(_categoryIcon(phrase.category),
+                            color: color, size: 28),
+                      ),
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -217,7 +241,7 @@ class _PhraseCardState extends State<_PhraseCard> {
               if (phrase.context != null) ...[
                 const SizedBox(height: 6),
                 Padding(
-                  padding: const EdgeInsets.only(left: 52),
+                  padding: const EdgeInsets.only(left: 68),
                   child: Text(
                     phrase.context!,
                     style: TextStyle(
@@ -231,14 +255,14 @@ class _PhraseCardState extends State<_PhraseCard> {
               // Translation (tap to reveal)
               AnimatedCrossFade(
                 firstChild: Padding(
-                  padding: const EdgeInsets.only(left: 52, top: 8),
+                  padding: const EdgeInsets.only(left: 68, top: 8),
                   child: Text(
                     'Tap to see translation',
                     style: TextStyle(fontSize: 13, color: Colors.grey.shade400),
                   ),
                 ),
                 secondChild: Padding(
-                  padding: const EdgeInsets.only(left: 52, top: 8),
+                  padding: const EdgeInsets.only(left: 68, top: 8),
                   child: Row(
                     children: [
                       Icon(Icons.translate, size: 18, color: Colors.green.shade600),

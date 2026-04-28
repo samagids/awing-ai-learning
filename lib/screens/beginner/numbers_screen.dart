@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:awing_ai_learning/data/awing_vocabulary.dart';
 import 'package:awing_ai_learning/services/pronunciation_service.dart';
+import 'package:awing_ai_learning/services/auth_service.dart';
 
 /// Beginner-level screen for learning Awing numbers 1-10.
 class NumbersScreen extends StatefulWidget {
@@ -18,10 +20,18 @@ class _NumbersScreenState extends State<NumbersScreen> {
   void initState() {
     super.initState();
     _pronunciation.init();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<AuthService>().completeLesson('beginner_numbers');
+    });
   }
+
+  // Only show base numbers 1-10 (difficulty 1)
+  List<AwingWord> get _beginnerNumbers =>
+      numbers.where((w) => w.difficulty == 1).toList();
 
   @override
   Widget build(BuildContext context) {
+    final baseNumbers = _beginnerNumbers;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Numbers'),
@@ -65,9 +75,9 @@ class _NumbersScreenState extends State<NumbersScreen> {
                 crossAxisSpacing: 12,
                 mainAxisSpacing: 12,
               ),
-              itemCount: numbers.length,
+              itemCount: baseNumbers.length,
               itemBuilder: (context, index) {
-                final word = numbers[index];
+                final word = baseNumbers[index];
                 final isSelected = _selectedIndex == index;
                 final digitValue = index + 1;
 
@@ -188,10 +198,11 @@ class _NumbersScreenState extends State<NumbersScreen> {
   }
 
   Future<void> _countAloud() async {
-    for (int i = 0; i < numbers.length; i++) {
+    final baseNumbers = _beginnerNumbers;
+    for (int i = 0; i < baseNumbers.length; i++) {
       if (!mounted) return;
       setState(() => _selectedIndex = i);
-      await _pronunciation.speakAwing(numbers[i].awing);
+      await _pronunciation.speakAwing(baseNumbers[i].awing);
       await Future.delayed(const Duration(milliseconds: 1200));
     }
   }

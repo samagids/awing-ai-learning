@@ -160,7 +160,7 @@ class AwingVowel {
 }
 
 const List<AwingVowel> awingVowels = [
-  AwingVowel(vowel: 'i', height: 'high', position: 'front', description: 'Like "ee" in "see"', exampleWord: 'pímə', exampleEnglish: 'see', hasLongForm: false),
+  AwingVowel(vowel: 'i', height: 'high', position: 'front', description: 'Like "ee" in "see"', exampleWord: 'pímə', exampleEnglish: 'believe', hasLongForm: false),
   AwingVowel(vowel: 'ɨ', height: 'high', position: 'central', description: 'Between "i" and "u" — lips neutral', exampleWord: 'yîkə', exampleEnglish: 'harden', hasLongForm: false),
   AwingVowel(vowel: 'u', height: 'high', position: 'back', description: 'Like "oo" in "food"', exampleWord: 'lúmə', exampleEnglish: 'bite', hasLongForm: true),
   AwingVowel(vowel: 'e', height: 'mid', position: 'front', description: 'Like "ay" in "say"', exampleWord: 'ndě', exampleEnglish: 'neck', hasLongForm: true),
@@ -349,8 +349,9 @@ const List<VerbTonePattern> verbTonePatterns = [
   VerbTonePattern(verb: 'ko', english: 'take', tonePattern: 'Low', tenseAspect: 'infinitive', example: 'ko ajúmə', exampleEnglish: 'to take something'),
   VerbTonePattern(verb: 'kô', english: 'take', tonePattern: 'Falling', tenseAspect: 'imperative', example: 'kô!', exampleEnglish: 'Take it!'),
   VerbTonePattern(verb: 'kó', english: 'take', tonePattern: 'High', tenseAspect: 'perfective', example: 'a kó ajúmə', exampleEnglish: 'he took something'),
-  VerbTonePattern(verb: 'nô', english: 'drink', tonePattern: 'Falling', tenseAspect: 'imperative', example: 'nô ndě!', exampleEnglish: 'Drink water!'),
-  VerbTonePattern(verb: 'nó', english: 'drink', tonePattern: 'High', tenseAspect: 'perfective', example: 'a nó ndě', exampleEnglish: 'he drank water'),
+  // CORRECTED ndě → nkǐə in 'drink water' examples — ndě does not mean water; correct word is nkǐə (rising tone) per dict (User-flagged Session 52)
+  VerbTonePattern(verb: 'nô', english: 'drink', tonePattern: 'Falling', tenseAspect: 'imperative', example: 'nô nkǐə!', exampleEnglish: 'Drink water!'),
+  VerbTonePattern(verb: 'nó', english: 'drink', tonePattern: 'High', tenseAspect: 'perfective', example: 'a nó nkǐə', exampleEnglish: 'he drank water'),
   VerbTonePattern(verb: 'fê', english: 'give', tonePattern: 'Falling', tenseAspect: 'imperative', example: 'fê pə!', exampleEnglish: 'Give me!'),
   VerbTonePattern(verb: 'fé', english: 'give', tonePattern: 'High', tenseAspect: 'perfective', example: 'a fé pə', exampleEnglish: 'he gave me'),
 ];

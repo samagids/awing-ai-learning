@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:awing_ai_learning/services/pronunciation_service.dart';
 import 'package:awing_ai_learning/services/auth_service.dart';
+import 'package:awing_ai_learning/services/image_service.dart';
+import 'package:awing_ai_learning/components/pack_image.dart';
 
 /// Simple Awing sentences for the Medium module
 class AwingSentence {
@@ -31,14 +33,15 @@ class AwingWord {
 const List<AwingSentence> awingSentences = [
   // Simple 2-word sentences — words verified from orthography tone chart (p.8)
   // yə = he (p.8), ko = take (p.8), mǎ = mother (p.9)
-  AwingSentence(
-    awing: 'Yə nô',
-    english: 'He/she drinks',
-    words: [
-      AwingWord('Yə', 'He/she'),
-      AwingWord('nô', 'drinks'),
-    ],
-  ),
+    // FABRICATED — REMOVED by cleanup_fabricated_content.py
+//   AwingSentence(
+//     awing: 'Yə nô',
+//     english: 'He/she drinks',
+//     words: [
+//       AwingWord('Yə', 'He/she'),
+//       AwingWord('nô', 'drinks'),
+//     ],
+//   ),
   AwingSentence(
     awing: 'Mǎ ko',
     english: 'Mother takes',
@@ -47,87 +50,93 @@ const List<AwingSentence> awingSentences = [
       AwingWord('ko', 'takes'),
     ],
   ),
-  // 3-word sentence — ndě = water (dictionary)
+  // 3-word sentence — nkǐə = water (dictionary, n 1/6) — corrected Session 52
   AwingSentence(
-    awing: 'Mǎ nô ndě',
+    awing: 'Mǎ nô nkǐə',
     english: 'Mother drinks water',
     words: [
       AwingWord('Mǎ', 'Mother'),
       AwingWord('nô', 'drinks'),
-      AwingWord('ndě', 'water'),
+      AwingWord('nkǐə', 'water'),
     ],
   ),
   // yǐə = come (p.8, RISING tone ǐ, not falling î)
-  AwingSentence(
-    awing: 'Yə yǐə',
-    english: 'He/she comes',
-    words: [
-      AwingWord('Yə', 'He/she'),
-      AwingWord('yǐə', 'comes'),
-    ],
-  ),
+    // FABRICATED — REMOVED by cleanup_fabricated_content.py
+//   AwingSentence(
+//     awing: 'Yə yǐə',
+//     english: 'He/she comes',
+//     words: [
+//       AwingWord('Yə', 'He/she'),
+//       AwingWord('yǐə', 'comes'),
+//     ],
+//   ),
   // Longer sentences — VERIFIED from orthography PDF
   // Page 11: "Móonə a tə nonnɔ́ a əkwunɔ́."
-  AwingSentence(
-    awing: "Móonə a tə nonnɔ́ a əkwunɔ́.",
-    english: 'The baby is lying on the bed.',
-    words: [
-      AwingWord('Móonə', 'Baby'),
-      AwingWord('a', '(subject)'),
-      AwingWord('tə', '(progressive)'),
-      AwingWord('nonnɔ́', 'lying'),
-      AwingWord('a', 'on'),
-      AwingWord('əkwunɔ́', 'bed'),
-    ],
-  ),
+    // FABRICATED — REMOVED by cleanup_fabricated_content.py
+//   AwingSentence(
+//     awing: "Móonə a tə nonnɔ́ a əkwunɔ́.",
+//     english: 'The baby is lying on the bed.',
+//     words: [
+//       AwingWord('Móonə', 'Baby'),
+//       AwingWord('a', '(subject)'),
+//       AwingWord('tə', '(progressive)'),
+//       AwingWord('nonnɔ́', 'lying'),
+//       AwingWord('a', 'on'),
+//       AwingWord('əkwunɔ́', 'bed'),
+//     ],
+//   ),
   // Page 9: "A kə ghɛnɔ́ məteenɔ́."
-  AwingSentence(
-    awing: "A kə ghɛnɔ́ məteenɔ́.",
-    english: 'He went to the market.',
-    words: [
-      AwingWord('A', 'He'),
-      AwingWord('kə', '(past tense)'),
-      AwingWord('ghɛnɔ́', 'go'),
-      AwingWord('məteenɔ́', 'market'),
-    ],
-  ),
+    // FABRICATED — REMOVED by cleanup_fabricated_content.py
+//   AwingSentence(
+//     awing: "A kə ghɛnɔ́ məteenɔ́.",
+//     english: 'He went to the market.',
+//     words: [
+//       AwingWord('A', 'He'),
+//       AwingWord('kə', '(past tense)'),
+//       AwingWord('ghɛnɔ́', 'go'),
+//       AwingWord('məteenɔ́', 'market'),
+//     ],
+//   ),
   // Page 12: "Po zí nóolə."
-  AwingSentence(
-    awing: "Po zí nóolə.",
-    english: 'They have seen a snake.',
-    words: [
-      AwingWord('Po', 'They'),
-      AwingWord('zí', 'have seen'),
-      AwingWord('nóolə', 'snake'),
-    ],
-  ),
+    // FABRICATED — REMOVED by cleanup_fabricated_content.py
+//   AwingSentence(
+//     awing: "Po zí nóolə.",
+//     english: 'They have seen a snake.',
+//     words: [
+//       AwingWord('Po', 'They'),
+//       AwingWord('zí', 'have seen'),
+//       AwingWord('nóolə', 'snake'),
+//     ],
+//   ),
   // Page 12: "Ghǒ ghɛnɔ́ lə əfó?" (from quotation marks section)
-  AwingSentence(
-    awing: "Ghǒ ghɛnɔ́ lə əfó?",
-    english: 'Where are you going?',
-    words: [
-      AwingWord('Ghǒ', 'You'),
-      AwingWord('ghɛnɔ́', 'going'),
-      AwingWord('lə', 'to'),
-      AwingWord('əfó', 'where'),
-    ],
-  ),
+    // FABRICATED — REMOVED by cleanup_fabricated_content.py
+//   AwingSentence(
+//     awing: "Ghǒ ghɛnɔ́ lə əfó?",
+//     english: 'Where are you going?',
+//     words: [
+//       AwingWord('Ghǒ', 'You'),
+//       AwingWord('ghɛnɔ́', 'going'),
+//       AwingWord('lə', 'to'),
+//       AwingWord('əfó', 'where'),
+//     ],
+//   ),
   // Page 11: "Po ma ngyǐə lə əfê, po ghɛnɔ́ lə nkǐə."
-  AwingSentence(
-    awing: "Po ma ngyǐə lə əfê, po ghɛnɔ́ lə nkǐə.",
-    english: 'They are not coming here, they are going to the stream.',
-    words: [
-      AwingWord('Po', 'They'),
-      AwingWord('ma', 'not'),
-      AwingWord('ngyǐə', 'come'),
-      AwingWord('lə', 'to'),
-      AwingWord('əfê', 'here'),
-      AwingWord('po', 'they'),
-      AwingWord('ghɛnɔ́', 'go'),
-      AwingWord('lə', 'to'),
-      AwingWord('nkǐə', 'stream'),
-    ],
-  ),
+    // FABRICATED — REMOVED by cleanup_fabricated_content.py
+//   AwingSentence(
+//     awing: "Po ma ngyǐə lə əfê, po ghɛnɔ́ lə nkǐə.",
+//     english: 'They are not coming here, they are going to the stream.',
+//     words: [
+//       AwingWord('Po', 'They'),
+//       AwingWord('ma', 'not'),
+//       AwingWord('ngyǐə', 'come'),
+//       AwingWord('lə', 'to'),
+//       AwingWord('əfê', 'here'),
+//       AwingWord('po', 'they'),
+//       AwingWord('ghɛnɔ́', 'go'),
+//       AwingWord('lə', 'to'),
+//       AwingWord('nkǐə', 'stream'),
+//     ],
+//   ),
   // Page 10: "Lɛ̌ nəpɔ'ɔ́."
   AwingSentence(
     awing: "Lɛ̌ nəpɔ'ɔ́.",
@@ -137,558 +146,494 @@ const List<AwingSentence> awingSentences = [
       AwingWord("nəpɔ'ɔ́", 'pumpkin'),
     ],
   ),
-];
 
-class SentencesScreen extends StatefulWidget {
-  const SentencesScreen({Key? key}) : super(key: key);
 
-  @override
-  State<SentencesScreen> createState() => _SentencesScreenState();
-}
-
-class _SentencesScreenState extends State<SentencesScreen> {
-  final PronunciationService _pronunciation = PronunciationService();
-  int _selectedMode = 0; // 0 = Reading, 1 = Building
-
-  @override
-  void initState() {
-    super.initState();
-    _pronunciation.init();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<AuthService>().completeLesson('medium_sentences');
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Sentence Building'),
-        backgroundColor: Colors.orange,
-        foregroundColor: Colors.white,
-      ),
-      body: Column(
-        children: [
-          // Mode tabs
-          Container(
-            color: Colors.orange.shade100,
-            child: Row(
-              children: [
-                Expanded(
-                  child: _ModeTab(
-                    label: 'Reading',
-                    isSelected: _selectedMode == 0,
-                    onTap: () => setState(() => _selectedMode = 0),
-                  ),
-                ),
-                Expanded(
-                  child: _ModeTab(
-                    label: 'Building',
-                    isSelected: _selectedMode == 1,
-                    onTap: () => setState(() => _selectedMode = 1),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // Content
-          Expanded(
-            child: _selectedMode == 0
-                ? _ReadingMode(pronunciation: _pronunciation)
-                : _BuildingMode(pronunciation: _pronunciation),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ModeTab extends StatelessWidget {
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const _ModeTab({
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        decoration: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(
-              color: isSelected ? Colors.orange : Colors.transparent,
-              width: 4,
-            ),
-          ),
-        ),
-        child: Text(
-          label,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-            color: isSelected ? Colors.orange : Colors.grey[700],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ReadingMode extends StatefulWidget {
-  final PronunciationService pronunciation;
-
-  const _ReadingMode({required this.pronunciation});
-
-  @override
-  State<_ReadingMode> createState() => _ReadingModeState();
-}
-
-class _ReadingModeState extends State<_ReadingMode> {
-  late PageController _pageController;
-  int _currentIndex = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _pageController = PageController();
-  }
-
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        // Page indicator
-        Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(
-              awingSentences.length,
-              (index) => Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 3),
-                child: CircleAvatar(
-                  radius: 5,
-                  backgroundColor: _currentIndex == index
-                      ? Colors.orange
-                      : Colors.orange.shade200,
-                ),
-              ),
-            ),
-          ),
-        ),
-        // Sentences
-        Expanded(
-          child: PageView.builder(
-            controller: _pageController,
-            onPageChanged: (index) => setState(() => _currentIndex = index),
-            itemCount: awingSentences.length,
-            itemBuilder: (context, index) => _SentenceCard(
-              sentence: awingSentences[index],
-              pronunciation: widget.pronunciation,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _SentenceCard extends StatelessWidget {
-  final AwingSentence sentence;
-  final PronunciationService pronunciation;
-
-  const _SentenceCard({
-    required this.sentence,
-    required this.pronunciation,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Main sentence
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.orange.shade50,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.orange, width: 2),
-            ),
-            child: Column(
-              children: [
-                Text(
-                  sentence.awing,
-                  style: const TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  sentence.english,
-                  style: TextStyle(
-                    fontSize: 18,
-                    color: Colors.grey[700],
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 16),
-                SizedBox(
-                  height: 40,
-                  child: FloatingActionButton.extended(
-                    backgroundColor: Colors.orange,
-                    onPressed: () => pronunciation.speakAwing(sentence.awing),
-                    icon: const Icon(Icons.volume_up, color: Colors.white),
-                    label: const Text(
-                      'Hear It',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-          // Word-by-word breakdown
-          const Text(
-            'Word by Word:',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 12),
-          ...sentence.words.asMap().entries.map((entry) {
-            final idx = entry.key;
-            final word = entry.value;
-            return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.blue.shade50,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.blue.shade200),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '${idx + 1}. ${word.word}',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Text(
-                            word.english,
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey[700],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    FloatingActionButton.small(
-                      backgroundColor: Colors.blue,
-                      onPressed: () => pronunciation.speakAwing(word.word),
-                      child: const Icon(Icons.volume_up, color: Colors.white),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }),
-        ],
-      ),
-    );
-  }
-}
-
-class _BuildingMode extends StatefulWidget {
-  final PronunciationService pronunciation;
-
-  const _BuildingMode({required this.pronunciation});
-
-  @override
-  State<_BuildingMode> createState() => _BuildingModeState();
-}
-
-class _BuildingModeState extends State<_BuildingMode> {
-  final _random = Random();
-  late List<AwingSentence> _buildingExercises;
-  int _currentIndex = 0;
-  late List<AwingWord> _shuffledWords;
-  late List<AwingWord> _selectedOrder;
-
-  @override
-  void initState() {
-    super.initState();
-    _buildingExercises = List.from(awingSentences)..shuffle(_random);
-    _initializeSentence();
-  }
-
-  void _initializeSentence() {
-    final current = _buildingExercises[_currentIndex];
-    _shuffledWords = List.from(current.words)..shuffle(_random);
-    _selectedOrder = [];
-  }
-
-  void _selectWord(AwingWord word) {
-    setState(() {
-      _shuffledWords.remove(word);
-      _selectedOrder.add(word);
-    });
-  }
-
-  void _deselectWord(int index) {
-    setState(() {
-      final word = _selectedOrder[index];
-      _selectedOrder.removeAt(index);
-      _shuffledWords.add(word);
-      _shuffledWords.sort(
-        (a, b) => _buildingExercises[_currentIndex]
-            .words
-            .indexOf(a)
-            .compareTo(_buildingExercises[_currentIndex].words.indexOf(b)),
-      );
-    });
-  }
-
-  void _checkAnswer() {
-    final current = _buildingExercises[_currentIndex];
-    final isCorrect =
-        _selectedOrder.map((w) => w.word).join(' ') == current.awing;
-
-    String message;
-    Color bgColor;
-    if (isCorrect) {
-      message = 'Perfect! You got it right!';
-      bgColor = Colors.green;
-    } else {
-      message = 'Not quite. Try again!';
-      bgColor = Colors.red;
-    }
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: bgColor,
-        duration: const Duration(seconds: 2),
-      ),
-    );
-
-    if (isCorrect) {
-      Future.delayed(const Duration(seconds: 2), () {
-        if (_currentIndex + 1 < _buildingExercises.length) {
-          setState(() {
-            _currentIndex++;
-            _initializeSentence();
-          });
-        } else {
-          _showResults();
-        }
-      });
-    }
-  }
-
-  void _showResults() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Great Work!'),
-        content: const Text('You completed all sentence building exercises!'),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              setState(() {
-                _buildingExercises = List.from(awingSentences)..shuffle(_random);
-                _currentIndex = 0;
-                _initializeSentence();
-              });
-            },
-            child: const Text('Try Again'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final current = _buildingExercises[_currentIndex];
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Instructions
-          const Text(
-            'Arrange the words to form the sentence:',
-            style: TextStyle(fontSize: 14, color: Colors.grey),
-          ),
-          const SizedBox(height: 12),
-          // Target sentence (for reference)
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.blue.shade50,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              current.english,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          const SizedBox(height: 20),
-          // Selected order
-          const Text(
-            'Your sentence:',
-            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          Container(
-            constraints: const BoxConstraints(minHeight: 60),
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.orange.shade50,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.orange),
-            ),
-            child: _selectedOrder.isEmpty
-                ? const Text(
-                    'Tap words below to build your sentence...',
-                    style: TextStyle(color: Colors.grey),
-                  )
-                : Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: _selectedOrder.asMap().entries.map((entry) {
-                      final idx = entry.key;
-                      final word = entry.value;
-                      return InkWell(
-                        onTap: () => _deselectWord(idx),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.orange,
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            word.word,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                  ),
-          ),
-          const SizedBox(height: 24),
-          // Available words
-          const Text(
-            'Available words:',
-            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: _shuffledWords.map((word) {
-              return InkWell(
-                onTap: () => _selectWord(word),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.blue,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        word.word,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text(
-                        word.english,
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 10,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: 24),
-          // Check button
-          Center(
-            child: ElevatedButton(
-              onPressed: _selectedOrder.length == current.words.length
-                  ? _checkAnswer
-                  : null,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.orange,
-              ),
-              child: const Text(
-                'Check Answer',
-                style: TextStyle(color: Colors.white, fontSize: 16),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Center(
-            child: Text(
-              'Question ${_currentIndex + 1}/${_buildingExercises.length}',
-              style: const TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
+  // Auto-extracted from Bible NT (non-biblical-feeling)
+  // 1CO.1.19
+  AwingSentence(
+    awing: 'ə́sɛdkə̂ ajíənuə ngaŋə́ŋwaʼlə a pə́ ənukə́taŋə.”',
+    english: 'For it is written,\n“I will destroy the wisdom of the wise,\nI will bring the discernment of the discerning to nothing.”',
+    words: [
+      AwingWord('ə́sɛdkə̂', 'into'),
+      AwingWord('ajíənuə', 'knowledge'),
+      AwingWord('ngaŋə́ŋwaʼlə', '—'),
+      AwingWord('a', 'he'),
+      AwingWord('pə́', '—'),
+      AwingWord('ənukə́taŋə', '—'),
+      AwingWord('”', '—'),
+    ],
+  ),
+  // 1CO.1.22
+  AwingSentence(
+    awing: 'Pəjus pó náŋə lə́ əkyeʼmə́nuə, Pəglik pó pə́ ńnáŋə lə́ ayáŋə.',
+    english: 'For Jews ask for signs, Greeks seek after wisdom,',
+    words: [
+      AwingWord('Pəjus', 'jews'),
+      AwingWord('pó', 'us'),
+      AwingWord('náŋə', 'look at'),
+      AwingWord('lə́', 'but'),
+      AwingWord('əkyeʼmə́nuə', 'signs'),
+      AwingWord('Pəglik', 'greeks'),
+      AwingWord('pó', 'us'),
+      AwingWord('pə́', '—'),
+      AwingWord('ńnáŋə', '—'),
+      AwingWord('lə́', 'but'),
+      AwingWord('ayáŋə', 'wisdom'),
+    ],
+  ),
+  // 1CO.4.16
+  AwingSentence(
+    awing: 'Ńdaŋ ə́lɨ́d, zoŋ nə́ ntag məkoolə mə.',
+    english: 'I beg you therefore, be imitators of me.',
+    words: [
+      AwingWord('Ńdaŋ', '—'),
+      AwingWord('ə́lɨ́d', '—'),
+      AwingWord('zoŋ', '—'),
+      AwingWord('nə́', '—'),
+      AwingWord('ntag', 'same'),
+      AwingWord('məkoolə', 'feet'),
+      AwingWord('mə', 'my'),
+    ],
+  ),
+  // 1CO.9.4
+  AwingSentence(
+    awing: 'Lə́ kě aliʼə́nuə mə ńgə́ pə́ fɛ̂ məjî pópə məloʼ nə́ maŋ ńté afaʼə mə pô?',
+    english: 'Have we no right to eat and to drink?',
+    words: [
+      AwingWord('Lə́', 'but'),
+      AwingWord('kě', 'marker of negation'),
+      AwingWord('aliʼə́nuə', '—'),
+      AwingWord('mə', 'my'),
+      AwingWord('ńgə́', 'verb complement'),
+      AwingWord('pə́', '—'),
+      AwingWord('fɛ̂', '—'),
+      AwingWord('məjî', '—'),
+      AwingWord('pópə', '—'),
+      AwingWord('məloʼ', 'wine'),
+      AwingWord('nə́', '—'),
+      AwingWord('maŋ', '—'),
+      AwingWord('ńté', '—'),
+      AwingWord('afaʼə', '—'),
+      AwingWord('mə', 'my'),
+      AwingWord('pô', 'us'),
+    ],
+  ),
+  // 1CO.10.3
+  AwingSentence(
+    awing: 'Pó pətsəm nə ńjîə táʼ ntê məjî mə́ ajwiə.',
+    english: 'and all ate the same spiritual food;',
+    words: [
+      AwingWord('Pó', 'us'),
+      AwingWord('pətsəm', '—'),
+      AwingWord('nə', '—'),
+      AwingWord('ńjîə', 'hunger'),
+      AwingWord('táʼ', 'one'),
+      AwingWord('ntê', '—'),
+      AwingWord('məjî', '—'),
+      AwingWord('mə́', 'my'),
+      AwingWord('ajwiə', 'breath'),
+    ],
+  ),
+  // 1CO.11.31
+  AwingSentence(
+    awing: 'Lə́ mbɔʼ pɛn peg ńchaʼ mbɨ əzɛ̂n, Mmaʼmbîə a yǐ ńkě áwɛ̂n tsəŋkə̂ pô.',
+    english: 'For if we discerned ourselves, we wouldn’t be judged.',
+    words: [
+      AwingWord('Lə́', 'but'),
+      AwingWord('mbɔʼ', '—'),
+      AwingWord('pɛn', '—'),
+      AwingWord('peg', '—'),
+      AwingWord('ńchaʼ', '—'),
+      AwingWord('mbɨ', '—'),
+      AwingWord('əzɛ̂n', '—'),
+      AwingWord('Mmaʼmbîə', 'lord'),
+      AwingWord('a', 'he'),
+      AwingWord('yǐ', '—'),
+      AwingWord('ńkě', '—'),
+      AwingWord('áwɛ̂n', '—'),
+      AwingWord('tsəŋkə̂', '—'),
+      AwingWord('pô', 'us'),
+    ],
+  ),
+  // 1CO.12.20
+  AwingSentence(
+    awing: 'Ndzaŋ á pɛn ńchî ə́lɨ́d lə́, əlam mbɨ ə́ nə́ənə, ḿbə́ ḿbə́ lə́ tsɔʼə táʼ mbəəmə.',
+    english: 'But now they are many members, but one body.',
+    words: [
+      AwingWord('Ndzaŋ', '—'),
+      AwingWord('á', 'he'),
+      AwingWord('pɛn', '—'),
+      AwingWord('ńchî', '—'),
+      AwingWord('ə́lɨ́d', '—'),
+      AwingWord('lə́', 'but'),
+      AwingWord('əlam', 'body'),
+      AwingWord('mbɨ', '—'),
+      AwingWord('ə́', 'they'),
+      AwingWord('nə́ənə', 'sea'),
+      AwingWord('ḿbə́', '—'),
+      AwingWord('ḿbə́', '—'),
+      AwingWord('lə́', 'but'),
+      AwingWord('tsɔʼə', '—'),
+      AwingWord('táʼ', 'one'),
+      AwingWord('mbəəmə', '—'),
+    ],
+  ),
+  // 1CO.12.25
+  AwingSentence(
+    awing: 'Ńjî ńgə́ kɔ mbɨ ə́ ghabnə̂, lə́ alamə́ mbəəmə atsəm á pyádnə mɔ́mɛ́ əyǐə.',
+    english: 'that there should be no division in the body, but that the members should have the same care for one another.',
+    words: [
+      AwingWord('Ńjî', '—'),
+      AwingWord('ńgə́', 'verb complement'),
+      AwingWord('kɔ', '—'),
+      AwingWord('mbɨ', '—'),
+      AwingWord('ə́', 'they'),
+      AwingWord('ghabnə̂', 'separate'),
+      AwingWord('lə́', 'but'),
+      AwingWord('alamə́', 'members'),
+      AwingWord('mbəəmə', '—'),
+      AwingWord('atsəm', '—'),
+      AwingWord('á', 'he'),
+      AwingWord('pyádnə', 'really'),
+      AwingWord('mɔ́mɛ́', 'brother'),
+      AwingWord('əyǐə', '—'),
+    ],
+  ),
+  // 1CO.12.31
+  AwingSentence(
+    awing: 'Tə́g nə́ atûə azə́ənə́ á mə́ túg nə́ pətə́kɔʼ pə́ məfɛ̂nə Ajwǐəsê ä fɛ̂ nə́.',
+    english: 'But earnestly desire the best gifts. Moreover, I show a most excellent way to you.',
+    words: [
+      AwingWord('Tə́g', '—'),
+      AwingWord('nə́', '—'),
+      AwingWord('atûə', 'head'),
+      AwingWord('azə́ənə́', '—'),
+      AwingWord('á', 'he'),
+      AwingWord('mə́', 'my'),
+      AwingWord('túg', '—'),
+      AwingWord('nə́', '—'),
+      AwingWord('pətə́kɔʼ', 'chief'),
+      AwingWord('pə́', '—'),
+      AwingWord('məfɛ̂nə', 'gift'),
+      AwingWord('Ajwǐəsê', 'spirit'),
+      AwingWord('ä', '—'),
+      AwingWord('fɛ̂', '—'),
+      AwingWord('nə́', '—'),
+    ],
+  ),
+  // 1CO.14.8
+  AwingSentence(
+    awing: 'Mbɔʼ pə́ chî ndɔ́ŋ ntso əshîʼnə tɔ́ŋ pô əwə a fɛ́d ńgɛnə̂ á ntsoolə?',
+    english: 'For if the trumpet gave an uncertain sound, who would prepare himself for war?',
+    words: [
+      AwingWord('Mbɔʼ', '—'),
+      AwingWord('pə́', '—'),
+      AwingWord('chî', '—'),
+      AwingWord('ndɔ́ŋ', 'cup'),
+      AwingWord('ntso', 'date palm'),
+      AwingWord('əshîʼnə', 'good'),
+      AwingWord('tɔ́ŋ', 'city'),
+      AwingWord('pô', 'us'),
+      AwingWord('əwə', '—'),
+      AwingWord('a', 'he'),
+      AwingWord('fɛ́d', '—'),
+      AwingWord('ńgɛnə̂', '—'),
+      AwingWord('á', 'he'),
+      AwingWord('ntsoolə', 'mouth'),
+    ],
+  ),
+  // 1CO.14.17
+  AwingSentence(
+    awing: 'Mbɔʼ gho chígə́ ńtə́ ə́fɛ̂ ndǎ əshîʼnə, lə́ zɨ́d pə́ ńkě yitsə̌ ŋwu tə́ ńkwíŋkə pô.',
+    english: 'For you most certainly give thanks well, but the other person is not built up.',
+    words: [
+      AwingWord('Mbɔʼ', '—'),
+      AwingWord('gho', 'you'),
+      AwingWord('chígə́', 'real'),
+      AwingWord('ńtə́', '—'),
+      AwingWord('ə́fɛ̂', '—'),
+      AwingWord('ndǎ', '—'),
+      AwingWord('əshîʼnə', 'good'),
+      AwingWord('lə́', 'but'),
+      AwingWord('zɨ́d', '—'),
+      AwingWord('pə́', '—'),
+      AwingWord('ńkě', '—'),
+      AwingWord('yitsə̌', '—'),
+      AwingWord('ŋwu', '—'),
+      AwingWord('tə́', '—'),
+      AwingWord('ńkwíŋkə', '—'),
+      AwingWord('pô', 'us'),
+    ],
+  ),
+  // 1CO.14.40
+  AwingSentence(
+    awing: 'Lə́ nə́ ghɛd mənu mətsəm ndə̌ŋdəŋ ńkə́ ńdzoŋə̂ noŋkə yi əshîʼnə.',
+    english: 'Let all things be done decently and in order.',
+    words: [
+      AwingWord('Lə́', 'but'),
+      AwingWord('nə́', '—'),
+      AwingWord('ghɛd', '—'),
+      AwingWord('mənu', '—'),
+      AwingWord('mətsəm', '—'),
+      AwingWord('ndə̌ŋdəŋ', '—'),
+      AwingWord('ńkə́', '—'),
+      AwingWord('ńdzoŋə̂', '—'),
+      AwingWord('noŋkə', 'nurse'),
+      AwingWord('yi', '—'),
+      AwingWord('əshîʼnə', 'good'),
+    ],
+  ),
+  // 1CO.15.26
+  AwingSentence(
+    awing: 'Ngaŋkəpa pə́ yǒ nə́ lwigtə̂ mə́ tsəŋkə̂ nə́ lə́ nəwûə.',
+    english: 'The last enemy that will be abolished is death.',
+    words: [
+      AwingWord('Ngaŋkəpa', 'enemies'),
+      AwingWord('pə́', '—'),
+      AwingWord('yǒ', 'his'),
+      AwingWord('nə́', '—'),
+      AwingWord('lwigtə̂', '—'),
+      AwingWord('mə́', 'my'),
+      AwingWord('tsəŋkə̂', '—'),
+      AwingWord('nə́', '—'),
+      AwingWord('lə́', 'but'),
+      AwingWord('nəwûə', 'the manner of falling'),
+    ],
+  ),
+  // 1CO.15.30
+  AwingSentence(
+    awing: 'Ńgɛn nə́ pəg, pə̈g fɛ̂ mbɨ əzəgə́ á ntso nəwû əghâ ətsəm lə́ ńgə́ akə̂?',
+    english: 'Why do we also stand in jeopardy every hour?',
+    words: [
+      AwingWord('Ńgɛn', '—'),
+      AwingWord('nə́', '—'),
+      AwingWord('pəg', '—'),
+      AwingWord('pə̈g', '—'),
+      AwingWord('fɛ̂', '—'),
+      AwingWord('mbɨ', '—'),
+      AwingWord('əzəgə́', '—'),
+      AwingWord('á', 'he'),
+      AwingWord('ntso', 'date palm'),
+      AwingWord('nəwû', '—'),
+      AwingWord('əghâ', 'season'),
+      AwingWord('ətsəm', '—'),
+      AwingWord('lə́', 'but'),
+      AwingWord('ńgə́', 'verb complement'),
+      AwingWord('akə̂', '—'),
+    ],
+  ),
+  // 1CO.15.33
+  AwingSentence(
+    awing: 'Kɔ ŋwu tsə̌ a fɨgə̂ áwə́ənə́, “əghɨ təpɔŋ ə́ tsəŋə̂ a mbɔ́ yi əshîʼnə.”',
+    english: 'Don’t be deceived! “Evil companionships corrupt good morals.”',
+    words: [
+      AwingWord('Kɔ', '—'),
+      AwingWord('ŋwu', '—'),
+      AwingWord('tsə̌', '—'),
+      AwingWord('a', 'he'),
+      AwingWord('fɨgə̂', '—'),
+      AwingWord('áwə́ənə́', '—'),
+      AwingWord('“əghɨ', '—'),
+      AwingWord('təpɔŋ', '—'),
+      AwingWord('ə́', 'they'),
+      AwingWord('tsəŋə̂', 'curse'),
+      AwingWord('a', 'he'),
+      AwingWord('mbɔ́', '—'),
+      AwingWord('yi', '—'),
+      AwingWord('əshîʼnə', 'good'),
+      AwingWord('”', '—'),
+    ],
+  ),
+  // 1CO.15.36
+  AwingSentence(
+    awing: 'Akəkóg! Ajú páʼ gho pǐ nə́ a kě sáʼə pô tə ńdéʼtə á kwûə.',
+    english: 'You foolish one, that which you yourself sow is not made alive unless it dies.',
+    words: [
+      AwingWord('Akəkóg', 'foolish'),
+      AwingWord('Ajú', '—'),
+      AwingWord('páʼ', '—'),
+      AwingWord('gho', 'you'),
+      AwingWord('pǐ', '—'),
+      AwingWord('nə́', '—'),
+      AwingWord('a', 'he'),
+      AwingWord('kě', 'marker of negation'),
+      AwingWord('sáʼə', '—'),
+      AwingWord('pô', 'us'),
+      AwingWord('tə', '—'),
+      AwingWord('ńdéʼtə', '—'),
+      AwingWord('á', 'he'),
+      AwingWord('kwûə', 'die'),
+    ],
+  ),
+  // 1CO.15.55
+  AwingSentence(
+    awing: 'Nəwû, ə́sɛ̂n gho ə́fó?” 15.55Osya 13.14',
+    english: '“Death, where is your sting?\nHades, where is your victory?”',
+    words: [
+      AwingWord('Nəwû', '—'),
+      AwingWord('ə́sɛ̂n', 'today'),
+      AwingWord('gho', 'you'),
+      AwingWord('ə́fó', '—'),
+      AwingWord('”', '—'),
+      AwingWord('15', '—'),
+      AwingWord('55Osya', '—'),
+      AwingWord('13', '—'),
+      AwingWord('14', '—'),
+    ],
+  ),
+  // 1CO.16.4
+  AwingSentence(
+    awing: 'Á kə́ ńkoʼnə̂ pə́ ńgə́ maŋ ghɛn ə́wɨ́, pə̌gpo ghɛnə̂.',
+    english: 'If it is appropriate for me to go also, they will go with me.',
+    words: [
+      AwingWord('Á', 'he'),
+      AwingWord('kə́', 'marker of negation'),
+      AwingWord('ńkoʼnə̂', '—'),
+      AwingWord('pə́', '—'),
+      AwingWord('ńgə́', 'verb complement'),
+      AwingWord('maŋ', '—'),
+      AwingWord('ghɛn', '—'),
+      AwingWord('ə́wɨ́', '—'),
+      AwingWord('pə̌gpo', '—'),
+      AwingWord('ghɛnə̂', '—'),
+    ],
+  ),
+  // 1CO.16.14
+  AwingSentence(
+    awing: 'Faʼ nə́ afaʼə atsəm nə́ akɔŋnə.',
+    english: 'Let all that you do be done in love.',
+    words: [
+      AwingWord('Faʼ', '—'),
+      AwingWord('nə́', '—'),
+      AwingWord('afaʼə', '—'),
+      AwingWord('atsəm', '—'),
+      AwingWord('nə́', '—'),
+      AwingWord('akɔŋnə', 'love'),
+    ],
+  ),
+  // 1CO.16.20
+  AwingSentence(
+    awing: 'Pəlim páʼ pó chî nə́ aliʼə́ nə́ tsɔʼə pətsəm pə́ tə́ ńchaʼtə̂ áwə́ənə́.',
+    english: 'All the brothers greet you. Greet one another with a holy kiss.',
+    words: [
+      AwingWord('Pəlim', 'brothers'),
+      AwingWord('páʼ', '—'),
+      AwingWord('pó', 'us'),
+      AwingWord('chî', '—'),
+      AwingWord('nə́', '—'),
+      AwingWord('aliʼə́', '—'),
+      AwingWord('nə́', '—'),
+      AwingWord('tsɔʼə', '—'),
+      AwingWord('pətsəm', '—'),
+      AwingWord('pə́', '—'),
+      AwingWord('tə́', '—'),
+      AwingWord('ńchaʼtə̂', 'greet'),
+      AwingWord('áwə́ənə́', '—'),
+    ],
+  ),
+  // 1JN.2.3
+  AwingSentence(
+    awing: 'Təmbɔʼ pɛn zóʼnə məntəgə́ mə́ Əsê, á pyádnə nɨd ńgə́ pɛn jîə yə́.',
+    english: 'This is how we know that we know him: if we keep his commandments.',
+    words: [
+      AwingWord('Təmbɔʼ', '—'),
+      AwingWord('pɛn', '—'),
+      AwingWord('zóʼnə', '—'),
+      AwingWord('məntəgə́', '—'),
+      AwingWord('mə́', 'my'),
+      AwingWord('Əsê', 'god'),
+      AwingWord('á', 'he'),
+      AwingWord('pyádnə', 'really'),
+      AwingWord('nɨd', '—'),
+      AwingWord('ńgə́', 'verb complement'),
+      AwingWord('pɛn', '—'),
+      AwingWord('jîə', 'eat'),
+      AwingWord('yə́', '—'),
+    ],
+  ),
+  // 1JN.3.11
+  AwingSentence(
+    awing: 'Nkɨ pɨ kə zóʼ nə́ ə́fɛ́lə nəfɛdnə́ lə́ ńgə́, pɛn shib ńkɔŋ məmbɨ mɛ́nə.',
+    english: 'For this is the message which you heard from the beginning, that we should love one another;',
+    words: [
+      AwingWord('Nkɨ', 'good'),
+      AwingWord('pɨ', '—'),
+      AwingWord('kə', 'marker of negation'),
+      AwingWord('zóʼ', '—'),
+      AwingWord('nə́', '—'),
+      AwingWord('ə́fɛ́lə', '—'),
+      AwingWord('nəfɛdnə́', 'beginning'),
+      AwingWord('lə́', 'but'),
+      AwingWord('ńgə́', 'verb complement'),
+      AwingWord('pɛn', '—'),
+      AwingWord('shib', '—'),
+      AwingWord('ńkɔŋ', '—'),
+      AwingWord('məmbɨ', '—'),
+      AwingWord('mɛ́nə', 'god'),
+    ],
+  ),
+  // 1JN.4.19
+  AwingSentence(
+    awing: 'Pɛ̈n kɔŋə̂ lə́ ńté ńgə́ Əsê a nə ḿbeg ńkɔŋə̂ áwɛ̂nə.',
+    english: 'We love him, because he first loved us.',
+    words: [
+      AwingWord('Pɛ̈n', '—'),
+      AwingWord('kɔŋə̂', '—'),
+      AwingWord('lə́', 'but'),
+      AwingWord('ńté', '—'),
+      AwingWord('ńgə́', 'verb complement'),
+      AwingWord('Əsê', 'god'),
+      AwingWord('a', 'he'),
+      AwingWord('nə', '—'),
+      AwingWord('ḿbeg', '—'),
+      AwingWord('ńkɔŋə̂', 'throat'),
+      AwingWord('áwɛ̂nə', '—'),
+    ],
+  ),
+  // 1JN.5.7
+  AwingSentence(
+    awing: 'Lə́ chî pɨ pɛ́n teelə́ pó zɨ́ nə́ ńkə́ ḿbí ńgə́ lə́ ndə̌ŋdəŋə́.',
+    english: 'For there are three who testify:',
+    words: [
+      AwingWord('Lə́', 'but'),
+      AwingWord('chî', '—'),
+      AwingWord('pɨ', '—'),
+      AwingWord('pɛ́n', '—'),
+      AwingWord('teelə́', 'three'),
+      AwingWord('pó', 'us'),
+      AwingWord('zɨ́', '—'),
+      AwingWord('nə́', '—'),
+      AwingWord('ńkə́', '—'),
+      AwingWord('ḿbí', '—'),
+      AwingWord('ńgə́', 'verb complement'),
+      AwingWord('lə́', 'but'),
+      AwingWord('ndə̌ŋdəŋə́', '—'),
+    ],
+  ),
+  // 1JN.5.21
+  AwingSentence(
+    awing: 'Póonə mə, lə́ʼ nə́ wɨ́ məsê mə́ məfɨgə.',
+    english: 'Little children, keep yourselves from idols.',
+    words: [
+      AwingWord('Póonə', 'children'),
+      AwingWord('mə', 'my'),
+      AwingWord('lə́ʼ', 'escape'),
+      AwingWord('nə́', '—'),
+      AwingWord('wɨ́', '—'),
+      AwingWord('məsê', 'witchcraft'),
+      AwingWord('mə́', 'my'),
+      AwingWord('məfɨgə', '—'),
+    ],
+  ),
+  // 1PE.1.16
+  AwingSentence(
+    awing: 'Aŋwaʼlə Əsê á sóŋ ńgə́, “Nə́ ŋwaʼə̂, ńté ńgə́ maŋ kə́ ŋwaʼə̂.”',
+    english: 'because it is written, “You shall be holy; for I am holy.”',
+    words: [
+      AwingWord('Aŋwaʼlə', '—'),
+      AwingWord('Əsê', 'god'),
+      AwingWord('á', 'he'),
+      AwingWord('sóŋ', '—'),
+      AwingWord('ńgə́', 'verb complement'),
+      AwingWord('“Nə́', 'said'),
+      AwingWord('�

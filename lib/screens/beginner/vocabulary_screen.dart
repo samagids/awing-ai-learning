@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:awing_ai_learning/data/awing_vocabulary.dart';
 import 'package:awing_ai_learning/services/pronunciation_service.dart';
-import 'package:awing_ai_learning/services/image_service.dart';
+import 'package:awing_ai_learning/components/pack_image.dart';
 import 'package:awing_ai_learning/services/auth_service.dart';
 
 class VocabularyScreen extends StatefulWidget {
@@ -194,8 +194,6 @@ class _FlashCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final imagePath = ImageService.assetPath(word.awing);
-
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Card(
@@ -226,19 +224,10 @@ class _FlashCard extends StatelessWidget {
                           topLeft: Radius.circular(24),
                           bottomLeft: Radius.circular(24),
                         ),
-                        child: Image.asset(
-                          imagePath,
+                        child: PackImage(
+                          awingWord: word.awing,
+                          english: word.english,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Container(
-                            decoration: BoxDecoration(
-                              color: Colors.green.shade50,
-                            ),
-                            child: Icon(
-                              Icons.image_outlined,
-                              size: 64,
-                              color: Colors.green.shade200,
-                            ),
-                          ),
                         ),
                       ),
                     ),
@@ -266,26 +255,38 @@ class _FlashCard extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 16),
-                          // Awing word
-                          Text(
-                            word.awing,
-                            style: const TextStyle(
-                              fontSize: 40,
-                              fontWeight: FontWeight.bold,
+                          // Awing word — auto-shrink to fit narrow phones
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                word.awing,
+                                style: const TextStyle(
+                                  fontSize: 40,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                textAlign: TextAlign.center,
+                                maxLines: 2,
+                              ),
                             ),
-                            textAlign: TextAlign.center,
                           ),
                           const SizedBox(height: 4),
                           // Pronunciation guide
-                          Text(
-                            PronunciationService.getPronunciationGuide(
-                                word.awing),
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey.shade500,
-                              fontStyle: FontStyle.italic,
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            child: Text(
+                              PronunciationService.getPronunciationGuide(
+                                  word.awing),
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey.shade500,
+                                fontStyle: FontStyle.italic,
+                              ),
+                              textAlign: TextAlign.center,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            textAlign: TextAlign.center,
                           ),
                           const SizedBox(height: 14),
                           // Hear it button

@@ -191,7 +191,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.surface,
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(color: Colors.amber.shade200),
                           ),
@@ -320,12 +320,13 @@ const List<Map<String, dynamic>> _conversations = [
         'english': 'Greetings!',
         'tip': 'Cha\'tɔ́ is the standard greeting. The tone is important!',
       },
-      {
-        'speaker': 'Person B',
-        'awing': "Cha'tɔ́! Yə yǐə?",
-        'english': 'Greetings! How are you? (Is he/she coming?)',
-        'tip': 'Yə yǐə? is a polite way to ask someone\'s status.',
-      },
+    // FABRICATED — REMOVED by cleanup_fabricated_content.py
+//       {
+//         'speaker': 'Person B',
+//         'awing': "Cha'tɔ́! Yə yǐə?",
+//         'english': 'Greetings! How are you? (Is he/she coming?)',
+//         'tip': 'Yə yǐə? is a polite way to ask someone\'s status.',
+//       },
       {
         'speaker': 'Person A',
         'awing': 'Ndèe, mǎ wə nə mə kwátə.',
@@ -338,72 +339,82 @@ const List<Map<String, dynamic>> _conversations = [
     'title': 'Asking for Something',
     'context': 'A child asks a parent for food',
     'lines': [
-      {
-        'speaker': 'Person A',
-        'awing': 'Mǎ, ndèe?',
-        'english': 'Mother, please? (Can I have something?)',
-        'tip': 'Ndèe shows respect and politeness when asking.',
-      },
-      {
-        'speaker': 'Person B',
-        'awing': 'Ache kə?',
-        'english': 'What do you want?',
-        'tip': 'Ache means "what". It\'s a natural question word.',
-      },
-      {
-        'speaker': 'Person A',
-        'awing': 'Ko akwe pə nəgoomɔ́.',
-        'english': 'Give me some plantain, please.',
-        'tip': 'Ko means "take/give". Pə shows politeness with the request.',
-      },
-      {
-        'speaker': 'Person B',
-        'awing': "Wo'! Ee wə nə fɛ́ə.",
-        'english': 'Sure! It is there.',
-        'tip': 'Wo\' means "okay". Ee marks agreement and emphasis.',
-      },
+    // FABRICATED — REMOVED by cleanup_fabricated_content.py
+//       {
+//         'speaker': 'Person A',
+//         'awing': 'Mǎ, ndèe?',
+//         'english': 'Mother, please? (Can I have something?)',
+//         'tip': 'Ndèe shows respect and politeness when asking.',
+//       },
+    // FABRICATED — REMOVED by cleanup_fabricated_content.py
+//       {
+//         'speaker': 'Person B',
+//         'awing': 'Ache kə?',
+//         'english': 'What do you want?',
+//         'tip': 'Ache means "what". It\'s a natural question word.',
+//       },
+    // FABRICATED — REMOVED by cleanup_fabricated_content.py
+//       {
+//         'speaker': 'Person A',
+//         'awing': 'Ko akwe pə nəgoomɔ́.',
+//         'english': 'Give me some plantain, please.',
+//         'tip': 'Ko means "take/give". Pə shows politeness with the request.',
+//       },
+    // FABRICATED — REMOVED by cleanup_fabricated_content.py
+//       {
+//         'speaker': 'Person B',
+//         'awing': "Wo'! Ee wə nə fɛ́ə.",
+//         'english': 'Sure! It is there.',
+//         'tip': 'Wo\' means "okay". Ee marks agreement and emphasis.',
+//       },
     ],
   },
-  {
-    'title': 'Visiting a Friend',
-    'context': 'Arriving at a friend\'s house',
-    'lines': [
-      {
-        'speaker': 'Person A',
-        'awing': "Cha'tɔ́! Yə yǐə?",
-        'english': 'Hello! How are you?',
-        'tip': 'This is the standard greeting when arriving.',
-      },
-      {
-        'speaker': 'Person B',
-        'awing': "Cha'tɔ́! Yə kwa'ə.",
-        'english': 'Hello! I am well.',
-        'tip': 'Kwa\'ə shows the person is doing well and happy.',
-      },
-      {
-        'speaker': 'Person A',
-        'awing': 'Apô wə nə mə ntô.',
-        'english': 'I came to visit (my hand/heart is here).',
-        'tip': 'Apô (hand) can represent coming with good intentions.',
-      },
-      {
-        'speaker': 'Person B',
-        'awing': 'Ee wə nə mə fɛ́ə. Ko pə asé.',
-        'english': 'Good! Come and sit down.',
-        'tip': 'Asé means "place" or "sit". Ko is the invitation.',
-      },
-    ],
-  },
+    // FABRICATED — REMOVED by cleanup_fabricated_content.py
+//   {
+//     'title': 'Visiting a Friend',
+//     'context': 'Arriving at a friend\'s house',
+//     'lines': [
+    // FABRICATED — REMOVED by cleanup_fabricated_content.py
+//       {
+//         'speaker': 'Person A',
+//         'awing': "Cha'tɔ́! Yə yǐə?",
+//         'english': 'Hello! How are you?',
+//         'tip': 'This is the standard greeting when arriving.',
+//       },
+    // FABRICATED — REMOVED by cleanup_fabricated_content.py
+//       {
+//         'speaker': 'Person B',
+//         'awing': "Cha'tɔ́! Yə kwa'ə.",
+//         'english': 'Hello! I am well.',
+//         'tip': 'Kwa\'ə shows the person is doing well and happy.',
+//       },
+    // FABRICATED — REMOVED by cleanup_fabricated_content.py
+//       {
+//         'speaker': 'Person A',
+//         'awing': 'Apô wə nə mə ntô.',
+//         'english': 'I came to visit (my hand/heart is here).',
+//         'tip': 'Apô (hand) can represent coming with good intentions.',
+//       },
+    // FABRICATED — REMOVED by cleanup_fabricated_content.py
+//       {
+//         'speaker': 'Person B',
+//         'awing': 'Ee wə nə mə fɛ́ə. Ko pə asé.',
+//         'english': 'Good! Come and sit down.',
+//         'tip': 'Asé means "place" or "sit". Ko is the invitation.',
+//       },
+//     ],
+//   },  // orphan close — no matching open above
   {
     'title': 'Learning Together',
     'context': 'A teacher and student learning Awing',
     'lines': [
-      {
-        'speaker': 'Person A',
-        'awing': 'Ache fɛ́ə ndo?',
-        'english': 'What is this thing?',
-        'tip': 'Ndo means "thing". This is how you ask what something is.',
-      },
+    // FABRICATED — REMOVED by cleanup_fabricated_content.py
+//       {
+//         'speaker': 'Person A',
+//         'awing': 'Ache fɛ́ə ndo?',
+//         'english': 'What is this thing?',
+//         'tip': 'Ndo means "thing". This is how you ask what something is.',
+//       },
       {
         'speaker': 'Person B',
         'awing': 'Ee wə nə apô. A apô.',
@@ -416,60 +427,25 @@ const List<Map<String, dynamic>> _conversations = [
         'english': 'Hand. A-po. What does it mean?',
         'tip': 'Breaking it down helps with learning pronunciation.',
       },
-      {
-        'speaker': 'Person B',
-        'awing': 'Apô wə nə ajúmə wə nə mə pə ko.',
-        'english': 'A hand is the thing we use to take things.',
-        'tip': 'This explanation helps understand the word through context.',
-      },
+    // FABRICATED — REMOVED by cleanup_fabricated_content.py
+//       {
+//         'speaker': 'Person B',
+//         'awing': 'Apô wə nə ajúmə wə nə mə pə ko.',
+//         'english': 'A hand is the thing we use to take things.',
+//         'tip': 'This explanation helps understand the word through context.',
+//       },
     ],
   },
-  {
-    'title': 'Simple Exchange',
-    'context': 'Quick daily conversation',
-    'lines': [
-      {
-        'speaker': 'Person A',
-        'awing': 'Ee wə nə kó?',
-        'english': 'Is it good?',
-        'tip': 'Kó can mean "good" or "fine". This asks for confirmation.',
-      },
-      {
-        'speaker': 'Person B',
-        'awing': 'Ee! Kó ndo! Ndèe?',
-        'english': 'Yes! Good thing! Please?',
-        'tip': 'Ndèe at the end makes a statement turn into a polite question.',
-      },
-      {
-        'speaker': 'Person A',
-        'awing': 'Wo\'! Ee ndèe mə kwa\'ə.',
-        'english': 'Sure! That\'s very good.',
-        'tip': 'Wo\' is agreement. Ndèe adds emphasis and politeness.',
-      },
-    ],
-  },
-  {
-    'title': 'Farewell',
-    'context': 'Saying goodbye to a friend',
-    'lines': [
-      {
-        'speaker': 'Person A',
-        'awing': 'Tifwə nə pə zə wǎ lɛ́ə.',
-        'english': 'I will go now.',
-        'tip': 'Tifwə shows gentle intention to leave.',
-      },
-      {
-        'speaker': 'Person B',
-        'awing': 'Akwe! Wə yǐə ndèe.',
-        'english': 'Okay! Come back please.',
-        'tip': 'Ndèe at the end makes this a hopeful request.',
-      },
-      {
-        'speaker': 'Person A',
-        'awing': "Ee! Cha'tɔ́ ndèe!",
-        'english': 'Yes! Goodbye! (Greetings please!)',
-        'tip': 'Cha\'tɔ́ means both "hello" and "goodbye" depending on context.',
-      },
-    ],
-  },
-];
+    // FABRICATED — REMOVED by cleanup_fabricated_content.py
+//   {
+//     'title': 'Simple Exchange',
+//     'context': 'Quick daily conversation',
+//     'lines': [
+    // FABRICATED — REMOVED by cleanup_fabricated_content.py
+//       {
+//         'speaker': 'Person A',
+//         'awing': 'Ee wə nə kó?',
+//         'english': 'Is it good?',
+//         'tip': 'Kó can mean "good" or "fine". This asks for confirmation.',
+//       },
+   

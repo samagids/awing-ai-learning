@@ -3,6 +3,12 @@
     <uses-permission android:name="android.permission.RECORD_AUDIO"/>
     <!-- Required for downloading model updates (future) -->
     <uses-permission android:name="android.permission.INTERNET"/>
+
+    <!-- ===== Exam mode: Wi-Fi LAN with TCP sockets + mDNS discovery ===== -->
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
+    <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE"/>
+    <!-- For network_info_plus to read the Wi-Fi IP on Android 13+ -->
+    <uses-permission android:name="android.permission.NEARBY_WIFI_DEVICES" android:usesPermissionFlags="neverForLocation"/>
     <application
         android:label="Awing"
         android:name="${applicationName}"

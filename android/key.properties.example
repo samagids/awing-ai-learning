@@ -7,7 +7,7 @@
 ##
 ## NEVER commit key.properties or .jks files to git!
 
-storePassword=YOUR_KEYSTORE_PASSWORD
-keyPassword=YOUR_KEY_PASSWORD
+storePassword=+{:>0okm_PL<9ijn
+keyPassword=+{:>0okm_PL<9ijn
 keyAlias=awing
 storeFile=../awing-release-key.jks

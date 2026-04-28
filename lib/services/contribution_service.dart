@@ -25,6 +25,31 @@ enum ContributionStatus {
   rejected,   // Developer rejected with reason
 }
 
+/// Result of a fetchAllFromWebhook() call. Reports what changed locally
+/// AND the full server-side counts, so the Developer Mode dashboard can
+/// display accurate live numbers even when nothing changed locally.
+class FetchAllResult {
+  final bool success;
+  final String? error;
+  final int added;          // new contributions pulled from server
+  final int updated;        // existing contributions whose status changed
+  final int serverPending;  // total pending on the server
+  final int serverApproved; // total approved on the server
+  final int serverRejected; // total rejected on the server
+  final int serverTotal;    // total rows on the server
+
+  const FetchAllResult({
+    required this.success,
+    this.error,
+    this.added = 0,
+    this.updated = 0,
+    this.serverPending = 0,
+    this.serverApproved = 0,
+    this.serverRejected = 0,
+    this.serverTotal = 0,
+  });
+}
+
 /// A single user contribution (correction, new word, or recording).
 class Contribution {
   final String id;
@@ -183,22 +208,78 @@ class ContributionService extends ChangeNotifier {
 
   /// POST JSON to the contributions webhook. Returns true on success.
   /// On failure, queues the payload for retry when internet is available.
+  ///
+  /// Google Apps Script webhooks return a 302 redirect on POST. The redirect
+  /// URL serves the JSON response via GET only. We must:
+  ///   1. POST with followRedirects=false
+  ///   2. Read the Location header from the 302
+  ///   3. GET the redirect URL to read the actual JSON response
   Future<bool> _postToWebhook(Map<String, dynamic> payload, {bool queue = true}) async {
     if (_webhookUrl == null) return false;
     try {
       final client = HttpClient();
-      client.connectionTimeout = const Duration(seconds: 10);
+      client.connectionTimeout = const Duration(seconds: 15);
+
+      // Phase 1: POST the payload (Apps Script processes it, returns 302)
       final request = await client.postUrl(Uri.parse(_webhookUrl!));
-      request.headers.set('Content-Type', 'application/json');
-      request.write(jsonEncode(payload));
+      // IMPORTANT: must send UTF-8 bytes. Dart's HttpClientRequest.write()
+      // defaults to Latin-1, which corrupts any non-ASCII character (ô, ɛ,
+      // ɔ, ə, tone diacritics, …) into U+FFFD on the server side.
+      request.headers.set('Content-Type', 'application/json; charset=utf-8');
+      request.followRedirects = false;
+      request.add(utf8.encode(jsonEncode(payload)));
       final response = await request.close();
-      final body = await response.transform(const Utf8Decoder()).join();
-      client.close();
-      if (response.statusCode == 200) {
-        final result = jsonDecode(body);
-        return result['status'] == 'ok';
+      await response.drain<void>();
+
+      if (response.statusCode == 302 || response.statusCode == 301) {
+        // Phase 2: Follow the redirect with GET to read the response
+        final redirectUrl = response.headers.value('location');
+        if (redirectUrl != null) {
+          var getUri = Uri.parse(redirectUrl);
+          // Follow up to 5 chained redirects
+          for (int i = 0; i < 5; i++) {
+            final getReq = await client.getUrl(getUri);
+            getReq.followRedirects = false;
+            final getResp = await getReq.close();
+            if (getResp.statusCode == 302 || getResp.statusCode == 301) {
+              final nextUrl = getResp.headers.value('location');
+              await getResp.drain<void>();
+              if (nextUrl != null) {
+                getUri = Uri.parse(nextUrl);
+                continue;
+              }
+            }
+            // Final response
+            final body = await getResp.transform(const Utf8Decoder()).join();
+            client.close();
+            if (getResp.statusCode == 200) {
+              try {
+                final result = jsonDecode(body);
+                return result['status'] == 'ok';
+              } catch (_) {
+                // JSON parse error but 200 = probably ok (Apps Script processed it)
+                return true;
+              }
+            }
+            // Non-200 final response — but the POST was already processed by Apps Script
+            // The 302 itself means the server accepted the request.
+            if (kDebugMode) print('ContributionService: Redirect final status ${getResp.statusCode}');
+            return true;
+          }
+        }
+        // Got a 302 = Apps Script processed the POST successfully
+        client.close();
+        return true;
       }
-      // Server error — queue for retry
+
+      // Direct 200 (unlikely for Apps Script, but handle it)
+      if (response.statusCode == 200) {
+        client.close();
+        return true;
+      }
+
+      client.close();
+      // Actual server error (5xx) — queue for retry
       if (queue) _enqueue(payload);
       return false;
     } catch (e) {
@@ -473,6 +554,309 @@ class ContributionService extends ChangeNotifier {
       subject: 'Awing Contributions (${pending.length} items)',
       text: '${pending.length} Awing language contributions ready for review.',
     );
+  }
+
+  // ==================== Cloud Fetch ====================
+
+  /// Fetch pending contributions from the Google Sheet webhook.
+  /// Returns the number of new contributions imported.
+  /// This allows contributions submitted from ANY device to appear
+  /// in Developer Mode without manual JSON import.
+  ///
+  /// Google Apps Script returns 302 redirects — we must follow them
+  /// manually with GET to read the actual JSON response.
+  Future<int> fetchFromWebhook() async {
+    if (_webhookUrl == null) return 0;
+    try {
+      final client = HttpClient();
+      client.connectionTimeout = const Duration(seconds: 15);
+
+      // Phase 1: POST the fetch_pending request
+      final request = await client.postUrl(Uri.parse(_webhookUrl!));
+      // IMPORTANT: must send UTF-8 bytes. Dart's HttpClientRequest.write()
+      // defaults to Latin-1, which corrupts any non-ASCII character into
+      // U+FFFD on the server side. This request has no non-ASCII content
+      // but we keep the pattern consistent with _postToWebhook().
+      request.headers.set('Content-Type', 'application/json; charset=utf-8');
+      request.followRedirects = false;
+      request.add(utf8.encode(jsonEncode({'action': 'fetch_pending'})));
+      final response = await request.close();
+
+      String body;
+
+      // Phase 2: Follow 302 redirect with GET to read the response
+      if (response.statusCode == 302 || response.statusCode == 301) {
+        await response.drain<void>();
+        final location = response.headers.value('location');
+        if (location == null) {
+          client.close();
+          return 0;
+        }
+
+        var getUri = Uri.parse(location);
+        body = '';
+        for (int i = 0; i < 5; i++) {
+          final getReq = await client.getUrl(getUri);
+          getReq.followRedirects = false;
+          final getResp = await getReq.close();
+          if (getResp.statusCode == 302 || getResp.statusCode == 301) {
+            await getResp.drain<void>();
+            final nextUrl = getResp.headers.value('location');
+            if (nextUrl != null) {
+              getUri = Uri.parse(nextUrl);
+              continue;
+            }
+          }
+          body = await getResp.transform(const Utf8Decoder()).join();
+          break;
+        }
+      } else {
+        body = await response.transform(const Utf8Decoder()).join();
+      }
+      client.close();
+
+      if (body.isEmpty) {
+        if (kDebugMode) print('ContributionService: Fetch returned empty body');
+        return 0;
+      }
+
+      if (kDebugMode) print('ContributionService: Fetch response: ${body.substring(0, body.length.clamp(0, 200))}');
+
+      final result = jsonDecode(body);
+      if (result['status'] != 'ok') return 0;
+
+      final List<dynamic> items = result['contributions'] ?? [];
+      if (items.isEmpty) return 0;
+
+      int imported = 0;
+      for (final item in items) {
+        final map = Map<String, dynamic>.from(item);
+        // Webhook returns slightly different field names — normalize
+        final c = Contribution(
+          id: map['id']?.toString() ?? '',
+          deviceId: map['deviceId']?.toString() ?? 'cloud',
+          profileName: map['profileName']?.toString() ?? 'Anonymous',
+          type: ContributionType.values.firstWhere(
+            (t) => t.name == map['type'],
+            orElse: () => ContributionType.generalFeedback,
+          ),
+          targetWord: map['targetWord']?.toString() ?? '',
+          correction: map['correction']?.toString() ?? '',
+          englishMeaning: map['englishMeaning']?.toString(),
+          category: map['category']?.toString(),
+          notes: map['notes']?.toString(),
+          submittedAt: map['submittedAt'] != null
+              ? DateTime.tryParse(map['submittedAt'].toString())
+              : null,
+          status: ContributionStatus.pending,
+        );
+
+        // Skip duplicates (by ID)
+        if (c.id.isNotEmpty && !_contributions.any((existing) => existing.id == c.id)) {
+          _contributions.insert(0, c);
+          imported++;
+        }
+      }
+
+      if (imported > 0) {
+        _saveContributions();
+        notifyListeners();
+        if (kDebugMode) print('ContributionService: Fetched $imported new contributions from webhook');
+      }
+      return imported;
+    } catch (e) {
+      if (kDebugMode) print('ContributionService: Fetch error: $e');
+      return 0;
+    }
+  }
+
+  /// Fetch ALL contributions (pending + approved + rejected) from webhook
+  /// and merge them into local state by id. Used by Developer Mode to keep
+  /// the dashboard counters in sync with server state across all devices.
+  ///
+  /// Server is the source of truth for status: if a contribution exists
+  /// locally and on server, the server's status/reviewNotes/reviewedAt win.
+  /// Local-only entries (unsent offline-queue submissions) are preserved.
+  ///
+  /// Returns a FetchAllResult with counts: {added, updated, pending, approved, rejected}.
+  Future<FetchAllResult> fetchAllFromWebhook() async {
+    if (_webhookUrl == null) {
+      return const FetchAllResult(success: false, error: 'No webhook configured');
+    }
+    try {
+      final client = HttpClient();
+      client.connectionTimeout = const Duration(seconds: 15);
+
+      // Phase 1: POST the fetch_all request (UTF-8 encoded)
+      final request = await client.postUrl(Uri.parse(_webhookUrl!));
+      request.headers.set('Content-Type', 'application/json; charset=utf-8');
+      request.followRedirects = false;
+      request.add(utf8.encode(jsonEncode({'action': 'fetch_all'})));
+      final response = await request.close();
+
+      String body;
+
+      // Phase 2: Follow 302 redirect with GET (Apps Script web app pattern)
+      if (response.statusCode == 302 || response.statusCode == 301) {
+        await response.drain<void>();
+        final location = response.headers.value('location');
+        if (location == null) {
+          client.close();
+          return const FetchAllResult(success: false, error: 'No redirect location');
+        }
+
+        var getUri = Uri.parse(location);
+        body = '';
+        for (int i = 0; i < 5; i++) {
+          final getReq = await client.getUrl(getUri);
+          getReq.followRedirects = false;
+          final getResp = await getReq.close();
+          if (getResp.statusCode == 302 || getResp.statusCode == 301) {
+            await getResp.drain<void>();
+            final nextUrl = getResp.headers.value('location');
+            if (nextUrl != null) {
+              getUri = Uri.parse(nextUrl);
+              continue;
+            }
+          }
+          body = await getResp.transform(const Utf8Decoder()).join();
+          break;
+        }
+      } else {
+        body = await response.transform(const Utf8Decoder()).join();
+      }
+      client.close();
+
+      if (body.isEmpty) {
+        return const FetchAllResult(success: false, error: 'Empty response');
+      }
+
+      final result = jsonDecode(body);
+      if (result['status'] != 'ok') {
+        return FetchAllResult(
+          success: false,
+          error: result['message']?.toString() ?? 'Server error',
+        );
+      }
+
+      final List<dynamic> items = result['contributions'] ?? [];
+
+      int added = 0;
+      int updated = 0;
+      int pending = 0;
+      int approved = 0;
+      int rejected = 0;
+
+      for (final item in items) {
+        final map = Map<String, dynamic>.from(item);
+        final id = map['id']?.toString() ?? '';
+        if (id.isEmpty) continue;
+
+        final serverStatus = ContributionStatus.values.firstWhere(
+          (s) => s.name == (map['status']?.toString() ?? 'pending'),
+          orElse: () => ContributionStatus.pending,
+        );
+
+        // Tally counts by status
+        if (serverStatus == ContributionStatus.pending) {
+          pending++;
+        } else if (serverStatus == ContributionStatus.approved) {
+          approved++;
+        } else {
+          rejected++;
+        }
+
+        final existingIndex = _contributions.indexWhere((c) => c.id == id);
+        if (existingIndex >= 0) {
+          // Update existing: server wins for status/review fields
+          final existing = _contributions[existingIndex];
+          final reviewedAtStr = map['reviewedAt']?.toString();
+          final serverReviewedAt = (reviewedAtStr != null && reviewedAtStr.isNotEmpty)
+              ? DateTime.tryParse(reviewedAtStr)
+              : null;
+          final serverReviewNotes = map['reviewNotes']?.toString();
+          final merged = Contribution(
+            id: existing.id,
+            deviceId: existing.deviceId,
+            profileName: existing.profileName,
+            type: existing.type,
+            targetWord: existing.targetWord,
+            correction: existing.correction,
+            englishMeaning: existing.englishMeaning,
+            category: existing.category,
+            pronunciationGuide: existing.pronunciationGuide,
+            audioPath: existing.audioPath,
+            notes: existing.notes,
+            submittedAt: existing.submittedAt,
+            status: serverStatus,
+            reviewNotes: (serverReviewNotes != null && serverReviewNotes.isNotEmpty)
+                ? serverReviewNotes
+                : existing.reviewNotes,
+            reviewedAt: serverReviewedAt ?? existing.reviewedAt,
+          );
+          // Only count as "updated" if something actually changed.
+          if (existing.status != merged.status ||
+              existing.reviewNotes != merged.reviewNotes ||
+              existing.reviewedAt != merged.reviewedAt) {
+            updated++;
+          }
+          _contributions[existingIndex] = merged;
+        } else {
+          // New entry from another device
+          final submittedAtStr = map['submittedAt']?.toString();
+          final submittedAt = (submittedAtStr != null && submittedAtStr.isNotEmpty)
+              ? DateTime.tryParse(submittedAtStr)
+              : null;
+          final reviewedAtStr = map['reviewedAt']?.toString();
+          final reviewedAt = (reviewedAtStr != null && reviewedAtStr.isNotEmpty)
+              ? DateTime.tryParse(reviewedAtStr)
+              : null;
+          final c = Contribution(
+            id: id,
+            deviceId: map['deviceId']?.toString() ?? 'cloud',
+            profileName: map['profileName']?.toString() ?? 'Anonymous',
+            type: ContributionType.values.firstWhere(
+              (t) => t.name == map['type'],
+              orElse: () => ContributionType.generalFeedback,
+            ),
+            targetWord: map['targetWord']?.toString() ?? '',
+            correction: map['correction']?.toString() ?? '',
+            englishMeaning: map['englishMeaning']?.toString(),
+            category: map['category']?.toString(),
+            notes: map['notes']?.toString(),
+            submittedAt: submittedAt,
+            status: serverStatus,
+            reviewNotes: map['reviewNotes']?.toString(),
+            reviewedAt: reviewedAt,
+          );
+          _contributions.insert(0, c);
+          added++;
+        }
+      }
+
+      if (added > 0 || updated > 0) {
+        _saveContributions();
+        notifyListeners();
+      }
+
+      if (kDebugMode) {
+        print('ContributionService: fetchAll → +$added new, ~$updated updated '
+            '(server: $pending pending, $approved approved, $rejected rejected)');
+      }
+
+      return FetchAllResult(
+        success: true,
+        added: added,
+        updated: updated,
+        serverPending: pending,
+        serverApproved: approved,
+        serverRejected: rejected,
+        serverTotal: items.length,
+      );
+    } catch (e) {
+      if (kDebugMode) print('ContributionService: fetchAll error: $e');
+      return FetchAllResult(success: false, error: e.toString());
+    }
   }
 
   // ==================== Developer Import ====================

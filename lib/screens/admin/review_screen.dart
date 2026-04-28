@@ -27,11 +27,14 @@ class _ReviewScreenState extends State<ReviewScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final AudioPlayer _player = AudioPlayer();
+  bool _isFetching = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    // Auto-fetch from webhook when screen opens
+    WidgetsBinding.instance.addPostFrameCallback((_) => _fetchFromCloud());
   }
 
   @override
@@ -39,6 +42,30 @@ class _ReviewScreenState extends State<ReviewScreen>
     _tabController.dispose();
     _player.dispose();
     super.dispose();
+  }
+
+  Future<void> _fetchFromCloud({bool showSnackbar = false}) async {
+    final service = context.read<ContributionService>();
+    if (!service.hasWebhook) return;
+
+    setState(() => _isFetching = true);
+    try {
+      final count = await service.fetchFromWebhook();
+      if (mounted && (showSnackbar || count > 0)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(count > 0
+                ? 'Fetched $count new contributions'
+                : 'No new contributions'),
+            backgroundColor: count > 0 ? Colors.green : Colors.grey,
+          ),
+        );
+      }
+    } catch (_) {
+      // Silently fail on auto-fetch
+    } finally {
+      if (mounted) setState(() => _isFetching = false);
+    }
   }
 
   Future<void> _importContributions() async {
@@ -170,9 +197,25 @@ class _ReviewScreenState extends State<ReviewScreen>
         foregroundColor: Colors.white,
         actions: [
           IconButton(
+            icon: _isFetching
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Icon(Icons.cloud_download),
+            onPressed: _isFetching
+                ? null
+                : () => _fetchFromCloud(showSnackbar: true),
+            tooltip: 'Fetch from cloud',
+          ),
+          IconButton(
             icon: const Icon(Icons.file_download),
             onPressed: _showImportMenu,
-            tooltip: 'Import contributions',
+            tooltip: 'Import from file',
           ),
           IconButton(
             icon: const Icon(Icons.file_upload),
@@ -230,13 +273,30 @@ class _ReviewScreenState extends State<ReviewScreen>
             if (showActions) ...[
               const SizedBox(height: 24),
               ElevatedButton.icon(
-                onPressed: _showImportMenu,
-                icon: const Icon(Icons.file_download),
-                label: const Text('Import Contributions'),
+                onPressed: _isFetching
+                    ? null
+                    : () => _fetchFromCloud(showSnackbar: true),
+                icon: _isFetching
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Icon(Icons.cloud_download),
+                label: Text(_isFetching ? 'Checking...' : 'Fetch from Cloud'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF006432),
                   foregroundColor: Colors.white,
                 ),
+              ),
+              const SizedBox(height: 8),
+              TextButton.icon(
+                onPressed: _showImportMenu,
+                icon: const Icon(Icons.file_download),
+                label: const Text('Or import from file'),
               ),
             ],
           ],
@@ -727,13 +787,35 @@ class _ContributionCard extends StatelessWidget {
                     const Icon(Icons.audiotrack,
                         color: Colors.blue, size: 20),
                     const SizedBox(width: 8),
-                    const Text('Audio recording attached'),
-                    const Spacer(),
+                    const Expanded(child: Text('Audio recording attached')),
                     IconButton(
                       icon: const Icon(Icons.play_circle_fill,
                           color: Colors.blue, size: 32),
-                      onPressed: () {
-                        player.play(DeviceFileSource(c.audioPath!));
+                      onPressed: () async {
+                        final file = File(c.audioPath!);
+                        if (await file.exists()) {
+                          try {
+                            await player.play(DeviceFileSource(c.audioPath!));
+                          } catch (e) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Playback error: $e'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                          }
+                        } else {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Audio file not found — it may be on another device'),
+                                backgroundColor: Colors.orange,
+                              ),
+                            );
+                          }
+                        }
                       },
                     ),
                   ],

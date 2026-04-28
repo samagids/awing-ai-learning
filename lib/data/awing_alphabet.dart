@@ -234,7 +234,7 @@ const List<AwingLetter> awingConsonants = [
     phoneme: '/p/',
     type: 'consonant',
     exampleWord: 'pímə',
-    exampleEnglish: 'see',
+    exampleEnglish: 'believe',
     description: 'Like English "p"',
   ),
   AwingLetter(

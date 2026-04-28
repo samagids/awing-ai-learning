@@ -1,4 +1,0 @@
-# DEPRECATED — merged into requirements_torch.txt
-# All training dependencies are now in requirements_torch.txt (venv_torch).
-# See install_dependencies.bat v2.0.0 for details.
--r requirements_torch.txt

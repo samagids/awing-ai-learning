@@ -9,6 +9,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 /// Minimum interval between auto-sync backup calls (prevents API flooding).
 const Duration _autoSyncDebounce = Duration(minutes: 2);
 
+/// Keep in sync with AboutScreen.appVersion and AboutScreen.buildNumber.
+/// Stamped on every Firestore doc so Developer Mode can see which client
+/// last wrote a given user's data.
+const String _kAppVersion = '1.11.0+35';
+
 /// Cloud backup service using Firebase Firestore.
 ///
 /// Data is stored per Google account email in Firestore:
@@ -195,12 +200,34 @@ class CloudBackupService extends ChangeNotifier {
       // Write all three documents in a batch for atomicity
       final batch = _db.batch();
 
+      // Count profiles for the parent user document
+      int pCount = 0;
+      if (accountsData is Map) {
+        for (final v in (accountsData as Map).values) {
+          if (v is Map && v['profiles'] is List) {
+            pCount += (v['profiles'] as List).length;
+          }
+        }
+      }
+
+      // Write the parent user document so collection('users').get() finds it
+      batch.set(
+        _db.doc(basePath),
+        {
+          'email': _connectedEmail,
+          'updated_at': now,
+          'app_version': _kAppVersion,
+          'profile_count': pCount,
+        },
+        SetOptions(merge: true),
+      );
+
       batch.set(
         _db.doc('$basePath/data/accounts'),
         {
           'data': accountsData is Map ? accountsData : {},
           'updated_at': now,
-          'app_version': '1.2.0',
+          'app_version': _kAppVersion,
         },
         SetOptions(merge: true),
       );

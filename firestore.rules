@@ -1,17 +1,50 @@
 rules_version = '2';
+
+// ===========================================================================
+// Awing AI Learning — Firestore security rules
+// ===========================================================================
+// Document layout:
+//   users/{email_sanitized}                — parent user doc
+//   users/{email_sanitized}/data/{docType} — synced data (accounts, progress,
+//                                            settings, ...)
+// Email is sanitized: lowercased + dots replaced with _dot_
+//
+// IMPORTANT: collection group queries (collectionGroup('data')) DO NOT
+// inherit from path-based rules. They need their own /{path=**}/data/...
+// rule. Developer Mode > Users tab uses a collection group query to list
+// all cloud-synced users — without the third match below it fails with
+//   [cloud_firestore/permission-denied]
+//
+// To deploy:
+//   1. Open https://console.firebase.google.com/
+//   2. Project > Firestore Database > Rules tab
+//   3. Paste the contents of this file
+//   4. Click "Publish"
+// ===========================================================================
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Each user can only read/write their own data.
-    // Document path: users/{email_sanitized}/data/{docType}
-    // The email is sanitized (dots replaced with _dot_, lowercased).
-    //
-    // In test mode (first 30 days), all reads/writes are allowed.
-    // Before going to production, deploy these rules in Firebase Console:
-    //   Firestore Database → Rules → paste this file → Publish
-    //
-    // For now (test mode), allow all authenticated access:
-    match /users/{userId}/{document=**} {
-      allow read, write: if true;
+
+    // Each user can read/write their own nested data.
+    match /users/{userId}/data/{docType} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Developer can list all users and read parent docs.
+    // Any authenticated user can write to their own parent doc.
+    match /users/{userId} {
+      allow read: if request.auth != null
+                  && request.auth.token.email == 'samagids@gmail.com';
+      allow write: if request.auth != null;
+    }
+
+    // Collection group query support — Developer Mode > Users tab uses
+    // collectionGroup('data').get() to enumerate all cloud-synced users.
+    // Restrict to the developer email so only the dev account can list
+    // every user's data.
+    match /{path=**}/data/{dataDoc} {
+      allow read: if request.auth != null
+                  && request.auth.token.email == 'samagids@gmail.com';
     }
   }
 }

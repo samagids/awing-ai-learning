@@ -22,7 +22,15 @@
           }
         },
         {
-          "client_id": "1060398800208-1pu3o6uvugd0etnloqo4d11l1b7rlsl6.apps.googleusercontent.com",
+          "client_id": "1060398800208-6t3k0u57auf6h745v3mkami7f5kst33r.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.awing.awing_ai_learning",
+            "certificate_hash": "aea249f65474bbc83198f31c34d75ae43046d70f"
+          }
+        },
+        {
+          "client_id": "1060398800208-k88o32sfk08nb6s0q06o7vpgcuvsjmqc.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
@@ -37,6 +45,57 @@
             {
               "client_id": "1060398800208-1pu3o6uvugd0etnloqo4d11l1b7rlsl6.apps.googleusercontent.com",
               "client_type": 3
+            },
+            {
+              "client_id": "1060398800208-d6na73hg4bpfmf0vvkcs3ms263oqt45q.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.awing.awingAiLearning"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1060398800208:android:b05f8e55eeeb76d73e2055",
+        "android_client_info": {
+          "package_name": "com.awing.learning"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1060398800208-3i02glmojiu8e0nfsv7mhucagkuvsvfb.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.awing.learning",
+            "certificate_hash": "aea249f65474bbc83198f31c34d75ae43046d70f"
+          }
+        },
+        {
+          "client_id": "1060398800208-k88o32sfk08nb6s0q06o7vpgcuvsjmqc.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBaFBDX_bWxVxxh7n8KqhM7wjFvHd2pV4g"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1060398800208-1pu3o6uvugd0etnloqo4d11l1b7rlsl6.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1060398800208-d6na73hg4bpfmf0vvkcs3ms263oqt45q.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.awing.awingAiLearning"
+              }
             }
           ]
         }

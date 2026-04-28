@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:awing_ai_learning/services/analytics_service.dart';
-import 'package:awing_ai_learning/services/image_service.dart';
+import 'package:awing_ai_learning/components/pack_image.dart';
 import 'package:awing_ai_learning/services/exam_service.dart';
 
 class StudentExamScreen extends StatefulWidget {
@@ -36,21 +36,63 @@ class _StudentExamScreenState extends State<StudentExamScreen> {
     return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
   }
 
-  String _getPromptForType(String type) {
+  /// Kid-friendly, self-contained question prompt that EMBEDS the word so
+  /// the student can read it as one complete sentence. Uses an emoji to
+  /// make it feel like a game rather than a test.
+  String _getPromptForType(String type, String questionText) {
+    final q = questionText.trim();
     switch (type) {
       case 'translate_to_english':
-        return 'What does this mean in English?';
+        return '🤔 What does "$q" mean?';
       case 'translate_to_awing':
-        return 'How do you say this in Awing?';
+        return '🗣️ How do you say "$q" in Awing?';
       case 'category_match':
-        return 'Which word belongs in this category?';
+        // questionText is the category label, e.g. "Food & drink".
+        final lower = q.toLowerCase();
+        // Strip leading article-ish bits to make it read naturally.
+        final trimmed = lower.startsWith('the ') ? lower.substring(4) : lower;
+        return '🔍 Which one is a ${_singular(trimmed)}?';
       case 'identify_tone':
-        return 'What tone does this word have?';
+        return '🎵 What tone does "$q" use?';
       case 'spelling':
-        return 'Which is the correct Awing spelling?';
+        return '✍️ How do you spell "$q" in Awing?';
+      case 'letter_to_sound':
+        return '🔤 What sound does the letter "$q" make?';
+      case 'sound_to_letter':
+        return '🔊 Which letter makes the sound $q?';
+      case 'letter_example':
+        return '🚀 Which word starts with the letter "$q"?';
+      case 'tone_minimal_pair':
+        return '🤔 What does "$q" mean?';
       default:
         return 'Answer this question';
     }
+  }
+
+  /// Turn a category label into a naturally-readable singular noun.
+  /// "Food & drink" → "food", "Animals" → "animal",
+  /// "Body parts" → "body part", "Actions / verbs" → "action".
+  String _singular(String label) {
+    // Collapse "X & Y" / "X / Y" down to the first chunk so the question
+    // stays short: "food & drink" → "food".
+    var s = label;
+    for (final sep in const [' & ', ' / ', '/', ',']) {
+      final i = s.indexOf(sep);
+      if (i > 0) {
+        s = s.substring(0, i);
+        break;
+      }
+    }
+    s = s.trim();
+    // Simple English plural → singular.
+    if (s.endsWith('ies') && s.length > 3) {
+      s = '${s.substring(0, s.length - 3)}y';
+    } else if (s.endsWith('es') && s.length > 2) {
+      s = s.substring(0, s.length - 2);
+    } else if (s.endsWith('s') && s.length > 1 && !s.endsWith('ss')) {
+      s = s.substring(0, s.length - 1);
+    }
+    return s;
   }
 
   @override
@@ -149,56 +191,46 @@ class _StudentExamScreenState extends State<StudentExamScreen> {
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     children: [
+                      // Kid-friendly prompt that embeds the word as a
+                      // complete sentence — e.g. "🤔 What does tátə mean?"
                       Text(
-                        _getPromptForType(question.type),
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey.shade600,
+                        _getPromptForType(
+                            question.type, question.questionText),
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w600,
+                          height: 1.25,
                         ),
+                        textAlign: TextAlign.center,
                       ),
-                      const SizedBox(height: 8),
-                      // Image thumbnail + question text side by side
-                      if (question.type == 'translate_to_english' ||
-                          question.type == 'spelling')
-                        Row(
-                          children: [
-                            ClipRRect(
+                      // Show the companion image whenever imageKey is set.
+                      // (Category-match questions set imageKey=null so the
+                      // picture doesn't leak the correct answer.)
+                      // PackImage has its own built-in fallback icon for
+                      // words that don't have a generated image file.
+                      if (question.imageKey != null &&
+                          question.imageKey!.trim().isNotEmpty) ...[
+                        const SizedBox(height: 12),
+                        Builder(
+                          builder: (context) {
+                            final imageSize =
+                                (MediaQuery.of(context).size.width * 0.45)
+                                    .clamp(90.0, 120.0);
+                            return ClipRRect(
                               borderRadius: BorderRadius.circular(12),
                               child: SizedBox(
-                                width: 70,
-                                height: 70,
-                                child: Image.asset(
-                                  ImageService.assetPath(question.questionText),
+                                width: imageSize,
+                                height: imageSize,
+                                child: PackImage(
+                                  awingWord: question.imageKey!,
+                                  english: question.imageEnglish ?? '',
                                   fit: BoxFit.cover,
-                                  errorBuilder: (_, __, ___) => Container(
-                                    color: Colors.indigo.shade50,
-                                    child: Icon(Icons.translate, color: Colors.indigo.shade300, size: 32),
-                                  ),
                                 ),
                               ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Text(
-                                question.questionText,
-                                style: const TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ),
-                          ],
-                        )
-                      else
-                        Text(
-                          question.questionText,
-                          style: const TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          textAlign: TextAlign.center,
+                            );
+                          },
                         ),
+                      ],
                     ],
                   ),
                 ),

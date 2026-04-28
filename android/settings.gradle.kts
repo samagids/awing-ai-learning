@@ -25,3 +25,4 @@ plugins {
 }
 
 include(":app")
+include(":install_time_assets")

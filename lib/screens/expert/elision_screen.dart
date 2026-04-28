@@ -97,7 +97,6 @@ class _ElisionScreenState extends State<ElisionScreen> {
                               style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
-                                color: Colors.black87,
                               ),
                             ),
                           ),
@@ -112,7 +111,7 @@ class _ElisionScreenState extends State<ElisionScreen> {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: Theme.of(context).colorScheme.surface,
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(color: Colors.amber.shade200),
                         ),
@@ -380,12 +379,12 @@ const List<Map<String, String>> _elisionRules = [
     'shortFormAnswer': 'əshû',
   },
   {
-    'title': 'Final Vowel Harmony',
+    'title': 'Vowel Contraction in Compounds',
     'explanation':
-        'When a word ending in a high vowel (i, ɨ, u) is followed by another word, the high vowel may be lowered or dropped.',
+        'When the final vowel of one word meets the starting vowel of the next, the two often contract into a single sound.',
     'longForm': 'ndě ayáŋə',
     'shortForm': 'ndèyáŋə',
-    'meaning': 'wisdom of neck — the vowels harmonize together',
+    'meaning': 'The final "ə" of ndě (house) and the "a" of ayáŋə (wisdom) contract together',
     'practiceWord': 'nəkəŋɔ́',
     'practiceMeaning': 'pot (long form)',
     'shortFormAnswer': 'kəŋɔ́',

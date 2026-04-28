@@ -1,30 +1,40 @@
 #!/usr/bin/env python3
 """
-Awing Edge TTS Audio Generator v4.0.0
+Awing Edge TTS Audio Generator v5.1.0
 ======================================
 Generates pronunciation audio for the Awing language using 6 original character
 voices from Microsoft Edge TTS neural engine — 2 per difficulty level.
+
+v5.1.0: awing_to_speakable() now collapses "gh" to "g". Awing "gh" = IPA /ɣ/
+(voiced velar fricative), which Swahili TTS cannot synthesize. When left as
+"gh" the neural voice spelled out the letters ("g-h-o" for ghǒ). Mapping to
+plain "g" produces a proper syllable. Use speakable_override in
+regenerate_words.json for word-specific fine-tuning.
+
+v5.0.0: Level-filtered content — each voice only generates audio for words at
+its difficulty level: beginner vocab for boy/girl, medium for young_man/woman,
+expert for man/woman. Reduces total clips and ensures voices match their mode.
 
 v4.0.0: Per-syllable tonal pitch synthesis — each syllable is generated at the
 pitch matching its Awing tone (High, Mid, Low, Rising, Falling), then
 concatenated with ffmpeg for natural-sounding tonal pronunciation.
 
-Voice Characters:
-  Beginner:  boy (child male) + girl (child female)     — slower, higher pitch
-  Medium:    young_man + young_woman                     — moderate pace
-  Expert:    man (adult male) + woman (adult female)     — natural pace, deeper
+Voice Characters (level-filtered):
+  Beginner:  boy + girl          — alphabet + beginner vocab + sentences
+  Medium:    young_man + woman   — alphabet + beginner+medium vocab + sentences
+  Expert:    man + woman         — alphabet + sentences + stories (NO vocabulary)
 
 Uses Swahili (Bantu family) neural voices as the base — Swahili shares
 prenasalized stops (mb, nd, ng), open syllable structure, and similar vowels
 with Awing. Edge TTS is FREE (no API key needed).
 
 Audio output structure:
-  assets/audio/boy/         — Beginner child male
-  assets/audio/girl/        — Beginner child female
-  assets/audio/young_man/   — Medium young adult male
-  assets/audio/young_woman/ — Medium young adult female
-  assets/audio/man/         — Expert adult male
-  assets/audio/woman/       — Expert adult female
+  assets/audio/boy/         — Beginner child male (beginner content only)
+  assets/audio/girl/        — Beginner child female (beginner content only)
+  assets/audio/young_man/   — Medium young adult male (beginner+medium content)
+  assets/audio/young_woman/ — Medium young adult female (beginner+medium content)
+  assets/audio/man/         — Expert adult male (all content)
+  assets/audio/woman/       — Expert adult female (all content)
 
 Usage:
     python scripts/generate_audio_edge.py generate         # Generate all voices
@@ -42,6 +52,7 @@ import sys
 import asyncio
 import shutil
 import argparse
+import json
 import unicodedata
 import re
 from pathlib import Path
@@ -52,10 +63,18 @@ from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).parent.resolve()
 PROJECT_DIR = SCRIPT_DIR.parent
-AUDIO_DIR = PROJECT_DIR / "assets" / "audio"
+# Default audio output: PAD install-time asset pack (for Play Store size limits)
+# Override with --output-dir flag
+AUDIO_DIR = PROJECT_DIR / "android" / "install_time_assets" / "src" / "main" / "assets" / "audio"
 TEMP_DIR = SCRIPT_DIR / "_edge_tts_temp"
 
-VERSION = "4.0.0"
+VERSION = "5.2.0"
+# 5.2.0 — Removed native-recording skip logic. Developer recordings are now
+#         archived by apply_contributions.py as TRAINING REFERENCES only and
+#         are never played in the app. Edge TTS always generates all 6
+#         character voices; when the developer supplies a pronunciationGuide
+#         (or Whisper ASR text), it arrives here via regenerate_words.json
+#         as a speakable_override to shape the TTS pronunciation.
 
 # Awing tone → pitch offset (Hz relative to character's base pitch)
 # High tone is distinctly higher, low is distinctly lower, mid is neutral
@@ -76,6 +95,7 @@ def _check_ffmpeg():
     if _ffmpeg_available is None:
         _ffmpeg_available = shutil.which("ffmpeg") is not None
     return _ffmpeg_available
+
 
 # 6 character voices — 2 per difficulty level
 # Using Swahili voices (Bantu family, closest to Awing phonology)
@@ -138,15 +158,21 @@ FALLBACK_VOICES = {
 # AWING VOCABULARY DATA
 # ====================================================================
 
+# Alphabet sounds: each value is a phonetic spelling that a Swahili TTS voice
+# will SOUND OUT as the phoneme, not read as a letter name.
+# Vowels: repeated/elongated so TTS produces the actual sound.
+# Consonants: consonant + "ah" to produce the phoneme sound (like "bah", "dah").
 ALPHABET_SOUNDS = {
-    "a": "a", "e": "e", "epsilon": "ɛ", "schwa": "ə",
-    "i": "i", "barred_i": "ɨ", "o": "o", "open_o": "ɔ", "u": "u",
-    "b": "bə́", "ch": "chə́", "d": "də́", "f": "fə́",
-    "g": "gə́", "gh": "ghə́", "j": "jə́", "k": "kə́",
-    "l": "lə́", "m": "mə́", "n": "nə́", "ny": "nyə́",
-    "eng": "ŋə́", "p": "pə́", "s": "sə́", "sh": "shə́",
-    "t": "tə́", "ts": "tsə́", "w": "wə́", "y": "yə́",
-    "z": "zə́", "glottal": "ə́'ə́",
+    # Vowels — elongated so TTS produces the vowel sound, not letter name
+    "a": "aah",  "e": "eh",  "epsilon": "eh",  "schwa": "uh",
+    "i": "eeh",  "barred_i": "ih",  "o": "ooh",  "open_o": "oh",  "u": "ooh",
+    # Consonants — consonant + short "ah" vowel to produce the sound
+    "b": "bah",  "ch": "chah",  "d": "dah",  "f": "fah",
+    "g": "gah",  "gh": "ghah",  "j": "jah",  "k": "kah",
+    "l": "lah",  "m": "mah",  "n": "nah",  "ny": "nyah",
+    "eng": "ngah",  "p": "pah",  "s": "sah",  "sh": "shah",
+    "t": "tah",  "ts": "tsah",  "w": "wah",  "y": "yah",
+    "z": "zah",  "glottal": "ah ah",
 }
 
 
@@ -193,7 +219,8 @@ def _audio_key(awing_text):
 
 def _load_vocabulary_from_dart():
     """Read vocabulary directly from awing_vocabulary.dart to stay in sync.
-    Returns dict of {audio_key: awing_text} for all AwingWord entries."""
+    Returns dict of {audio_key: (awing_text, difficulty)} for all AwingWord entries.
+    difficulty: 1=beginner, 2=medium, 3=expert."""
     dart_file = PROJECT_DIR / "lib" / "data" / "awing_vocabulary.dart"
     if not dart_file.exists():
         print(f"  Warning: {dart_file} not found, using built-in vocabulary")
@@ -203,14 +230,30 @@ def _load_vocabulary_from_dart():
     with open(dart_file, "r", encoding="utf-8") as f:
         content = f.read()
 
-    # Match: awing: 'text' or awing: "text"
-    for m in re.finditer(r"AwingWord\([^)]*awing:\s*['\"]([^'\"]+)['\"]", content):
-        awing_text = m.group(1)
+    # Match AwingWord entries with awing text and optional difficulty
+    for m in re.finditer(r"AwingWord\(([^)]*)\)", content, re.DOTALL):
+        block = m.group(1)
+        awing_match = re.search(r"awing:\s*['\"]([^'\"]+)['\"]", block)
+        if not awing_match:
+            continue
+        awing_text = awing_match.group(1)
         key = _audio_key(awing_text)
-        if key and key not in vocab:
-            vocab[key] = awing_text
+        if not key or key in vocab:
+            continue
+        # Extract difficulty (default 1 if not specified)
+        diff_match = re.search(r"difficulty:\s*(\d+)", block)
+        difficulty = int(diff_match.group(1)) if diff_match else 1
+        vocab[key] = (awing_text, difficulty)
 
     return vocab if vocab else None
+
+
+def _filter_vocab_for_level(vocab, level):
+    """Filter vocabulary dict to only include words at or below the given level.
+    Level mapping: beginner=1, medium=2, expert=3.
+    Returns dict of {audio_key: awing_text} (strips difficulty)."""
+    max_diff = {"beginner": 1, "medium": 2, "expert": 3}.get(level, 3)
+    return {k: v[0] for k, v in vocab.items() if v[1] <= max_diff}
 
 
 def _load_phrases_from_dart():
@@ -419,6 +462,15 @@ def awing_to_speakable(text):
 
     for old, new in replacements:
         text = text.replace(old, new)
+
+    # Awing "gh" = IPA /ɣ/ (voiced velar fricative). Earlier versions
+    # collapsed gh→g to stop Swahili TTS from spelling "g-h-o" for ghǒ,
+    # but the Session 56 Phase-2 rule-mining audit (197-word corpus,
+    # Dr. Sama's verdicts) showed preserve_gh is the single safe
+    # pattern rule (+2 score: helps ghanə/ghǒ, hurts 0 good
+    # pronunciations). Preserve gh here; handle any residual
+    # letter-spelling via per-word speakable_override entries in
+    # regenerate_words.json.
 
     text = re.sub(r'\s+', ' ', text).strip()
     return text
@@ -671,24 +723,62 @@ async def _find_available_voice(preferred, gender="male"):
     return preferred
 
 
+async def _edge_tts_save_with_retry(text, voice_name, rate, pitch, temp_path,
+                                     max_attempts=3):
+    """Call edge_tts.Communicate + save with retry on transient errors.
+
+    Microsoft's Edge TTS endpoint regularly returns transient WebSocket 503s
+    ("Invalid response status") due to rate limiting and backend jitter.
+    These are not bugs in our code — they're public-API noise. A single
+    retry with backoff recovers nearly all of them.
+
+    Backoff schedule: 2s, 5s, 10s between attempts. Three attempts total.
+    Returns True iff the final saved file is >500 bytes. On per-attempt
+    failure, only the first retry is logged to avoid spamming the batch
+    output; the final exception (if all attempts fail) is printed.
+    """
+    import edge_tts
+    delays = [2.0, 5.0, 10.0]  # seconds — used between attempts
+
+    TEMP_DIR.mkdir(parents=True, exist_ok=True)
+    last_error = None
+
+    for attempt in range(max_attempts):
+        try:
+            if temp_path.exists():
+                try:
+                    temp_path.unlink()
+                except Exception:
+                    pass
+            communicate = edge_tts.Communicate(
+                text, voice_name, rate=rate, pitch=pitch)
+            await communicate.save(str(temp_path))
+            if temp_path.exists() and temp_path.stat().st_size > 500:
+                return True
+            last_error = "empty output"
+        except Exception as e:
+            last_error = str(e)
+
+        if attempt < max_attempts - 1:
+            delay = delays[attempt]
+            if attempt == 0:
+                # Only log on first retry so a flaky network doesn't spam
+                print(f"    [retry] Edge TTS jitter, waiting {delay}s...")
+            await asyncio.sleep(delay)
+
+    print(f"    Error: {last_error}")
+    return False
+
+
 async def _generate_clip_simple(voice_name, text, output_path, rate="-20%", pitch="+0Hz"):
     """Generate a single audio clip using Edge TTS (flat pitch, no tonal variation)."""
-    import edge_tts
-
     speakable = awing_to_speakable(text)
+    temp_mp3 = TEMP_DIR / "temp_edge.mp3"
 
-    try:
-        communicate = edge_tts.Communicate(speakable, voice_name, rate=rate, pitch=pitch)
-        TEMP_DIR.mkdir(parents=True, exist_ok=True)
-        temp_mp3 = TEMP_DIR / "temp_edge.mp3"
-        await communicate.save(str(temp_mp3))
-
-        if temp_mp3.exists() and temp_mp3.stat().st_size > 500:
-            output_path.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(temp_mp3, output_path)
-            return True
-    except Exception as e:
-        print(f"    Error: {e}")
+    if await _edge_tts_save_with_retry(speakable, voice_name, rate, pitch, temp_mp3):
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(temp_mp3, output_path)
+        return True
     return False
 
 
@@ -740,15 +830,30 @@ async def _generate_clip(voice_name, text, output_path, rate="-20%", pitch="+0Hz
     return await _generate_clip_simple(voice_name, text, output_path, rate=rate, pitch=pitch)
 
 
-async def _generate_character_clips(char_name, char_config, vocab_override=None, phrases_override=None):
-    """Generate all audio clips for one character voice."""
+async def _generate_character_clips(char_name, char_config, vocab_override=None,
+                                    phrases_override=None):
+    """Generate audio clips for one character voice.
+
+    Each voice only generates content for its difficulty level:
+      - Beginner (boy/girl):              alphabet + vocabulary(diff=1) + sentences/phrases
+      - Medium (young_man/young_woman):   alphabet + vocabulary(diff≤2) + sentences/phrases
+      - Expert (man/woman):               alphabet + sentences/phrases + stories (NO vocabulary)
+    """
     voice = char_config["voice"]
     pitch = char_config["pitch"]
     rate = char_config["rate"]
     desc = char_config["description"]
+    level = char_config["level"]
 
-    # Use Dart-loaded vocabulary if available, else fall back to built-in
-    vocab = vocab_override if vocab_override else VOCABULARY_WORDS
+    # Filter vocabulary by difficulty level for this voice
+    if vocab_override:
+        vocab = _filter_vocab_for_level(vocab_override, level)
+    else:
+        # Built-in fallback has no difficulty info — use all for all voices
+        vocab = VOCABULARY_WORDS
+
+    # Sentences: Medium + Expert only
+    # Phrases: Beginner only (greetings, daily phrases)
     sentences = phrases_override if phrases_override else SENTENCES
 
     # Resolve actual available voice
@@ -759,7 +864,7 @@ async def _generate_character_clips(char_name, char_config, vocab_override=None,
 
     char_dir = AUDIO_DIR / char_name
     print(f"\n{'='*50}")
-    print(f"  Generating: {char_name} — {desc}")
+    print(f"  Generating: {char_name} — {desc} (level={level})")
     print(f"  Voice: {actual_voice} | Pitch: {pitch} | Rate: {rate}")
     print(f"  Output: {char_dir}")
     print(f"{'='*50}")
@@ -768,7 +873,7 @@ async def _generate_character_clips(char_name, char_config, vocab_override=None,
     success = 0
     failed = []
 
-    # Alphabet
+    # Alphabet — all levels (used as reference across all modules)
     print(f"\n  --- Alphabet ({len(ALPHABET_SOUNDS)} sounds) ---")
     for key, text in ALPHABET_SOUNDS.items():
         total += 1
@@ -782,24 +887,26 @@ async def _generate_character_clips(char_name, char_config, vocab_override=None,
             failed.append(f"{key}")
             print(f"    ✗ {key} FAILED")
 
-    # Vocabulary
-    print(f"\n  --- Vocabulary ({len(vocab)} words) ---")
-    for key, text in vocab.items():
-        total += 1
-        output = char_dir / "vocabulary" / f"{key}.mp3"
-        if await _generate_clip(actual_voice, text, output, rate=rate, pitch=pitch):
-            success += 1
-            print(f"    ✓ {key}")
-        else:
-            failed.append(f"{key}")
-            print(f"    ✗ {key} FAILED")
+    # Vocabulary — filtered by level (beginner=1 only, medium=1+2, expert=NONE)
+    if level == "expert":
+        print(f"\n  --- Vocabulary: SKIPPED (expert mode has no vocabulary) ---")
+    else:
+        print(f"\n  --- Vocabulary ({len(vocab)} words for {level}) ---")
+        for key, text in vocab.items():
+            total += 1
+            output = char_dir / "vocabulary" / f"{key}.mp3"
+            if await _generate_clip(actual_voice, text, output, rate=rate, pitch=pitch):
+                success += 1
+                print(f"    ✓ {key}")
+            else:
+                failed.append(f"{key}")
+                print(f"    ✗ {key} FAILED")
 
-    # Sentences
+    # Sentences/Phrases — all levels (beginner uses phrases, medium/expert use sentences)
     print(f"\n  --- Sentences ({len(sentences)} clips) ---")
     for key, text in sentences.items():
         total += 1
         output = char_dir / "sentences" / f"{key}.mp3"
-        # Slightly faster for sentences
         sent_rate = rate.replace("-15%", "-10%").replace("-25%", "-15%").replace("-35%", "-20%")
         if await _generate_clip(actual_voice, text, output, rate=sent_rate, pitch=pitch):
             success += 1
@@ -808,18 +915,21 @@ async def _generate_character_clips(char_name, char_config, vocab_override=None,
             failed.append(f"{key}")
             print(f"    ✗ {key} FAILED")
 
-    # Stories
-    print(f"\n  --- Stories ({len(STORIES)} clips) ---")
-    for key, text in STORIES.items():
-        total += 1
-        output = char_dir / "stories" / f"{key}.mp3"
-        story_rate = rate.replace("-15%", "-10%").replace("-25%", "-15%").replace("-35%", "-20%")
-        if await _generate_clip(actual_voice, text, output, rate=story_rate, pitch=pitch):
-            success += 1
-            print(f"    ✓ {key}")
-        else:
-            failed.append(f"{key}")
-            print(f"    ✗ {key} FAILED")
+    # Stories — Expert only (advanced reading comprehension)
+    if level == "expert":
+        print(f"\n  --- Stories ({len(STORIES)} clips) ---")
+        for key, text in STORIES.items():
+            total += 1
+            output = char_dir / "stories" / f"{key}.mp3"
+            story_rate = rate.replace("-15%", "-10%").replace("-25%", "-15%").replace("-35%", "-20%")
+            if await _generate_clip(actual_voice, text, output, rate=story_rate, pitch=pitch):
+                success += 1
+                print(f"    ✓ {key}")
+            else:
+                failed.append(f"{key}")
+                print(f"    ✗ {key} FAILED")
+    else:
+        print(f"\n  --- Stories: SKIPPED (not in {level} level) ---")
 
     print(f"\n  {char_name}: {success}/{total} clips generated")
     if failed:
@@ -852,7 +962,12 @@ def cmd_generate(args):
     dart_vocab = _load_vocabulary_from_dart()
     dart_phrases = _load_phrases_from_dart()
     if dart_vocab:
-        print(f"Loaded {len(dart_vocab)} words from awing_vocabulary.dart")
+        total_words = len(dart_vocab)
+        beg_words = len(_filter_vocab_for_level(dart_vocab, "beginner"))
+        med_words = len(_filter_vocab_for_level(dart_vocab, "medium"))
+        exp_words = len(_filter_vocab_for_level(dart_vocab, "expert"))
+        print(f"Loaded {total_words} words from awing_vocabulary.dart")
+        print(f"  Beginner: {beg_words} words | Medium: {med_words} words | Expert: {exp_words} words")
     else:
         print(f"Using built-in vocabulary ({len(VOCABULARY_WORDS)} words)")
     if dart_phrases:
@@ -866,26 +981,201 @@ def cmd_generate(args):
             s, t = await _generate_character_clips(
                 char_name, char_config,
                 vocab_override=dart_vocab,
-                phrases_override=dart_phrases
+                phrases_override=dart_phrases,
             )
             grand_success += s
             grand_total += t
 
         print(f"\n{'='*50}")
         print(f"  ALL DONE: {grand_success}/{grand_total} clips across 6 voices")
-        clips_per_voice = grand_total // 6
-        print(f"  {clips_per_voice} clips per voice x 6 voices = {grand_total} total")
-        print(f"\n  Voices saved to:")
-        print(f"    assets/audio/boy/         — Beginner (child male)")
-        print(f"    assets/audio/girl/        — Beginner (child female)")
-        print(f"    assets/audio/young_man/   — Medium (young adult male)")
-        print(f"    assets/audio/young_woman/ — Medium (young adult female)")
-        print(f"    assets/audio/man/         — Expert (adult male)")
-        print(f"    assets/audio/woman/       — Expert (adult female)")
+        print(f"\n  Voices (level-filtered content):")
+        print(f"    boy/girl         — Beginner: alphabet + beginner vocab + sentences")
+        print(f"    young_man/woman  — Medium:   alphabet + beginner+medium vocab + sentences")
+        print(f"    man/woman        — Expert:   alphabet + all vocab + sentences + stories")
         print(f"{'='*50}")
-        return grand_success == grand_total
+        # Edge TTS hits Microsoft's public endpoint, which occasionally
+        # times out on individual words due to API jitter. A handful of
+        # failures out of thousands of clips is normal and must NOT fail
+        # the release build — losing 3 clips out of 4366 (0.07%) would
+        # otherwise abort the APK build. Tolerate up to 1% failure OR 10
+        # missing clips, whichever is higher. Only fail the build if
+        # generation was catastrophically broken (zero clips generated,
+        # network down, missing deps).
+        failed = grand_total - grand_success
+        if grand_total == 0:
+            print("  ✗ FAIL: no clips generated at all — check edge-tts install / network")
+            return False
+        tolerance = max(10, int(grand_total * 0.01))
+        if failed > tolerance:
+            print(f"  ✗ FAIL: {failed} clips failed (tolerance: {tolerance}, >1%)")
+            return False
+        if failed > 0:
+            print(f"  ✓ Accepted: {failed} clips failed, within tolerance ({tolerance})")
+        return True
 
     return asyncio.run(run())
+
+
+def cmd_regenerate(args):
+    """Force-regenerate specific words from a regeneration list JSON file.
+
+    Used by the pronunciation fix pipeline: when a developer approves a
+    pronunciation contribution, apply_contributions.py writes a
+    regenerate_words.json file listing words that need new audio.
+
+    For each word, this deletes existing audio across ALL voice directories
+    that would contain it (based on difficulty level), then regenerates
+    using Edge TTS character voices. If a speakable_override is provided,
+    it's used instead of the default awing_to_speakable() conversion.
+
+    The developer's raw recording is NOT used — Edge TTS regenerates the
+    word in all 6 character voices with the corrected pronunciation mapping.
+    """
+    regen_file = args.regenerate_file
+    if not regen_file:
+        # Default path
+        regen_file = str(PROJECT_DIR / "contributions" / "regenerate_words.json")
+
+    regen_path = Path(regen_file)
+    if not regen_path.exists():
+        print(f"No regeneration file found at: {regen_path}")
+        print("Nothing to regenerate.")
+        return True
+
+    try:
+        with open(regen_path, 'r', encoding='utf-8') as f:
+            words = json.load(f)
+    except Exception as e:
+        print(f"Error reading regeneration file: {e}")
+        return False
+
+    if not words:
+        print("Regeneration file is empty. Nothing to do.")
+        return True
+
+    print(f"=== Regenerating {len(words)} word(s) across 6 voices ===")
+
+    try:
+        import edge_tts
+    except ImportError:
+        print("ERROR: edge-tts not installed. Run: pip install edge-tts")
+        return False
+
+    # Build speakable override map: audio_key → speakable text
+    speakable_overrides = {}
+    word_entries = []
+    for w in words:
+        awing = w.get('awing', '')
+        if not awing:
+            continue
+        key = _audio_key(awing)
+        override = w.get('speakable_override', '')
+        if override:
+            speakable_overrides[key] = override
+            print(f"  {awing} (key={key}) → speakable override: '{override}'")
+        else:
+            print(f"  {awing} (key={key}) → default pronunciation")
+        word_entries.append((key, awing))
+
+    if not word_entries:
+        print("No valid words to regenerate.")
+        return True
+
+    async def run():
+        grand_success = 0
+        grand_total = 0
+
+        for char_name, char_config in VOICE_CHARACTERS.items():
+            voice = char_config["voice"]
+            pitch = char_config["pitch"]
+            rate = char_config["rate"]
+            level = char_config["level"]
+
+            gender = "female" if char_name in ("girl", "young_woman", "woman") else "male"
+            actual_voice = await _find_available_voice(voice, gender)
+
+            char_dir = AUDIO_DIR / char_name
+            print(f"\n  --- {char_name} ({char_config['description']}) ---")
+
+            for key, awing_text in word_entries:
+                # Delete existing clip in vocabulary directory
+                vocab_clip = char_dir / "vocabulary" / f"{key}.mp3"
+                if vocab_clip.exists():
+                    vocab_clip.unlink()
+                    print(f"    Deleted: {vocab_clip}")
+
+                # Also check alphabet directory (for letter sounds)
+                alpha_clip = char_dir / "alphabet" / f"{key}.mp3"
+                if alpha_clip.exists():
+                    alpha_clip.unlink()
+                    print(f"    Deleted: {alpha_clip}")
+
+                # Expert voices skip vocabulary — only regenerate alphabet/sentences
+                if level == "expert":
+                    output = alpha_clip if alpha_clip.parent.exists() else None
+                    # Only regenerate if it was an alphabet clip
+                    if not (char_dir / "alphabet").exists():
+                        print(f"    Skipped {key} (expert voice, no vocab)")
+                        continue
+                else:
+                    output = vocab_clip
+
+                # Use speakable override if provided, otherwise default
+                if key in speakable_overrides:
+                    # Generate with the override text directly (already speakable)
+                    text_to_speak = speakable_overrides[key]
+                    grand_total += 1
+                    temp_mp3 = TEMP_DIR / "temp_regen.mp3"
+                    if await _edge_tts_save_with_retry(
+                            text_to_speak, actual_voice, rate, pitch, temp_mp3):
+                        output.parent.mkdir(parents=True, exist_ok=True)
+                        shutil.copy2(temp_mp3, output)
+                        grand_success += 1
+                        print(f"    ✓ {key} (override: '{text_to_speak}')")
+                    else:
+                        print(f"    ✗ {key} FAILED")
+                else:
+                    # Use default awing_to_speakable() conversion
+                    grand_total += 1
+                    if await _generate_clip(actual_voice, awing_text, output,
+                                           rate=rate, pitch=pitch):
+                        grand_success += 1
+                        print(f"    ✓ {key}")
+                    else:
+                        print(f"    ✗ {key} FAILED")
+
+        print(f"\n{'='*50}")
+        print(f"  Regenerated: {grand_success}/{grand_total} clips across 6 voices")
+        print(f"{'='*50}")
+        # Same Edge TTS jitter tolerance as cmd_generate — a couple of
+        # timed-out clips in a batch of pronunciation fixes shouldn't
+        # abort the build and block an entire release. Regenerate is
+        # stricter than generate because these are explicit developer-
+        # approved corrections that the user expects to ship: tolerate
+        # up to 1% failure OR 3 clips, whichever is higher.
+        failed = grand_total - grand_success
+        if grand_total == 0:
+            print("  (no clips to regenerate — nothing to do)")
+            return True
+        tolerance = max(3, int(grand_total * 0.01))
+        if failed > tolerance:
+            print(f"  ✗ FAIL: {failed} clips failed (tolerance: {tolerance})")
+            return False
+        if failed > 0:
+            print(f"  ✓ Accepted: {failed} clips failed, within tolerance ({tolerance})")
+        return True
+
+    success = asyncio.run(run())
+
+    # Clean up the regeneration file after processing
+    if success:
+        try:
+            regen_path.unlink()
+            print(f"\n✓ Removed processed regeneration file: {regen_path}")
+        except Exception:
+            pass
+
+    return success
 
 
 def cmd_speak(args):
@@ -1049,11 +1339,18 @@ def cmd_status(args):
 # ====================================================================
 
 def main():
+    global AUDIO_DIR
     parser = argparse.ArgumentParser(
         description=f"Awing Edge TTS Audio Generator v{VERSION}")
+    parser.add_argument("--output-dir", type=str, default=None,
+                        help="Override audio output directory")
     subparsers = parser.add_subparsers(dest="command")
 
     subparsers.add_parser("generate", help="Generate all 6 character voices")
+    regen_sp = subparsers.add_parser("regenerate",
+        help="Force-regenerate specific words from a JSON file (pronunciation fix pipeline)")
+    regen_sp.add_argument("--regenerate-file", type=str, default=None,
+        help="Path to regenerate_words.json (default: contributions/regenerate_words.json)")
     sp = subparsers.add_parser("speak", help="Speak Awing text in all voices")
     sp.add_argument("text", nargs="*", help="Text to speak")
     subparsers.add_parser("test", help="Test sample pronunciations")
@@ -1062,8 +1359,13 @@ def main():
 
     args = parser.parse_args()
 
+    # Override output directory if specified
+    if args.output_dir:
+        AUDIO_DIR = Path(args.output_dir)
+
     commands = {
         "generate": cmd_generate,
+        "regenerate": cmd_regenerate,
         "speak": cmd_speak,
         "test": cmd_test,
         "voices": cmd_voices,

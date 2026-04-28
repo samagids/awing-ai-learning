@@ -1,5 +1,6 @@
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:awing_ai_learning/services/asset_pack_service.dart';
 
 /// Pronunciation service for the Awing language.
 ///
@@ -103,14 +104,22 @@ class PronunciationService {
     "'": 'glottal',
   };
 
-  /// Play an audio asset file, returns true if successful.
+  final AssetPackService _assetPack = AssetPackService();
+
+  /// Play an audio asset file from the install-time asset pack.
+  /// Returns true if successful.
   Future<bool> _playAudioAsset(String assetPath) async {
     try {
+      // Assets are in the PAD install-time pack, accessed via platform channel.
+      // The asset pack path is relative to the pack root (no "assets/" prefix).
+      final packPath = assetPath.replaceFirst('assets/', '');
+      final filePath = await _assetPack.getAssetPath(packPath);
+      if (filePath == null) return false;
+
       await _audioPlayer.stop();
       await _audioPlayer.setVolume(1.0);
       await _audioPlayer.setPlayerMode(PlayerMode.mediaPlayer);
-      final relativePath = assetPath.replaceFirst('assets/', '');
-      await _audioPlayer.play(AssetSource(relativePath));
+      await _audioPlayer.play(DeviceFileSource(filePath));
       return true;
     } catch (_) {
       return false;
@@ -124,42 +133,37 @@ class PronunciationService {
     return expertVoices;
   }
 
-  /// Get all other level voice lists (not the current level).
-  List<List<String>> _otherLevelVoices() {
-    final all = [beginnerVoices, mediumVoices, expertVoices];
-    final same = _sameLevelVoices();
-    return all.where((l) => l != same).toList();
-  }
-
   /// Build search paths for a given audio key across voice directories.
   ///
-  /// ONLY searches the 6 Edge TTS character voice directories.
-  /// Does NOT use legacy flat dirs (assets/audio/alphabet/, etc.)
-  /// because those contain YouTube-extracted clips we don't have rights to.
+  /// ONLY searches within the current level's voice directories.
+  /// Each level has its own voices with level-appropriate content:
+  ///   - Beginner (boy/girl): alphabet + beginner vocabulary + sentences
+  ///   - Medium (young_man/young_woman): alphabet + beginner+medium vocabulary + sentences
+  ///   - Expert (man/woman): alphabet + all vocabulary + sentences + stories
   ///
-  /// Priority order:
-  ///   1. Selected character voice (Edge TTS)
-  ///   2. Same-level alternate voice (e.g. girl if boy is selected)
-  ///   3. Other level voices
+  /// Does NOT fall back to other levels because voices only contain
+  /// audio for words at their difficulty level.
   List<String> _buildSearchPaths(String key, String category) {
     final paths = <String>[];
 
-    // 1. Current character voice — first priority
+    // 0. Native speaker recording — highest priority across all voices.
+    //    Populated by scripts/apply_recordings_as_audio.py from
+    //    training_data/recordings/ (Dr. Sama's recordings). When present,
+    //    every character voice plays the authentic recording instead of
+    //    the Edge TTS Swahili approximation.
+    paths.add('assets/audio/native/$category/$key.mp3');
+
+    // 1. Current character voice
     paths.add('assets/audio/$_currentVoice/$category/$key.mp3');
 
-    // 2. Same-level alternate voice
+    // 2. Same-level alternate voice (e.g. girl if boy is selected)
     for (final v in _sameLevelVoices()) {
       if (v != _currentVoice) {
         paths.add('assets/audio/$v/$category/$key.mp3');
       }
     }
 
-    // 3. Other level voices as last resort
-    for (final levelVoices in _otherLevelVoices()) {
-      for (final v in levelVoices) {
-        paths.add('assets/audio/$v/$category/$key.mp3');
-      }
-    }
+    // No cross-level fallback — voices only contain their level's content
 
     return paths;
   }
@@ -177,9 +181,12 @@ class PronunciationService {
       }
     }
 
-    // Fallback to TTS with phonetic conversion
+    // Fallback to TTS with phonetic conversion.
+    // Use a slightly faster rate so it sounds like a single word, not spelled out.
     final phonetic = awingToPhonetic(awingWord);
+    await _tts.setSpeechRate(0.4);
     await _tts.speak(phonetic);
+    await _tts.setSpeechRate(0.35);
   }
 
   /// Speak an Awing sentence — tries pre-generated clip first,
@@ -381,76 +388,160 @@ class PronunciationService {
   }
 
   /// Convert Awing orthography to English phonetic approximation for TTS fallback.
-  /// Designed so English TTS will SOUND OUT the word, not spell it.
+  /// Designed so English TTS will SOUND OUT the word as a single unit, not spell it.
+  ///
+  /// Strategy: build a pronounceable English-like word by converting each Awing
+  /// grapheme to an English syllable. The result should look like a real English
+  /// word so TTS reads it fluently (e.g., "nkɔ́'ə" → "nkaw-uh", "ŋgóonɛ́" → "nggoh-neh").
   static String awingToPhonetic(String awingWord) {
+    String text = awingWord.toLowerCase().trim();
+    if (text.isEmpty) return text;
 
-    String result = awingWord;
+    // Strip all tone diacritics (combining marks) via Unicode NFD decomposition
+    // This handles á→a, ɛ́→ɛ, ə̌→ə, etc. without needing every combination
+    final buffer = StringBuffer();
+    for (final rune in text.runes) {
+      final char = String.fromCharCode(rune);
+      // Skip combining diacritical marks (U+0300–U+036F)
+      if (rune >= 0x0300 && rune <= 0x036F) continue;
+      buffer.write(char);
+    }
+    text = buffer.toString();
 
-    // Strip tone diacritics first
-    result = result
-        .replaceAll('á', 'a').replaceAll('à', 'a')
-        .replaceAll('â', 'a').replaceAll('ǎ', 'a')
-        .replaceAll('é', 'e').replaceAll('è', 'e')
-        .replaceAll('ê', 'e').replaceAll('ě', 'e')
-        .replaceAll('í', 'i').replaceAll('ì', 'i')
-        .replaceAll('î', 'i').replaceAll('ǐ', 'i')
-        .replaceAll('ó', 'o').replaceAll('ò', 'o')
-        .replaceAll('ô', 'o').replaceAll('ǒ', 'o')
-        .replaceAll('ú', 'u').replaceAll('ù', 'u')
-        .replaceAll('û', 'u').replaceAll('ǔ', 'u');
+    // Process character by character, consuming multi-char sequences first
+    final out = StringBuffer();
+    int i = 0;
+    while (i < text.length) {
+      String? match;
 
-    // Replace special vowels WITH tone diacritics first
-    result = result
-        .replaceAll('ɛ́', 'eh').replaceAll('ɛ̂', 'eh').replaceAll('ɛ̌', 'eh')
-        .replaceAll('ə́', 'uh').replaceAll('ə̂', 'uh').replaceAll('ə̌', 'uh')
-        .replaceAll('ɔ́', 'aw').replaceAll('ɔ̂', 'aw').replaceAll('ɔ̌', 'aw')
-        .replaceAll('ɨ́', 'ih').replaceAll('ɨ̂', 'ih').replaceAll('ɨ̌', 'ih');
+      // Try 3-character sequences
+      if (i + 2 < text.length) {
+        final tri = text.substring(i, i + 3);
+        match = _phonemeMap3[tri];
+        if (match != null) { out.write(match); i += 3; continue; }
+      }
 
-    // Handle consonant digraphs/clusters BEFORE single consonants
-    result = result
-        .replaceAll('gh', 'g')
-        .replaceAll('ny', 'nyuh')
-        .replaceAll('ng', 'ng')
-        .replaceAll('sh', 'sh')
-        .replaceAll('ch', 'ch')
-        .replaceAll('ts', 'ts');
+      // Try 2-character sequences
+      if (i + 1 < text.length) {
+        final di = text.substring(i, i + 2);
+        match = _phonemeMap2[di];
+        if (match != null) { out.write(match); i += 2; continue; }
+      }
 
-    // Palatalized clusters
-    result = result
-        .replaceAll('ty', 'tee-yuh')
-        .replaceAll('ky', 'kee-yuh')
-        .replaceAll('fy', 'fee-yuh')
-        .replaceAll('py', 'pee-yuh')
-        .replaceAll('ly', 'lee-yuh');
+      // Single character
+      final ch = text[i];
+      match = _phonemeMap1[ch];
+      if (match != null) {
+        out.write(match);
+      } else if (RegExp(r'[a-z]').hasMatch(ch)) {
+        // Unknown letter — keep as-is with a vowel so TTS doesn't spell it
+        out.write('${ch}uh');
+      } else if (ch == ' ') {
+        out.write(' ');
+      }
+      // Skip other characters (punctuation, remaining diacritics, etc.)
+      i++;
+    }
 
-    // Labialized clusters
-    result = result
-        .replaceAll('tw', 'twuh')
-        .replaceAll('kw', 'kwuh')
-        .replaceAll('fw', 'fwuh')
-        .replaceAll('bw', 'bwuh')
-        .replaceAll('pw', 'pwuh');
-
-    // Replace remaining special vowels
-    result = result
-        .replaceAll('ɛ', 'eh')
-        .replaceAll('ə', 'uh')
-        .replaceAll('ɔ', 'aw')
-        .replaceAll('ɨ', 'ih');
-
-    result = result
-        .replaceAll('ŋ', 'ng')
-        .replaceAll("'", ', ');
-
-    // Long vowels
-    result = result
-        .replaceAll('aa', 'ah-ah')
-        .replaceAll('ee', 'ay-ay')
-        .replaceAll('oo', 'oh-oh')
-        .replaceAll('uu', 'oo-oo');
-
-    return result.trim();
+    return out.toString().trim();
   }
+
+  /// 3-character phoneme mappings (checked first)
+  static const _phonemeMap3 = {
+    // Prenasalized + labialized
+    'mbw': 'mbwah',
+    'ndw': 'ndwah',
+    'ngw': 'ngwah',
+    'nkw': 'nkwah',
+    // Prenasalized + palatalized
+    'nty': 'ntchah',
+    'nky': 'nkyah',
+  };
+
+  /// 2-character phoneme mappings (checked second)
+  static const _phonemeMap2 = {
+    // Long vowels — pronounce as extended single sound
+    'aa': 'ahh',
+    'ee': 'ayy',
+    'oo': 'ohh',
+    'uu': 'ooh',
+    // Prenasalized stops (common in Bantu)
+    'mb': 'mb',
+    'nd': 'nd',
+    'nj': 'nj',
+    'nk': 'nk',
+    'nt': 'nt',
+    'nz': 'nz',
+    // Consonant digraphs
+    'gh': 'g',
+    'sh': 'sh',
+    'ch': 'ch',
+    'ts': 'ts',
+    'ny': 'nyuh',
+    'ng': 'ng',
+    // Palatalized
+    'ty': 'tchah',
+    'ky': 'kyah',
+    'fy': 'fyah',
+    'py': 'pyah',
+    'ly': 'lyah',
+    // Labialized
+    'tw': 'twah',
+    'kw': 'kwah',
+    'fw': 'fwah',
+    'bw': 'bwah',
+    'pw': 'pwah',
+    'gw': 'gwah',
+    // Double consonants
+    'mm': 'mm',
+    'nn': 'nn',
+  };
+
+  /// 1-character phoneme mappings (checked last)
+  static const _phonemeMap1 = {
+    // Plain vowels
+    'a': 'ah',
+    'e': 'eh',
+    'i': 'ee',
+    'o': 'oh',
+    'u': 'oo',
+    // Special Awing vowels
+    'ɛ': 'eh',
+    'ə': 'uh',
+    'ɔ': 'aw',
+    'ɨ': 'ih',
+    // Precomposed vowels with tone diacritics (single Unicode codepoints).
+    // These are NOT decomposed by Dart, so the combining-mark stripper misses them.
+    // Acute (high tone)
+    'á': 'ah', 'é': 'eh', 'í': 'ee', 'ó': 'oh', 'ú': 'oo',
+    // Grave (low tone)
+    'à': 'ah', 'è': 'eh', 'ì': 'ee', 'ò': 'oh', 'ù': 'oo',
+    // Circumflex (falling tone)
+    'â': 'ah', 'ê': 'eh', 'î': 'ee', 'ô': 'oh', 'û': 'oo',
+    // Caron/háček (rising tone)
+    'ǎ': 'ah', 'ě': 'eh', 'ǐ': 'ee', 'ǒ': 'oh', 'ǔ': 'oo',
+    // Consonants — most are fine as-is for English TTS
+    'b': 'b',
+    'd': 'd',
+    'f': 'f',
+    'g': 'g',
+    'j': 'j',
+    'k': 'k',
+    'l': 'l',
+    'm': 'm',
+    'n': 'n',
+    'p': 'p',
+    'r': 'r',
+    's': 's',
+    't': 't',
+    'w': 'w',
+    'y': 'y',
+    'z': 'z',
+    'ŋ': 'ng',
+    "'": '',     // glottal stop — brief pause handled by TTS naturally
+    "\u2019": '', // curly apostrophe
+    "\u2018": '', // left curly apostrophe
+  };
 
   /// Get a human-readable pronunciation guide string for display
   static String getPronunciationGuide(String awingWord) {

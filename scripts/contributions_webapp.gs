@@ -79,12 +79,16 @@ function doPost(e) {
         return handleSubmission(payload);
       case 'fetch_pending':
         return handleFetchPending();
+      case 'fetch_all':
+        return handleFetchAll();
       case 'approve':
         return handleApproval(payload);
       case 'reject':
         return handleRejection(payload);
       case 'check_version':
         return handleVersionCheck(payload);
+      case 'fetch_audio':
+        return handleFetchAudio(payload);
       default:
         return jsonResponse({ status: 'error', message: 'Unknown action' });
     }
@@ -208,13 +212,75 @@ function handleFetchPending() {
 }
 
 /**
+ * Fetch ALL submissions (pending, approved, rejected) — used by Developer
+ * Mode dashboard to show a live count of contributions across all devices,
+ * not just what's been imported into the local SharedPreferences.
+ *
+ * The Developer Mode Review tab calls this on open + every 30 seconds so
+ * the developer sees new contributions arrive without restarting the app.
+ */
+function handleFetchAll() {
+  var ss = getSheet();
+  var submissions = ss.getSheetByName('Submissions');
+  var data = submissions.getDataRange().getValues();
+  var contributions = [];
+
+  // Skip header row
+  for (var i = 1; i < data.length; i++) {
+    var row = data[i];
+    // Skip blank rows (no id)
+    if (!row[0]) continue;
+    contributions.push({
+      id: row[0],
+      submittedAt: row[1] ? new Date(row[1]).toISOString() : null,
+      profileName: row[2],
+      type: row[3],
+      targetWord: row[4],
+      correction: row[5],
+      englishMeaning: row[6],
+      category: row[7],
+      notes: row[8],
+      audioUrl: row[9],
+      status: row[10] || 'pending',
+      reviewNotes: row[11],
+      reviewedAt: row[12] ? new Date(row[12]).toISOString() : null
+    });
+  }
+
+  return jsonResponse({ status: 'ok', contributions: contributions });
+}
+
+/**
  * Approve a contribution and bump content version.
+ *
+ * IDEMPOTENT: if this `id` is already in the Approved sheet, return the
+ * existing version without appending a new row or sending another email.
+ * This is required because the client's offline-queue retry may resend
+ * an approval that the server already processed (e.g. when the client's
+ * redirect-follow times out before it sees the success response). Without
+ * this check, every retry appends a duplicate Approved row with a higher
+ * version, which `handleVersionCheck` then returns as two separate updates
+ * for the same contribution.
  */
 function handleApproval(payload) {
   var ss = getSheet();
   var submissions = ss.getSheetByName('Submissions');
   var approved = ss.getSheetByName('Approved');
   var versionSheet = ss.getSheetByName('ContentVersion');
+
+  // Idempotency check: already approved?
+  var approvedData = approved.getDataRange().getValues();
+  for (var j = 1; j < approvedData.length; j++) {
+    if (approvedData[j][0] === payload.id) {
+      // Already approved — return the existing version, do not append.
+      var existingVersion = approvedData[j][7];
+      return jsonResponse({
+        status: 'ok',
+        version: existingVersion,
+        alreadyApproved: true
+      });
+    }
+  }
 
   // Find and update the submission row
   var data = submissions.getDataRange().getValues();
@@ -258,6 +324,8 @@ function handleApproval(payload) {
     }
   }
 
+  // Not in Submissions — but we already confirmed it's not in Approved
+  // above. This means the id really is unknown.
   return jsonResponse({ status: 'error', message: 'Contribution not found' });
 }
 
@@ -283,6 +351,11 @@ function handleRejection(payload) {
 
 /**
  * Check content version and return updates if newer version exists.
+ *
+ * Cross-references the Submissions sheet at query time to return the
+ * audioUrl for pronunciationFix contributions. This avoids needing to
+ * migrate the Approved sheet schema when we added audio support — the
+ * audio URL lives in Submissions (column 10), keyed by contribution id.
  */
 function handleVersionCheck(payload) {
   var ss = getSheet();
@@ -292,6 +365,16 @@ function handleVersionCheck(payload) {
 
   if (currentVersion <= clientVersion) {
     return jsonResponse({ status: 'ok', version: currentVersion, updates: [] });
+  }
+
+  // Build id → audioUrl map from Submissions sheet (column 10 is 'Audio File')
+  var submissions = ss.getSheetByName('Submissions');
+  var subData = submissions.getDataRange().getValues();
+  var audioById = {};
+  for (var k = 1; k < subData.length; k++) {
+    var sid = subData[k][0];
+    var url = subData[k][9];
+    if (sid && url) audioById[sid] = url;
   }
 
   // Fetch approved items newer than client version
@@ -310,7 +393,8 @@ function handleVersionCheck(payload) {
         englishMeaning: data[i][4],
         category: data[i][5],
         approvedAt: data[i][6],
-        version: data[i][7]
+        version: data[i][7],
+        audioUrl: audioById[data[i][0]] || null
       });
     }
   }
@@ -320,6 +404,41 @@ function handleVersionCheck(payload) {
     version: currentVersion,
     updates: updates
   });
+}
+
+/**
+ * Return audioUrl for each contribution id passed in.
+ * Payload: { action: 'fetch_audio', ids: ['id1', 'id2', ...] }
+ * Used by apply_contributions.py --refetch-audio to recover audio for
+ * contributions that were approved BEFORE handleVersionCheck learned to
+ * include audioUrl (i.e. before this file was redeployed).
+ */
+function handleFetchAudio(payload) {
+  var ids = payload.ids || [];
+  if (!Array.isArray(ids) || ids.length === 0) {
+    return jsonResponse({ status: 'ok', audio: {} });
+  }
+
+  var ss = getSheet();
+  var submissions = ss.getSheetByName('Submissions');
+  var subData = submissions.getDataRange().getValues();
+
+  // Column 0 is id, column 9 is audio URL.
+  var wanted = {};
+  for (var j = 0; j < ids.length; j++) {
+    wanted[ids[j]] = true;
+  }
+
+  var audio = {};
+  for (var k = 1; k < subData.length; k++) {
+    var sid = subData[k][0];
+    var url = subData[k][9];
+    if (sid && url && wanted[sid]) {
+      audio[sid] = url;
+    }
+  }
+
+  return jsonResponse({ status: 'ok', audio: audio });
 }
 
 // ==================== Helpers ====================
