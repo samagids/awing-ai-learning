@@ -1,9 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:awing_ai_learning/services/pronunciation_service.dart';
-import 'package:awing_ai_learning/services/progress_service.dart';
-import 'package:awing_ai_learning/services/image_service.dart';
-import 'package:awing_ai_learning/components/pack_image.dart';
 
 /// Data class for a single story
 class AwingStory {
@@ -76,7 +72,7 @@ final List<AwingStory> awingStories = [
         english: 'The owl came to the village.',
       ),
       StorySentence(
-        awing: 'Yə zó\'ə wâakɔ́ ne nkǐə.',
+        awing: 'Yə zó\'ə wâakɔ́ ne ndě.',
         english: 'She heard sounds at the water.',
       ),
       StorySentence(
@@ -84,15 +80,13 @@ final List<AwingStory> awingStories = [
         english: 'The fish was in the water.',
       ),
       StorySentence(
-        // Session 52: pímə = believe/confess (dict), not "see". Switched to náŋə (look at).
-        awing: 'Koŋə náŋə əshûə.',
-        english: 'The owl looked at the fish.',
+        awing: 'Koŋə pímə əshûə.',
+        english: 'The owl saw the fish.',
       ),
-    // FABRICATED — REMOVED by cleanup_fabricated_content.py
-//       StorySentence(
-//         awing: 'Yə cha\'tɔ́ əshûə ne mîə nô.',
-//         english: 'She greeted the fish, who swallowed water.',
-//       ),
+      StorySentence(
+        awing: 'Yə cha\'tɔ́ əshûə ne mîə nô.',
+        english: 'She greeted the fish, who swallowed water.',
+      ),
     ],
     vocabulary: [
       StoryVocabulary(awing: 'koŋə', english: 'owl'),
@@ -101,7 +95,7 @@ final List<AwingStory> awingStories = [
       StoryVocabulary(awing: 'yǐə', english: 'come'),
       StoryVocabulary(awing: 'zó\'ə', english: 'hear'),
       StoryVocabulary(awing: 'wâakɔ́', english: 'water'),
-      StoryVocabulary(awing: 'náŋə', english: 'look at'),
+      StoryVocabulary(awing: 'pímə', english: 'see/believe'),
       StoryVocabulary(awing: 'cha\'tɔ́', english: 'greet'),
       StoryVocabulary(awing: 'mîə', english: 'swallow'),
       StoryVocabulary(awing: 'nô', english: 'drink'),
@@ -129,33 +123,26 @@ final List<AwingStory> awingStories = [
     titleAwing: 'Mǎ ne apô',
     illustration: '👩',
     sentences: [
-    // FABRICATED — REMOVED by cleanup_fabricated_content.py
-//       StorySentence(
-//         awing: 'Mǎ nkadtə nə nəgoomɔ́.',
-//         english: 'Mother prepared plantain.',
-//       ),
-    // FABRICATED — REMOVED by cleanup_fabricated_content.py
-//       StorySentence(
-//         awing: 'Apô yə kwágə pɛ́nə.',
-//         english: 'Her hands worked and danced.',
-//       ),
-    // FABRICATED — REMOVED by cleanup_fabricated_content.py
-//       StorySentence(
-//         awing: 'Yə ko afûə ne ngwáŋə.',
-//         english: 'She took leaves and salt.',
-//       ),
-    // FABRICATED — REMOVED by cleanup_fabricated_content.py
-//       StorySentence(
-//         awing: 'Məkəŋɔ́ yə nyɛ́ə atîə.',
-//         english: 'The pots sat on the fire.',
-//       ),
-    // FABRICATED — REMOVED by cleanup_fabricated_content.py
-//       StorySentence(
-        // Simplified — Session 52: removed məndě (means "necks", not "each other")
-        // and pímə (dictionary: believe/confess, not "food").
-//         awing: 'Pəmǎ cha\'tɔ́ yə.',
-//         english: 'The mothers greeted her.',
-//       ),
+      StorySentence(
+        awing: 'Mǎ nkadtə nə nəgoomɔ́.',
+        english: 'Mother prepared plantain.',
+      ),
+      StorySentence(
+        awing: 'Apô yə kwágə pɛ́nə.',
+        english: 'Her hands worked and danced.',
+      ),
+      StorySentence(
+        awing: 'Yə ko afûə ne ngwáŋə.',
+        english: 'She took leaves and salt.',
+      ),
+      StorySentence(
+        awing: 'Məkəŋɔ́ yə nyɛ́ə atîə.',
+        english: 'The pots sat on the fire.',
+      ),
+      StorySentence(
+        awing: 'Pəmǎ cha\'tɔ́ məndě ne yə pímə.',
+        english: 'The mothers greeted each other when they saw her food.',
+      ),
     ],
     vocabulary: [
       StoryVocabulary(awing: 'mǎ', english: 'mother'),
@@ -192,31 +179,25 @@ final List<AwingStory> awingStories = [
     titleAwing: 'Alá\'ə ne pɛ́nə',
     illustration: '🏘️',
     sentences: [
-    // FABRICATED — REMOVED by cleanup_fabricated_content.py
-//       StorySentence(
-//         awing: 'Alá\'ə nyɛ́ə pəlɛ́ə ne asɨ́ə.',
-//         english: 'The village had many people and houses.',
-//       ),
-    // FABRICATED — REMOVED by cleanup_fabricated_content.py
-//       StorySentence(
-//         awing: 'Mbe\'tə pɛ́nə pimə akoobɔ́.',
-//         english: 'The young people danced and looked at the forest.',
-//       ),
-    // FABRICATED — REMOVED by cleanup_fabricated_content.py
-//       StorySentence(
-//         awing: 'Cha\'tɔ́ nyɛ́ə ngye pəmǎ ne pəyə.',
-//         english: 'Greetings were the voices of mothers and fathers.',
-//       ),
       StorySentence(
-        // Session 52: was 'Pəndě nəkəŋɔ́…' — Pəndě is voc 1/2 plural ("elders"),
-        // not "pots." Replaced with the correct n 1/6 plural for nəkəŋɔ́.
-        awing: 'Məkəŋɔ́ nyɛ́ə pə alá\'ə.',
-        english: 'Pots were in the village.',
+        awing: 'Alá\'ə nyɛ́ə pəlɛ́ə ne asɨ́ə.',
+        english: 'The village had many people and houses.',
       ),
       StorySentence(
-        // Session 52: removed unverified "pə ndě" locative construction.
-        awing: 'Ayáŋə pə alá\'ə.',
-        english: 'Wisdom is in the village.',
+        awing: 'Mbe\'tə pɛ́nə pimə akoobɔ́.',
+        english: 'The young people danced and looked at the forest.',
+      ),
+      StorySentence(
+        awing: 'Cha\'tɔ́ nyɛ́ə ngye pəmǎ ne pəyə.',
+        english: 'Greetings were the voices of mothers and fathers.',
+      ),
+      StorySentence(
+        awing: 'Pəndě nəkəŋɔ́ nyɛ́ə meŋ ne mândzǒ.',
+        english: 'The pots held soup and groundnuts.',
+      ),
+      StorySentence(
+        awing: 'Ayáŋə pə ndě alá\'ə.',
+        english: 'The wisdom lived in the village.',
       ),
     ],
     vocabulary: [
@@ -263,13 +244,12 @@ final List<AwingStory> awingStories = [
         english: 'Mother heard the trees and the leaves.',
       ),
       StorySentence(
-        awing: 'Yə nô nkǐə pə atîə nyɛ́ə tsó\'ə.',
+        awing: 'Yə nô ndě pə atîə nyɛ́ə tsó\'ə.',
         english: 'She drank water—the tree is healing.',
       ),
       StorySentence(
-        // Session 52: pímə "see" was wrong (dict: believe). Replaced with náŋə "look at".
-        awing: 'Apɛ̌ɛlə náŋə afûə nəlwîə ne nkǐə.',
-        english: 'The young person looked at the medicine leaf for the nose and water.',
+        awing: 'Apɛ̌ɛlə pímə afûə nəlwîə ne ndě.',
+        english: 'The young person saw the medicine leaf for the nose and water.',
       ),
       StorySentence(
         awing: 'Tsó\'ə pə alá\'ə ne ayáŋə pə mǎ.',
@@ -284,7 +264,7 @@ final List<AwingStory> awingStories = [
       StoryVocabulary(awing: 'atîə', english: 'tree'),
       StoryVocabulary(awing: 'zó\'ə', english: 'hear'),
       StoryVocabulary(awing: 'nô', english: 'drink'),
-      StoryVocabulary(awing: 'náŋə', english: 'look at'),
+      StoryVocabulary(awing: 'pímə', english: 'see'),
       StoryVocabulary(awing: 'nəlwîə', english: 'nose'),
       StoryVocabulary(awing: 'ayáŋə', english: 'wisdom'),
     ],
@@ -319,27 +299,24 @@ final List<AwingStory> awingStories = [
         awing: 'Ngɔ́bə yǐə nchîndê.',
         english: 'The chicken came to the compound.',
       ),
-    // FABRICATED — REMOVED by cleanup_fabricated_content.py
-//       StorySentence(
-//         awing: 'Ngɔ́bə a kə jíə ngəsáŋɔ́.',
-//         english: 'The chicken was eating corn.',
-//       ),
+      StorySentence(
+        awing: 'Ngɔ́bə a kə jíə ngəsáŋɔ́.',
+        english: 'The chicken was eating corn.',
+      ),
       StorySentence(
         awing: 'Ngwûə zó\'ə ngɔ́bə.',
         english: 'The dog heard the chicken.',
       ),
-    // FABRICATED — REMOVED by cleanup_fabricated_content.py
-//       StorySentence(
-//         awing: 'Yə kə́ərə kə ngɔ́bə.',
-//         english: 'It ran to the chicken.',
-//       ),
+      StorySentence(
+        awing: 'Yə kə́ərə kə ngɔ́bə.',
+        english: 'It ran to the chicken.',
+      ),
       StorySentence(
         awing: 'Ngɔ́bə shɔ́ŋə atîə wíŋɔ́!',
         english: 'The chicken climbed a big tree!',
       ),
       StorySentence(
-        // Session 52: pímə "see" was wrong (dict: believe). Replaced with náŋə "look at".
-        awing: 'Ngwûə náŋə ngɔ́bə atîə.',
+        awing: 'Ngwûə pímə ngɔ́bə atîə.',
         english: 'The dog looked at the chicken in the tree.',
       ),
       StorySentence(
@@ -380,43 +357,38 @@ final List<AwingStory> awingStories = [
     titleAwing: 'Tǎ afoonə ne mbəŋə',
     illustration: '🌧️',
     sentences: [
-    // FABRICATED — REMOVED by cleanup_fabricated_content.py
-//       StorySentence(
-//         awing: 'Tǎ ghɛnɔ́ afoonə kə̂ŋə.',
-//         english: 'Father went to the farm early.',
-//       ),
+      StorySentence(
+        awing: 'Tǎ ghɛnɔ́ afoonə kə̂ŋə.',
+        english: 'Father went to the farm early.',
+      ),
       StorySentence(
         awing: 'Yə tɔ̀ə ngəsáŋɔ́ ne azó\'ə.',
         english: 'He planted corn and yam.',
       ),
-    // FABRICATED — REMOVED by cleanup_fabricated_content.py
-//       StorySentence(
-//         awing: 'Mɔ́numə a kə tɔnɔ́ sagɔ́.',
-//         english: 'The sun was very hot.',
-//       ),
-    // FABRICATED — REMOVED by cleanup_fabricated_content.py
-//       StorySentence(
-//         awing: 'Yə nô nkǐə.',
-//         english: 'He drank water.',
-//       ),
+      StorySentence(
+        awing: 'Mɔ́numə a kə tɔnɔ́ sagɔ́.',
+        english: 'The sun was very hot.',
+      ),
+      StorySentence(
+        awing: 'Yə nô ndě, yə jwítə.',
+        english: 'He drank water and rested.',
+      ),
       StorySentence(
         awing: 'Aləmə yǐə nəpóolə.',
         english: 'Clouds came in the sky.',
       ),
-    // FABRICATED — REMOVED by cleanup_fabricated_content.py
-//       StorySentence(
-//         awing: 'Mbəŋə a kə pə̀ə wíŋɔ́!',
-//         english: 'The rain fell heavily!',
-//       ),
+      StorySentence(
+        awing: 'Mbəŋə a kə pə̀ə wíŋɔ́!',
+        english: 'The rain fell heavily!',
+      ),
       StorySentence(
         awing: 'Tǎ wiŋɔ́, yə sóŋə: "Ashî\'nə sagɔ́!"',
         english: 'Father was happy, he said: "Very good!"',
       ),
-    // FABRICATED — REMOVED by cleanup_fabricated_content.py
-//       StorySentence(
-//         awing: 'Mbəŋə ko pə nkǐə kə afoonə.',
-//         english: 'The rain brought water to the farm.',
-//       ),
+      StorySentence(
+        awing: 'Mbəŋə ko pə ndě kə afoonə.',
+        english: 'The rain brought water to the farm.',
+      ),
     ],
     vocabulary: [
       StoryVocabulary(awing: 'afoonə', english: 'farm'),
@@ -451,21 +423,18 @@ final List<AwingStory> awingStories = [
     titleAwing: 'Mɔ́ŋkə kə mətéenɔ́',
     illustration: '🛍️',
     sentences: [
-    // FABRICATED — REMOVED by cleanup_fabricated_content.py
-//       StorySentence(
-//         awing: 'Mǎ sóŋə: "Yîə, ghɛnɔ́ mətéenɔ́."',
-//         english: 'Mother said: "Come, let\'s go to the market."',
-//       ),
+      StorySentence(
+        awing: 'Mǎ sóŋə: "Yîə, ghɛnɔ́ mətéenɔ́."',
+        english: 'Mother said: "Come, let\'s go to the market."',
+      ),
       StorySentence(
         awing: 'Mɔ́ŋkə wiŋɔ́ sagɔ́!',
         english: 'The child was very happy!',
       ),
-    // FABRICATED — REMOVED by cleanup_fabricated_content.py
-//       StorySentence(
-        // Session 52: pímə "see" was wrong (dict: believe). Replaced with náŋə "look at".
-//         awing: 'Yə náŋə amú\'ɔ́ ne lámɔ́sə.',
-//         english: 'He looked at bananas and oranges.',
-//       ),
+      StorySentence(
+        awing: 'Yə pímə amú\'ɔ́ ne lámɔ́sə.',
+        english: 'He saw bananas and oranges.',
+      ),
       StorySentence(
         awing: 'Mǎ júnə ngəsáŋɔ́ ne ndzě.',
         english: 'Mother bought corn and vegetables.',
@@ -514,191 +483,6 @@ final List<AwingStory> awingStories = [
         options: ['Thank you', 'More please', 'Goodbye'],
       ),
     ],
-  ),
-
-
-  // Auto-extracted from Bible NT (non-biblical-feeling)
-  // 1CO.13.5-7 — Story 1
-  AwingStory(
-    titleEnglish: 'Story 1',
-    titleAwing: 'ńkě ntso yi',
-    illustration: '📖',
-    sentences: [
-      StorySentence(
-        awing: 'ńkě ntso yi féŋ nə́ túg pô, ńkě aŋwɛ túg pô, ńkě ndě zaŋkə̂ ńdzáŋə pô, ńkě təpɔŋ lɔʼkə̂ pô.',
-        english: 'doesn’t behave itself inappropriately, doesn’t seek its own way, is not provoked, takes no account of evil;',
-      ),
-      StorySentence(
-        awing: 'Akɔŋnə á kě kɔŋtə̂ əghâ páʼ təpɔŋə a chî nə́ pô, ḿbə́ ńkɔŋtə̂ əghâ páʼ ndə̌ŋdəŋə́ a chî nə́.',
-        english: 'doesn’t rejoice in unrighteousness, but rejoices with the truth;',
-      ),
-      StorySentence(
-        awing: 'Akɔŋnə á kě anu waamə̂ ḿbəənə̂ ḿmyaʼə̂ pô, a tə́gə atû nə́ mbimə́, nə́ akwaŋ ńtə́ ḿbyáabə, pó awaamə́ntə́əmə.',
-        english: 'bears all things, believes all things, hopes all things, endures all things.',
-      ),
-    ],
-    vocabulary: [
-      StoryVocabulary(awing: 'ntso', english: 'date palm'),
-      StoryVocabulary(awing: 'pô', english: 'us'),
-      StoryVocabulary(awing: 'ndě', english: 'neck'),
-      StoryVocabulary(awing: 'zaŋkə̂', english: 'light'),
-      StoryVocabulary(awing: 'ńdzáŋə', english: 'color'),
-      StoryVocabulary(awing: 'Akɔŋnə', english: 'love'),
-    ],
-    questions: [],
-  ),
-  // 1CO.15.35-37 — Story 2
-  AwingStory(
-    titleEnglish: 'Story 2',
-    titleAwing: 'Lə́ ŋwu tsə̌',
-    illustration: '📖',
-    sentences: [
-      StorySentence(
-        awing: 'Lə́ ŋwu tsə̌ a chî təmbɔʼ a pítə ńgə́, “Təmbɔʼ pəkwû pə́ júmnə nəwû lə́ ə́lɛ́? Pó yǒ tíʼ túg lə́ zə́ənə́ ntê mbəəmə?”',
-        english: 'But someone will say, “How are the dead raised?” and, “With what kind of body do they come?”',
-      ),
-      StorySentence(
-        awing: 'Akəkóg! Ajú páʼ gho pǐ nə́ a kě sáʼə pô tə ńdéʼtə á kwûə.',
-        english: 'You foolish one, that which you yourself sow is not made alive unless it dies.',
-      ),
-      StorySentence(
-        awing: 'Ajú páʼ gho pǐ nə́ á ndəsê lə́ tsɔʼə mbi əjǐə. Əghâ tsə́ a pə́ pə́ mbi ngəsáŋ kəənə ajúmə ndaʼə.',
-        english: 'That which you sow, you don’t sow the body that will be, but a bare grain, maybe of wheat, or of some other kind.',
-      ),
-    ],
-    vocabulary: [
-      StoryVocabulary(awing: 'Lə́', english: 'but'),
-      StoryVocabulary(awing: 'a', english: 'he'),
-      StoryVocabulary(awing: 'pítə', english: 'ask'),
-      StoryVocabulary(awing: 'ńgə́', english: 'verb complement'),
-      StoryVocabulary(awing: '“Təmbɔʼ', english: 'said'),
-      StoryVocabulary(awing: 'pəkwû', english: 'dead'),
-    ],
-    questions: [],
-  ),
-  // 1TH.5.4-7 — Story 3
-  AwingStory(
-    titleEnglish: 'Story 3',
-    titleAwing: 'Lə́ pɨ nə́',
-    illustration: '📖',
-    sentences: [
-      StorySentence(
-        awing: 'Lə́ pɨ nə́ pəlimə́ mə, pɨ kě lə́ á mə́m ndzəmə́ chî təmbɔʼ alě yəwə́ á yǒ ńgabkə̂ ńgyǐəə á mbô pəənə́ ándó ndzə̌ pô.',
-        english: 'But you, brothers, aren’t in darkness, that the day should overtake you like a thief.',
-      ),
-      StorySentence(
-        awing: 'Pɨ lə́ pɨ pə́ nkyaʼə, ḿbə́ pi pə́ əliʼ pə́ ŋwaʼ nə́. Pɛn kě lə́ á mbô nətúʼ pópə əliʼ pipə sɛ́n nə́ chî pô.',
-        english: 'You are all children of light, and children of the day. We don’t belong to the night, nor to darkness,',
-      ),
-      StorySentence(
-        awing: 'Lə́ələ́ á pə́ ńgə́ kɔ pɛn tə́ ńdê ándó pətsə́ pəənə. Pɛn tə́ ńjwə́ʼtə əliʼə́, atûə azɛ̂nə a kə́ ńdá əghâ atsəmə.',
-        english: 'so then let’s not sleep, as the rest do, but let’s watch and be sober.',
-      ),
-      StorySentence(
-        awing: 'Ńté ńgə́ pɨ pö lê nə́ pó lê lə́ á nətúʼə, pɨ pö pɛ́ nə́ məloʼ pó kə́ ḿbɛ́ɛlə lə́ á nətúʼə.',
-        english: 'For those who sleep, sleep in the night; and those who are drunk are drunk in the night.',
-      ),
-    ],
-    vocabulary: [
-      StoryVocabulary(awing: 'Lə́', english: 'but'),
-      StoryVocabulary(awing: 'pəlimə́', english: 'brothers'),
-      StoryVocabulary(awing: 'mə', english: 'my'),
-      StoryVocabulary(awing: 'kě', english: 'marker of negation'),
-      StoryVocabulary(awing: 'á', english: 'he'),
-      StoryVocabulary(awing: 'ndzəmə́', english: 'back'),
-    ],
-    questions: [],
-  ),
-  // 1TI.2.10-13 — Story 4
-  AwingStory(
-    titleEnglish: 'Story 4',
-    titleAwing: 'lə́ pó lɔgə̂',
-    illustration: '📖',
-    sentences: [
-      StorySentence(
-        awing: 'lə́ pó lɔgə̂ pə́ məfaʼ mimə əshîʼnə ándó məmɔ́b məshumə́, ándó pəngyě pó sóŋ nə́ ńgə́ pó jî Əsê.',
-        english: 'but (which becomes women professing godliness) with good works.',
-      ),
-      StorySentence(
-        awing: 'Məngyě ntsəmə a naʼ nə́ ntso yí ńkə́ ńdzóʼnə əghâ páʼ a tə́ nə́ ńdzéʼə.',
-        english: 'Let a woman learn in quietness with full submission.',
-      ),
-      StorySentence(
-        awing: 'Maŋ kě əsa yitsə̌ á mbô məngyě fɛ̂ ńgə́ a zéʼkə kɨ ńtúg mətəənə á ndú mbyâŋnə pô, pó shib ńnaʼ nə́ ntso əghóobə́.',
-        english: 'But I don’t permit a woman to teach, nor to exercise authority over a man, but to be in quietness.',
-      ),
-      StorySentence(
-        awing: 'Ńté ńgə́ pə́ nə ḿbeg ńtsoŋkə̂ lə́ Adam záʼ ḿbɔŋə̂ tsoŋkə̂ Ifə.',
-        english: 'For Adam was first formed, then Eve.',
-      ),
-    ],
-    vocabulary: [
-      StoryVocabulary(awing: 'lə́', english: 'but'),
-      StoryVocabulary(awing: 'pó', english: 'us'),
-      StoryVocabulary(awing: 'məfaʼ', english: 'works'),
-      StoryVocabulary(awing: 'əshîʼnə', english: 'good'),
-      StoryVocabulary(awing: 'ándó', english: 'approximately'),
-      StoryVocabulary(awing: 'məshumə́', english: 'pearls'),
-    ],
-    questions: [],
-  ),
-  // 1TI.5.1-3 — Story 5
-  AwingStory(
-    titleEnglish: 'Story 5',
-    titleAwing: 'Kɔ gho sáʼə',
-    illustration: '📖',
-    sentences: [
-      StorySentence(
-        awing: 'Kɔ gho sáʼə ntəŋkaŋə́, tséebə mbô yə́ ándó tǎ əgho. Túg nkaŋŋwu yi mbyâŋnə ándó pəlim pô,',
-        english: 'Don’t rebuke an older man, but exhort him as a father; the younger men as brothers;',
-      ),
-      StorySentence(
-        awing: 'ńtúg pətəkaŋ pə́ pəngyě ándó pəmǎ pô, ńkə́ ńtúg nkaŋŋwu pəngyě ándó pəlim pô pipə́ pəngyě tə kɔntə yitsə̌.',
-        english: 'the elder women as mothers; the younger as sisters, in all purity.',
-      ),
-      StorySentence(
-        awing: 'Pəkogə́ ándó pó pə́ nə́ chigə pəkog gho nɨd ngóʼkə nə́ pó.',
-        english: 'Honor widows who are widows indeed.',
-      ),
-    ],
-    vocabulary: [
-      StoryVocabulary(awing: 'gho', english: 'you'),
-      StoryVocabulary(awing: 'tséebə', english: 'talk'),
-      StoryVocabulary(awing: 'mbô', english: 'people of'),
-      StoryVocabulary(awing: 'ándó', english: 'approximately'),
-      StoryVocabulary(awing: 'tǎ', english: 'five'),
-      StoryVocabulary(awing: 'əgho', english: 'possessive pronoun yours'),
-    ],
-    questions: [],
-  ),
-  // 2CO.2.6-8 — Story 6
-  AwingStory(
-    titleEnglish: 'Story 6',
-    titleAwing: 'Atsáŋ jɨ páʼ',
-    illustration: '📖',
-    sentences: [
-      StorySentence(
-        awing: 'Atsáŋ jɨ páʼ ŋwu yi nɨ́ nə́ a fɛ̂ nə́ lə́, á koʼnə̂ á mbô ńté ŋwu zə̂.',
-        english: 'This punishment which was inflicted by the many is sufficient for such a one;',
-      ),
-      StorySentence(
-        awing: 'Nə́ pə əghâ nə́ pɨ tíʼ ńchî lə́ á mə́ ləgnə̂ təpɔŋ əyǐ ə́ tû pwɔ́dkə ntɨ́ əyə́, ńjî ńgə́ kɔ a tə́ fɨnə̂ tə́shúnə́.',
-        english: 'so that on the contrary you should rather forgive him and comfort him, lest by any means such a one should be swallowed up with his excessive sorrow.',
-      ),
-      StorySentence(
-        awing: 'Lə́ á pə́ ńgə́ maŋ póʼ mbô nə́ pɨ ńgə́ nə́ ghɛlə̂ a jî ńgə́ pɨ chígə́ ńkɔŋə̂ yə́.',
-        english: 'Therefore I beg you to confirm your love toward him.',
-      ),
-    ],
-    vocabulary: [
-      StoryVocabulary(awing: 'nɨ́', english: 'many'),
-      StoryVocabulary(awing: 'a', english: 'he'),
-      StoryVocabulary(awing: 'lə́', english: 'but'),
-      StoryVocabulary(awing: 'mbô', english: 'people of'),
-      StoryVocabulary(awing: 'əghâ', english: 'season'),
-      StoryVocabulary(awing: 'mə́', english: 'my'),
-    ],
-    questions: [],
   ),
 ];
 
@@ -900,7 +684,6 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> {
   void initState() {
     super.initState();
     _pronunciation.init();
-    _pronunciation.setVoiceForLevel('expert');
   }
 
   void _nextSentence() {
@@ -925,9 +708,9 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> {
     }
   }
 
-  Future<void> _speakSentence() async {
+  void _speakSentence() {
     final sentence = widget.story.sentences[_currentSentenceIndex];
-    await _pronunciation.speakAwing(sentence.awing);
+    _pronunciation.speakAwing(sentence.awing);
   }
 
   @override
@@ -936,9 +719,6 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> {
       return StoryQuizScreen(
         story: widget.story,
         onComplete: () {
-          context.read<ProgressService>().completeLesson(
-            'story_${widget.story.titleEnglish.toLowerCase().replaceAll(' ', '_')}',
-          );
           Navigator.pop(context, true);
         },
       );
@@ -967,30 +747,14 @@ class _StoryViewerScreenState extends State<StoryViewerScreen> {
         child: SafeArea(
           child: Column(
             children: [
-              // Large illustration area — per-sentence image from PAD pack
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: PackImage.path(
-                    packPath: ImageService.storyPackPath(sentence.awing),
-                    width: double.infinity,
-                    height: 180,
-                    fit: BoxFit.cover,
-                    placeholder: Container(
-                      height: 180,
-                      color: Colors.teal.shade100,
-                    ),
-                    errorWidget: Container(
-                      height: 180,
-                      color: Colors.teal.shade100,
-                      alignment: Alignment.center,
-                      child: Text(
-                        widget.story.illustration,
-                        style: const TextStyle(fontSize: 72),
-                      ),
-                    ),
-                  ),
+              // Large illustration area
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(24),
+                child: Text(
+                  widget.story.illustration,
+                  style: const TextStyle(fontSize: 96),
+                  textAlign: TextAlign.center,
                 ),
               ),
               // Sentence card
@@ -1159,4 +923,302 @@ class _StoryQuizScreenState extends State<StoryQuizScreen> {
   void _selectAnswer(String answer) {
     if (_answered) return;
 
-    final i
+    final isCorrect = answer == widget.story.questions[_currentQuestion].correctAnswer;
+    setState(() {
+      _selectedAnswer = answer;
+      _answered = true;
+      if (isCorrect) {
+        _score++;
+      }
+    });
+  }
+
+  void _nextQuestion() {
+    if (_currentQuestion < widget.story.questions.length - 1) {
+      setState(() {
+        _currentQuestion++;
+        _answered = false;
+        _selectedAnswer = null;
+      });
+    } else {
+      setState(() {
+        _quizCompleted = true;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_quizCompleted) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Quiz Complete!'),
+          backgroundColor: Colors.teal,
+          automaticallyImplyLeading: false,
+        ),
+        body: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Colors.teal.shade50,
+                Colors.cyan.shade50,
+              ],
+            ),
+          ),
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.celebration,
+                  size: 80,
+                  color: Colors.teal,
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  'Great Job!',
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    color: Colors.teal,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'You scored $_score/${widget.story.questions.length}',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    color: Colors.teal,
+                  ),
+                ),
+                const SizedBox(height: 48),
+                ElevatedButton.icon(
+                  onPressed: widget.onComplete,
+                  icon: const Icon(Icons.check),
+                  label: const Text('Complete Story'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.teal,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 32,
+                      vertical: 16,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    final question = widget.story.questions[_currentQuestion];
+    final isCorrect = _selectedAnswer == question.correctAnswer;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Story Quiz'),
+        backgroundColor: Colors.teal,
+        automaticallyImplyLeading: false,
+      ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.teal.shade50,
+              Colors.cyan.shade50,
+            ],
+          ),
+        ),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'Question ${_currentQuestion + 1}/${widget.story.questions.length}',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey.shade600,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  question.question,
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.teal,
+                  ),
+                ),
+                const SizedBox(height: 32),
+                ...question.options.map((option) {
+                  final isSelected = _selectedAnswer == option;
+                  final showCorrect = _answered && option == question.correctAnswer;
+                  final showIncorrect = _answered && isSelected && !isCorrect;
+
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: ElevatedButton(
+                      onPressed: _answered ? null : () => _selectAnswer(option),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _answered
+                            ? showCorrect
+                                ? Colors.green
+                                : showIncorrect
+                                    ? Colors.red
+                                    : Colors.grey.shade300
+                            : Colors.white,
+                        foregroundColor: Colors.teal,
+                        disabledBackgroundColor: Colors.grey.shade300,
+                        disabledForegroundColor: Colors.black54,
+                        side: BorderSide(
+                          color: isSelected ? Colors.teal : Colors.grey.shade300,
+                          width: isSelected ? 2 : 1,
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text(
+                        option,
+                        style: const TextStyle(fontSize: 16),
+                      ),
+                    ),
+                  );
+                }).toList(),
+                const SizedBox(height: 32),
+                if (_answered)
+                  Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: isCorrect ? Colors.green.shade100 : Colors.red.shade100,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              isCorrect ? Icons.check_circle : Icons.cancel,
+                              color: isCorrect ? Colors.green : Colors.red,
+                              size: 28,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                isCorrect ? 'Correct!' : 'Not quite right.',
+                                style: TextStyle(
+                                  color: isCorrect ? Colors.green.shade800 : Colors.red.shade800,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: _nextQuestion,
+                          icon: const Icon(Icons.arrow_forward),
+                          label: Text(
+                            _currentQuestion < widget.story.questions.length - 1
+                                ? 'Next Question'
+                                : 'Finish',
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.teal,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class StoryVocabularyView extends StatelessWidget {
+  const StoryVocabularyView({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    // Collect all vocabulary from all stories
+    final allVocab = <String, String>{};
+    for (final story in awingStories) {
+      for (final vocab in story.vocabulary) {
+        allVocab[vocab.awing] = vocab.english;
+      }
+    }
+
+    final vocabList = allVocab.entries.toList()
+        ..sort((a, b) => a.key.compareTo(b.key));
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: vocabList.length,
+      itemBuilder: (context, index) {
+        final entry = vocabList[index];
+        return Card(
+          margin: const EdgeInsets.only(bottom: 12),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+              gradient: LinearGradient(
+                colors: [Colors.cyan.shade50, Colors.teal.shade50],
+              ),
+            ),
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        entry.key,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.teal,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        entry.value,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey.shade700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  onPressed: () {
+                    PronunciationService().speakAwing(entry.key);
+                  },
+                  icon: const Icon(Icons.volume_up),
+                  color: Colors.teal,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
