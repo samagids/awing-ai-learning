@@ -117,6 +117,38 @@ jobs:
           retention-days: 90
           if-no-files-found: ignore
 
+      # === AUTO-UPLOAD TO TESTFLIGHT ===
+      # Pushes the signed IPA to App Store Connect via fastlane pilot.
+      # Runs only on tags AND only when the App Store Connect API secrets
+      # are configured. The build still succeeds (and the IPA is still
+      # uploaded as a workflow artifact) if the upload is skipped.
+      - name: Upload to TestFlight
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          APP_STORE_CONNECT_API_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          APP_STORE_CONNECT_API_KEY_KEY: ${{ secrets.ASC_KEY_BASE64 }}
+          APP_STORE_CONNECT_API_KEY_IS_KEY_CONTENT_BASE64: 'true'
+          APP_STORE_CONNECT_API_KEY_IN_HOUSE: 'false'
+        run: |
+          if [ -z "${APP_STORE_CONNECT_API_KEY_ID:-}" ]; then
+            echo "::warning::App Store Connect API secrets not set — skipping TestFlight upload."
+            exit 0
+          fi
+          gem install fastlane --no-document --quiet
+          IPA=$(find build/ios/ipa -name "*.ipa" | head -1)
+          if [ -z "$IPA" ]; then
+            echo "::error::No IPA found at build/ios/ipa/*.ipa"
+            exit 1
+          fi
+          echo "Uploading $IPA to TestFlight via fastlane pilot..."
+          fastlane pilot upload \
+            --ipa "$IPA" \
+            --app_identifier "com.awing.awingAiLearning" \
+            --skip_waiting_for_build_processing \
+            --skip_submission
+          echo "✓ Build uploaded — Apple processes for 10-15 min before TestFlight install becomes available."
+
       - name: Cleanup keychain
         if: always()
         run: |
