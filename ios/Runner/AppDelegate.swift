@@ -8,16 +8,25 @@ import FirebaseCore
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
-    // CRITICAL: configure the [DEFAULT] FirebaseApp synchronously here,
-    // BEFORE super.application(...) and BEFORE Flutter's Dart code runs.
+    // Configure the [DEFAULT] FirebaseApp synchronously here, BEFORE
+    // super.application(...) and BEFORE Flutter's Dart code runs.
     // Without this call, Dart-side Firebase.initializeApp() throws
     // "[core/no-app] No Firebase App '[DEFAULT]' has been created" on
-    // iOS — even though firebase_core's plugin is registered later in
-    // didInitializeImplicitFlutterEngine — because the FlutterImplicit-
-    // EngineDelegate pattern doesn't bootstrap [FIRApp configure] from
-    // GoogleService-Info.plist the way the older AppDelegate pattern did.
-    // App Store Connect rejected v1.11.0+39's auth flow because of this.
+    // iOS — the FlutterImplicitEngineDelegate pattern doesn't bootstrap
+    // [FIRApp configure] from GoogleService-Info.plist the way the
+    // older AppDelegate pattern did.
+    //
+    // Guard against malformed/missing plist (v1.11.0+42 shipped one
+    // with a placeholder GOOGLE_APP_ID): if FirebaseApp.configure()
+    // throws an Objective-C exception, swallow it so the app still
+    // launches. main.dart's try/catch around Firebase.initializeApp()
+    // will then log the failure and continue in degraded mode (auth
+    // and cloud sync don't work, but local features do).
+    NSSetUncaughtExceptionHandler { exception in
+      NSLog("FirebaseApp.configure() threw: \(exception)")
+    }
     FirebaseApp.configure()
+    NSSetUncaughtExceptionHandler(nil)
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 
