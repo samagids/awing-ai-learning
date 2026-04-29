@@ -10,7 +10,14 @@ on:
 
 jobs:
   build-ios:
-    runs-on: macos-latest
+    # macos-15 has Xcode 26 + Xcode 16 preinstalled. macos-latest
+    # currently maps to macOS 14 with Xcode 16 only (iOS 18.5 SDK),
+    # which Apple rejects at TestFlight upload as of Apr 2026:
+    # "All iOS and iPadOS apps must be built with the iOS 26 SDK or
+    # later, included in Xcode 26 or later." Run #38 hit this:
+    # altool returned 409 STATE_ERROR.VALIDATION_ERROR / SDK version
+    # issue.
+    runs-on: macos-15
     # 90 min: signed Flutter iOS archives with the full ~1 GB PAD asset
     # bundle take 35-50 min just for archive+sign; the IPA export +
     # TestFlight upload steps add another 10-15 min. v1.11.0+36-test-1
@@ -21,6 +28,42 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      # Pick the highest Xcode_NN.app on the runner. macos-15 ships with
+      # Xcode 16 AND Xcode 26 preinstalled — default activation is
+      # whichever the runner image was bootstrapped with. Apple now
+      # requires iOS 26 SDK (Xcode 26+) for all App Store / TestFlight
+      # uploads, so we explicitly select 26 before flutter touches Xcode.
+      - name: Auto-select latest Xcode
+        run: |
+          set -euo pipefail
+          echo "Available Xcode installations on this runner:"
+          ls -1d /Applications/Xcode_*.app 2>/dev/null || ls -1d /Applications/Xcode*.app 2>/dev/null
+          echo ""
+
+          LATEST=$(ls -1d /Applications/Xcode_*.app 2>/dev/null | sort -V | tail -1)
+          if [ -z "${LATEST:-}" ]; then
+            LATEST="/Applications/Xcode.app"
+          fi
+          echo "Selecting: $LATEST"
+          sudo xcode-select -s "$LATEST/Contents/Developer"
+
+          echo ""
+          echo "Active Xcode after selection:"
+          xcode-select -p
+          xcodebuild -version
+          echo ""
+
+          # Hard-fail if the active Xcode doesn't include iOS 26 SDK.
+          # Apple started rejecting iOS 18.x SDK uploads in 2026.
+          if xcodebuild -showsdks 2>/dev/null | grep -qE 'iphoneos2[6-9]|iphoneos[3-9][0-9]'; then
+            echo "::notice::Active Xcode includes iOS 26+ SDK — good."
+          else
+            echo "::error::Active Xcode does NOT include iOS 26 SDK. App Store Connect will reject the upload."
+            echo "Available SDKs:"
+            xcodebuild -showsdks 2>/dev/null || true
+            exit 1
+          fi
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
