@@ -6,7 +6,7 @@ description: A lightweight on-device AI application to teach the Awing language.
 
 publish_to: "none"
 
-version: 1.11.0+41
+version: 1.11.0+42
 
 environment:
   sdk: ">=3.4.0 <4.0.0"
@@ -46,12 +46,30 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  # Generates platform-specific app icon sets from a single source PNG.
+  # Run: dart run flutter_launcher_icons
+  flutter_launcher_icons: ^0.14.4
 
 flutter_native_splash:
   color: "#006432"
   image: assets/splash_icon.png
   android: true
   ios: true
+
+# Generates the actual app icon (separate from flutter_native_splash which
+# only does the launch screen). Without this, the iOS app icon is the
+# default Flutter placeholder — visible on the home screen and in the
+# App Store listing. iOS requires icons WITHOUT alpha channel; the
+# remove_alpha_ios flag strips it before bundling.
+flutter_launcher_icons:
+  android: "ic_launcher"
+  ios: true
+  image_path: "assets/images/app_icon.png"
+  remove_alpha_ios: true
+  background_color_ios: "#006432"
+  adaptive_icon_background: "#006432"
+  adaptive_icon_foreground: "assets/images/app_icon.png"
+  min_sdk_android: 26
 
 flutter:
   uses-material-design: true

@@ -93,11 +93,14 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      # Generate Android app icon + splash screen from assets/splash_icon.png
-      # per pubspec.yaml's flutter_native_splash: block. Without this, the
-      # APK ships with default Flutter placeholder icons.
+      # Generate Android splash + app icons. Two SEPARATE packages:
+      #   - flutter_native_splash:create  → res/drawable*/launch_background.xml
+      #   - flutter_launcher_icons        → res/mipmap-*/ic_launcher.png
+      # flutter_native_splash does NOT update the app icon — only the splash.
       - name: Generate Android splash + app icons
-        run: dart run flutter_native_splash:create
+        run: |
+          dart run flutter_native_splash:create
+          dart run flutter_launcher_icons
 
       - name: Run Flutter analyze
         run: flutter analyze --no-fatal-infos

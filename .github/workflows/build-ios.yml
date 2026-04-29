@@ -116,20 +116,29 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      # Generate iOS app icon set + LaunchScreen image from
-      # assets/splash_icon.png, per pubspec.yaml's flutter_native_splash:
-      # block. Without this, the Assets.xcassets ships with default
-      # placeholder Flutter icons → app appears as a generic placeholder
-      # icon on the home screen AND the launch screen renders blank
-      # white because LaunchImage is the default 168x185 placeholder.
+      # Generate iOS LaunchScreen image (splash) AND the app icon set.
+      # Two SEPARATE packages handle these:
+      #   - flutter_native_splash:create  → ios/Runner/Assets.xcassets/
+      #                                      LaunchImage.imageset/
+      #   - flutter_launcher_icons        → ios/Runner/Assets.xcassets/
+      #                                      AppIcon.appiconset/
+      # flutter_native_splash does NOT touch the app icon — that's why
+      # earlier builds shipped with the default Flutter placeholder app
+      # icon despite splash:create succeeding. Both must run.
       - name: Generate iOS splash + app icons
         run: |
+          set -e
+          echo "=== flutter_native_splash:create (LaunchScreen) ==="
           dart run flutter_native_splash:create
-          echo "iOS app icon set:"
-          ls ios/Runner/Assets.xcassets/AppIcon.appiconset/ | head -10
           echo ""
-          echo "iOS LaunchImage set:"
-          ls ios/Runner/Assets.xcassets/LaunchImage.imageset/
+          echo "=== flutter_launcher_icons (AppIcon) ==="
+          dart run flutter_launcher_icons
+          echo ""
+          echo "iOS AppIcon files generated:"
+          ls -la ios/Runner/Assets.xcassets/AppIcon.appiconset/ | head -25
+          echo ""
+          echo "Verify Icon-App-1024x1024@1x.png is the Awing icon (not Flutter default):"
+          file ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-1024x1024@1x.png
 
       - name: Install CocoaPods dependencies
         working-directory: ios
