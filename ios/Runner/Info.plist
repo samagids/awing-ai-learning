@@ -58,6 +58,17 @@
 	     and student devices can discover and join via mDNS. -->
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>Awing AI Learning uses your local Wi-Fi network so teachers can host classroom exam sessions and students can discover and join nearby sessions.</string>
+	<!-- Photo library + camera purpose strings — required by Apple even though
+	     the app does not directly use these APIs. file_picker / share_plus /
+	     image_picker pull in iOS frameworks that reference PhotoKit; Apple's
+	     static analyzer (rejection 90683) flags any binary that references the
+	     PhotoKit symbols regardless of whether the user-facing flow uses them. -->
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Awing AI Learning does not use your photo library. This permission is required only because a third-party library bundled with the app references the Photos framework.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Awing AI Learning does not save anything to your photo library. This permission is required only because a third-party library bundled with the app references the Photos framework.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Awing AI Learning does not use your camera. This permission is required only because a third-party library bundled with the app references the Camera framework.</string>
 	<!-- Bonjour service types we register/browse via mDNS. The single service
 	     here is the Kahoot-style exam discovery service used by exam_service.dart.
 	     iOS 14+ requires every Bonjour service type to be declared here or
