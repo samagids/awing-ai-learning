@@ -1,5 +1,6 @@
 import Flutter
 import UIKit
+import FirebaseCore
 
 @main
 @objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
@@ -7,6 +8,16 @@ import UIKit
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
+    // CRITICAL: configure the [DEFAULT] FirebaseApp synchronously here,
+    // BEFORE super.application(...) and BEFORE Flutter's Dart code runs.
+    // Without this call, Dart-side Firebase.initializeApp() throws
+    // "[core/no-app] No Firebase App '[DEFAULT]' has been created" on
+    // iOS — even though firebase_core's plugin is registered later in
+    // didInitializeImplicitFlutterEngine — because the FlutterImplicit-
+    // EngineDelegate pattern doesn't bootstrap [FIRApp configure] from
+    // GoogleService-Info.plist the way the older AppDelegate pattern did.
+    // App Store Connect rejected v1.11.0+39's auth flow because of this.
+    FirebaseApp.configure()
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 
