@@ -17,26 +17,58 @@ import 'package:audioplayers/audioplayers.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Firebase (required for Firestore cloud sync)
-  await Firebase.initializeApp();
+  // Initialize Firebase under a 10s timeout. On iOS we've seen the iPhone
+  // hang on a blank white screen here when the network is flaky or
+  // Firestore takes too long to bootstrap — without timeout protection,
+  // the entire app launch is stuck before runApp() is ever called and
+  // the user sees nothing but the launch screen forever. Fall back to a
+  // degraded-mode launch (cloud sync becomes a no-op, local features
+  // still work) rather than blocking.
+  try {
+    await Firebase.initializeApp().timeout(
+      const Duration(seconds: 10),
+      onTimeout: () {
+        // Re-throw as a regular exception so the catch block runs.
+        throw Exception('Firebase.initializeApp timed out after 10s');
+      },
+    );
+  } catch (e, st) {
+    debugPrint('Firebase init failed: $e\n$st');
+    // Continue without Firebase — auth + cloud sync will degrade to local.
+  }
 
   // Set global audio context so all audio plays on the MUSIC stream.
   // This ensures device volume buttons control app audio volume.
-  final AudioContext audioContext = AudioContext(
-    android: AudioContextAndroid(
-      audioMode: AndroidAudioMode.normal,
-      audioFocus: AndroidAudioFocus.gainTransientMayDuck,
-      contentType: AndroidContentType.music,
-      usageType: AndroidUsageType.media,
-    ),
-    iOS: AudioContextIOS(
-      category: AVAudioSessionCategory.playback,
-      options: {AVAudioSessionOptions.mixWithOthers},
-    ),
-  );
-  AudioPlayer.global.setAudioContext(audioContext);
+  try {
+    final AudioContext audioContext = AudioContext(
+      android: AudioContextAndroid(
+        audioMode: AndroidAudioMode.normal,
+        audioFocus: AndroidAudioFocus.gainTransientMayDuck,
+        contentType: AndroidContentType.music,
+        usageType: AndroidUsageType.media,
+      ),
+      iOS: AudioContextIOS(
+        category: AVAudioSessionCategory.playback,
+        options: {AVAudioSessionOptions.mixWithOthers},
+      ),
+    );
+    AudioPlayer.global.setAudioContext(audioContext);
+  } catch (e) {
+    debugPrint('AudioContext setup failed: $e');
+  }
 
-  await AnalyticsService.instance.initialize();
+  // Analytics init also wrapped — it can make a network call to flush
+  // queued events on startup, which can hang if the webhook endpoint
+  // is slow.
+  try {
+    await AnalyticsService.instance.initialize().timeout(
+      const Duration(seconds: 5),
+      onTimeout: () => debugPrint('Analytics init timed out — continuing'),
+    );
+  } catch (e) {
+    debugPrint('Analytics init failed: $e');
+  }
+
   runApp(const AwingApp());
 }
 
