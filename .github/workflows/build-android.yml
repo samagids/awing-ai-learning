@@ -134,17 +134,19 @@ jobs:
           retention-days: 90
           if-no-files-found: ignore
 
-      # === AUTO-UPLOAD TO GOOGLE PLAY INTERNAL TESTING ===
-      # Pushes the signed AAB to Play Console via the Google Play Developer API.
-      # Runs only on tags AND only when PLAY_SERVICE_ACCOUNT_JSON is configured.
-      # The build still succeeds (and the AAB is still uploaded as a workflow
-      # artifact) if this upload is skipped.
-      - name: Upload to Play Internal Testing
+      # === AUTO-UPLOAD TO GOOGLE PLAY CLOSED TESTING - ALPHA ===
+      # Pushes the signed AAB to the alpha (closed testing) track via the
+      # Google Play Developer API. The 12 active testers on this track
+      # automatically receive the new build. Track choice rationale:
+      # internal-testing has no opted-in testers; alpha = Closed testing
+      # - Alpha which already has 12 testers from prior manual uploads.
+      # Runs only on tags AND only when PLAY_SERVICE_ACCOUNT_JSON is set.
+      - name: Upload to Play Closed Testing
         if: startsWith(github.ref, 'refs/tags/v')
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
           packageName: com.awing.learning
           releaseFiles: build/app/outputs/bundle/release/app-release.aab
-          track: internal
+          track: alpha
           status: completed
