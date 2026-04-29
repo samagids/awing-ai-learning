@@ -11,7 +11,12 @@ on:
 jobs:
   build-ios:
     runs-on: macos-latest
-    timeout-minutes: 45
+    # 90 min: signed Flutter iOS archives with the full ~1 GB PAD asset
+    # bundle take 35-50 min just for archive+sign; the IPA export +
+    # TestFlight upload steps add another 10-15 min. v1.11.0+36-test-1
+    # was killed at 45m 24s — Xcode archive done but IPA export never
+    # got to run.
+    timeout-minutes: 90
 
     steps:
       - name: Checkout repository
@@ -80,13 +85,18 @@ jobs:
         run: flutter test
         continue-on-error: true
 
-      # === UNSIGNED BUILD (every push) — verifies iOS compilation works ===
-      - name: Build Flutter iOS framework
+      # === UNSIGNED BUILD (non-tag pushes only) — verifies iOS compiles ===
+      # On tag builds we go straight to the signed build to save ~10 min.
+      # On main/PR pushes we run the unsigned verify so compile breakage
+      # is caught early without needing signing secrets.
+      - name: Build Flutter iOS framework (unsigned verify)
+        if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
         run: |
           flutter build ios --release --no-codesign 2>&1 || true
           echo "Flutter build step complete (codesign error is expected)"
 
       - name: Build with xcodebuild (no signing)
+        if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
         run: |
           cd ios
           xcodebuild build \
