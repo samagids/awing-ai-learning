@@ -26,11 +26,44 @@ jobs:
       - name: Flutter version info
         run: flutter --version
 
-      - name: Create placeholder assets (large assets are in PAD install_time_assets module)
+      # === DOWNLOAD PAD ASSETS FROM GITHUB RELEASE ===
+      # iOS doesn't have Play Asset Delivery — instead, the same audio +
+      # image tarball published by scripts/pack_and_upload_assets.sh is
+      # extracted into ios/Runner/PADAssets/. That folder is registered
+      # in project.pbxproj as a folder reference, so Xcode auto-bundles
+      # everything inside it into Runner.app/PADAssets/.
+      # AssetPackHandler.swift reads from there at runtime.
+      - name: Download PAD asset bundle
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          # Android-side placeholder so `flutter build` doesn't trip on
+          # missing dirs (the iOS build doesn't ship these, but the
+          # Flutter build phase still scans the workspace).
           mkdir -p android/install_time_assets/src/main/assets/audio
           mkdir -p android/install_time_assets/src/main/assets/images/vocabulary
           find android/install_time_assets -type d -empty -exec touch {}/.gitkeep \;
+
+          # iOS side: pull the tarball + extract into ios/Runner/PADAssets/
+          mkdir -p ios/Runner/PADAssets
+          if gh release view pad-assets >/dev/null 2>&1; then
+            echo "Downloading pad-assets.tar.gz from release pad-assets ..."
+            gh release download pad-assets \
+              --pattern 'pad-assets.tar.gz' \
+              --output pad-assets.tar.gz
+            ls -lh pad-assets.tar.gz
+            echo "Extracting into ios/Runner/PADAssets/ ..."
+            tar -xzf pad-assets.tar.gz -C ios/Runner/PADAssets
+            rm pad-assets.tar.gz
+            echo "iOS asset tree size after extract:"
+            du -sh ios/Runner/PADAssets
+          else
+            echo "::warning::pad-assets release not found — IPA will ship with empty PADAssets/."
+            if [ "${{ startsWith(github.ref, 'refs/tags/v') }}" = "true" ]; then
+              echo "::error::Tag build cannot ship without assets. Run scripts/pack_and_upload_assets.sh from your dev machine first."
+              exit 1
+            fi
+          fi
 
       - name: Install dependencies
         run: flutter pub get

@@ -32,11 +32,42 @@ jobs:
       - name: Flutter version info
         run: flutter --version
 
-      - name: Create placeholder assets (large assets are in PAD install_time_assets module)
+      # === DOWNLOAD PAD ASSETS FROM GITHUB RELEASE ===
+      # The 945 MB audio + image tree is gitignored (regenerated locally
+      # via scripts/build_and_run.sh). For CI, the tree is published once
+      # via scripts/pack_and_upload_assets.sh as a release asset on the
+      # 'pad-assets' release. This step pulls + extracts it into the PAD
+      # install-time module so the resulting AAB ships with full content.
+      #
+      # Falls back to placeholder dirs if the release asset is missing —
+      # that only matters for dev pushes; tag builds will fail loudly if
+      # the asset tarball isn't present.
+      - name: Download PAD asset bundle
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          mkdir -p android/install_time_assets/src/main/assets/audio
-          mkdir -p android/install_time_assets/src/main/assets/images/vocabulary
-          find android/install_time_assets -type d -empty -exec touch {}/.gitkeep \;
+          mkdir -p android/install_time_assets/src/main/assets
+          if gh release view pad-assets >/dev/null 2>&1; then
+            echo "Downloading pad-assets.tar.gz from release pad-assets ..."
+            gh release download pad-assets \
+              --pattern 'pad-assets.tar.gz' \
+              --output pad-assets.tar.gz
+            ls -lh pad-assets.tar.gz
+            echo "Extracting into install_time_assets/src/main/assets/ ..."
+            tar -xzf pad-assets.tar.gz -C android/install_time_assets/src/main/assets
+            rm pad-assets.tar.gz
+            echo "Asset tree size after extract:"
+            du -sh android/install_time_assets/src/main/assets
+          else
+            echo "::warning::pad-assets release not found — building with placeholder assets."
+            mkdir -p android/install_time_assets/src/main/assets/audio
+            mkdir -p android/install_time_assets/src/main/assets/images/vocabulary
+            find android/install_time_assets -type d -empty -exec touch {}/.gitkeep \;
+            if [ "${{ startsWith(github.ref, 'refs/tags/v') }}" = "true" ]; then
+              echo "::error::Tag build cannot ship without assets. Run scripts/pack_and_upload_assets.sh from your dev machine first."
+              exit 1
+            fi
+          fi
 
       # === Setup release signing (every build, not just tags) ===
       - name: Setup signing key

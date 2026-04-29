@@ -120,6 +120,13 @@ ios/Pods/
 ios/.symlinks/
 ios/Podfile.lock
 
+# iOS large-asset bundle — populated by CI from the GitHub Release tarball
+# (same role as android/install_time_assets/src/main/assets/ on Android).
+# Folder reference is committed via .gitkeep so Xcode's PBXFileReference
+# resolves locally, but the actual audio/image tree is gitignored.
+ios/Runner/PADAssets/*
+!ios/Runner/PADAssets/.gitkeep
+
 # Flutter generated
 .flutter-plugins
 .packages
