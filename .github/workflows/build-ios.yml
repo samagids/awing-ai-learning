@@ -110,11 +110,38 @@ jobs:
           BUILD_PROVISION_PROFILE_BASE64: ${{ secrets.BUILD_PROVISION_PROFILE_BASE64 }}
           KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
         run: |
-          if [ -z "$BUILD_CERTIFICATE_BASE64" ]; then
-            echo "::warning::Signing secrets not configured. Skipping signed build."
-            exit 0
+          set -euo pipefail
+
+          # Hard-fail (not warn) if any required secret is missing — silently
+          # skipping signing produces an unsigned build that fails downstream
+          # with a confusing "no profile found" error.
+          MISSING=()
+          [ -z "${BUILD_CERTIFICATE_BASE64:-}" ]      && MISSING+=("BUILD_CERTIFICATE_BASE64")
+          [ -z "${P12_PASSWORD:-}" ]                  && MISSING+=("P12_PASSWORD")
+          [ -z "${BUILD_PROVISION_PROFILE_BASE64:-}" ] && MISSING+=("BUILD_PROVISION_PROFILE_BASE64")
+          [ -z "${KEYCHAIN_PASSWORD:-}" ]             && MISSING+=("KEYCHAIN_PASSWORD")
+          if [ ${#MISSING[@]} -gt 0 ]; then
+            echo "::error::Missing required signing secrets: ${MISSING[*]}"
+            echo "Add them at: https://github.com/${{ github.repository }}/settings/secrets/actions"
+            exit 1
           fi
 
+          # Sanity-check the secret payload sizes — a 0-byte secret means the
+          # value was set but the user pasted nothing/whitespace, which doesn't
+          # trip the [ -z ] check above.
+          CERT_LEN=${#BUILD_CERTIFICATE_BASE64}
+          PP_LEN=${#BUILD_PROVISION_PROFILE_BASE64}
+          echo "Secret length checks: cert=$CERT_LEN chars, profile=$PP_LEN chars"
+          if [ "$CERT_LEN" -lt 1000 ]; then
+            echo "::error::BUILD_CERTIFICATE_BASE64 only $CERT_LEN chars — expected ~4480 for a Distribution cert .p12. Re-add the secret."
+            exit 1
+          fi
+          if [ "$PP_LEN" -lt 5000 ]; then
+            echo "::error::BUILD_PROVISION_PROFILE_BASE64 only $PP_LEN chars — expected ~16000 for an App Store provisioning profile. Re-add the secret."
+            exit 1
+          fi
+
+          # === Keychain + cert ===
           KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
           security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
           security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
@@ -126,10 +153,69 @@ jobs:
           security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
           security list-keychain -d user -s $KEYCHAIN_PATH
 
+          # === Provisioning profile ===
           PP_PATH=$RUNNER_TEMP/build_pp.mobileprovision
           echo -n "$BUILD_PROVISION_PROFILE_BASE64" | base64 --decode -o $PP_PATH
+
+          # Verify the decode produced a real CMS-wrapped mobileprovision (not
+          # an empty file or random garbage from a truncated secret).
+          if [ ! -s "$PP_PATH" ]; then
+            echo "::error::Decoded $PP_PATH is empty — BUILD_PROVISION_PROFILE_BASE64 secret may be truncated."
+            exit 1
+          fi
+          PP_BYTES=$(stat -f '%z' "$PP_PATH")
+          echo "Decoded profile size: $PP_BYTES bytes"
+
+          # Extract + print the profile's Name and TeamIdentifier so we can
+          # verify they match what project.pbxproj expects. If the secret
+          # holds the WRONG profile (e.g. a Development profile vs App
+          # Store), we'll see it here BEFORE wasting 10 min on a doomed
+          # archive.
+          PP_PLIST=$(security cms -D -i "$PP_PATH" 2>/dev/null || true)
+          if [ -z "$PP_PLIST" ]; then
+            echo "::error::Could not decode $PP_PATH as a CMS-wrapped mobileprovision. Secret content is corrupt."
+            exit 1
+          fi
+
+          PP_NAME=$(echo "$PP_PLIST" | /usr/libexec/PlistBuddy -c "Print :Name" /dev/stdin 2>/dev/null || echo "<unreadable>")
+          PP_TEAM=$(echo "$PP_PLIST" | /usr/libexec/PlistBuddy -c "Print :TeamIdentifier:0" /dev/stdin 2>/dev/null || echo "<unreadable>")
+          PP_APPID=$(echo "$PP_PLIST" | /usr/libexec/PlistBuddy -c "Print :Entitlements:application-identifier" /dev/stdin 2>/dev/null || echo "<unreadable>")
+          PP_UUID=$(echo "$PP_PLIST" | /usr/libexec/PlistBuddy -c "Print :UUID" /dev/stdin 2>/dev/null || echo "<unreadable>")
+          echo "Provisioning profile contents:"
+          echo "  Name:                   $PP_NAME"
+          echo "  TeamIdentifier:         $PP_TEAM"
+          echo "  application-identifier: $PP_APPID"
+          echo "  UUID:                   $PP_UUID"
+
+          EXPECTED_NAME="Awing AI Learning App Store"
+          EXPECTED_TEAM="9GUMAMVYJF"
+          EXPECTED_APPID_SUFFIX="com.awing.awingAiLearning"
+          if [ "$PP_NAME" != "$EXPECTED_NAME" ]; then
+            echo "::error::Profile Name is '$PP_NAME' but project.pbxproj expects '$EXPECTED_NAME'. The BUILD_PROVISION_PROFILE_BASE64 secret holds the wrong file."
+            exit 1
+          fi
+          if [ "$PP_TEAM" != "$EXPECTED_TEAM" ]; then
+            echo "::error::Profile TeamIdentifier is '$PP_TEAM' but project.pbxproj expects '$EXPECTED_TEAM'."
+            exit 1
+          fi
+          case "$PP_APPID" in
+            *"$EXPECTED_APPID_SUFFIX"*) ;;
+            *) echo "::error::Profile application-identifier '$PP_APPID' does not contain expected bundle '$EXPECTED_APPID_SUFFIX'." ; exit 1 ;;
+          esac
+
+          # Install into BOTH locations Xcode searches: the user-facing
+          # MobileDevice dir AND the modern UserData/Provisioning Profiles
+          # dir Xcode 14+ uses internally on macos-latest.
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-          cp $PP_PATH ~/Library/MobileDevice/Provisioning\ Profiles
+          mkdir -p ~/Library/Developer/Xcode/UserData/Provisioning\ Profiles
+          # Use the profile's own UUID as the filename — Xcode indexes by
+          # UUID and a generic name like build_pp.mobileprovision can throw
+          # off some Xcode versions.
+          cp "$PP_PATH" ~/Library/MobileDevice/Provisioning\ Profiles/"$PP_UUID".mobileprovision
+          cp "$PP_PATH" ~/Library/Developer/Xcode/UserData/Provisioning\ Profiles/"$PP_UUID".mobileprovision 2>/dev/null || true
+
+          echo "Installed provisioning profile $PP_UUID"
+          ls -la ~/Library/MobileDevice/Provisioning\ Profiles/
 
       - name: Build signed IPA
         if: startsWith(github.ref, 'refs/tags/v')
