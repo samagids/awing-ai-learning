@@ -130,29 +130,73 @@ def _existing_deployment_id(config_key):
 
 
 def verify_contributions_webhook(url):
-    """POST action=fetch_all to a webhook URL and check the response.
+    """Confirm the deployed contributions webhook is the latest code.
 
-    Returns True if the server responds with {status: 'ok', contributions: [...]}
-    (meaning the deployment supports fetch_all). Returns False if the server
-    returns Unknown action or any non-ok status — that indicates the URL points
-    at a stale deployment that predates the fetch_all handler.
+    Strategy (post-Session 58 security hardening):
+
+    Step 1 — call `check_version` (an OPEN endpoint that exists in every
+             version of the webhook). A successful `{status: 'ok',
+             version: N}` response proves the URL is live and serving
+             SOME version of the script.
+
+    Step 2 — call `fetch_all` (a PRIVILEGED endpoint) WITHOUT a script
+             secret. The expected response now is
+             `{status: 'error', message: 'unauthorized'}`. THIS IS THE
+             SUCCESS CASE — only the new auth-secured code returns
+             unauthorized. Old code returned a 200 with the full
+             contributions list (which is exactly what we just locked
+             down). So:
+                response  unauthorized  → ✓ new code live
+                response  status=ok     → ✗ STALE: old code without auth
+                response  Unknown action→ ✗ STALE: pre-fetch_all version
+                response  anything else → ✗ unhealthy
+
+    Optional Step 3 — if AWING_SCRIPT_SECRET is set in env (or
+             config/webhooks.json has a script_secret), additionally
+             verify the secret is correct by re-calling fetch_all WITH
+             it and confirming the response is now status=ok.
     """
-    try:
-        data = json.dumps({"action": "fetch_all"}).encode('utf-8')
+    def _post(payload):
+        data = json.dumps(payload).encode('utf-8')
         req = Request(url, data=data, headers={
             'Content-Type': 'application/json; charset=utf-8',
         })
-        resp = urlopen(req, timeout=20)
-        body = resp.read().decode('utf-8', errors='replace')
-        result = json.loads(body)
-        if result.get('status') != 'ok':
-            msg = result.get('message', '')
-            print(f"    Server said: {result.get('status')} - {msg}")
+        with urlopen(req, timeout=20) as r:
+            return json.loads(r.read().decode('utf-8', errors='replace'))
+
+    try:
+        # Step 1 — open endpoint, confirms webhook is live.
+        cv = _post({"action": "check_version", "currentVersion": 999999})
+        if cv.get('status') != 'ok' or 'version' not in cv:
+            print(f"    Server said: {cv.get('status')} - "
+                  f"{cv.get('message', '')}")
             return False
-        if 'contributions' not in result:
-            print(f"    Server returned status=ok but no 'contributions' field.")
+
+        # Step 2 — privileged endpoint without auth. New code MUST reject.
+        fa = _post({"action": "fetch_all"})
+        msg = fa.get('message', '')
+        if fa.get('status') == 'error' and msg == 'unauthorized':
+            # New auth-secured code is live and rejecting unauthenticated
+            # privileged calls — exactly what we want.
+            print(f"    ✓ check_version ok (v{cv.get('version', '?')}); "
+                  f"fetch_all correctly rejected unauthenticated call.")
+            return True
+        if fa.get('status') == 'ok' and 'contributions' in fa:
+            # Pre-Session-58 code: the privileged endpoint accepts
+            # unauthenticated calls. This is the security hole we just
+            # patched out. Treat as STALE, not a success.
+            print(f"    ✗ STALE: fetch_all returned contents without auth")
+            print(f"      The pushed Code.js does NOT have Session 58's")
+            print(f"      auth check. Re-push: clasp push --force")
             return False
-        return True
+        if msg.lower().startswith('unknown action'):
+            print(f"    ✗ STALE: fetch_all is 'Unknown action'")
+            print(f"      The pushed Code.js predates Session 49's "
+                  f"fetch_all handler.")
+            return False
+        print(f"    ✗ Unexpected fetch_all response: "
+              f"{fa.get('status')} - {msg}")
+        return False
     except HTTPError as e:
         print(f"    HTTP error during verify: {e.code}")
         return False

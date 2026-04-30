@@ -24,6 +24,40 @@ var SHEET_NAME = 'Awing Contributions';
 var AUDIO_FOLDER_NAME = 'Awing Audio Recordings';
 var DEVELOPER_EMAIL = 'samagids@gmail.com';
 
+// =========================================================================
+// SECURITY CONFIG
+// =========================================================================
+// Field length caps. Anything beyond these is silently truncated server-side
+// before it ever reaches the Sheet, so a malicious 10 MB `notes` payload
+// can't bloat storage or break later reads.
+var MAX_FIELD_LEN = 500;        // most fields (target, correction, etc.)
+var MAX_NOTES_LEN = 2000;       // free-form notes
+var MAX_PROFILE_LEN = 60;       // profile name (privacy: don't store more)
+var MAX_AUDIO_BYTES = 2 * 1024 * 1024;  // 2 MB raw — well above any legit
+                                        // pronunciation recording (a 10 sec
+                                        // m4a is ~120 KB).
+// Headers in setFontWeight rely on email subject not containing CR/LF.
+// MailApp also gets confused by control characters in subjects.
+//
+// PRIVILEGED ENDPOINTS REQUIRE AUTH:
+//   approve, reject, fetch_pending, fetch_all, fetch_audio
+//
+// Two ways to authenticate:
+//   1. payload.scriptSecret matches the SCRIPT_SECRET script property —
+//      used by apply_contributions.py running on the developer's machine.
+//      Set via: Apps Script editor > Project Settings > Script Properties.
+//      Use a 32+ char random value.
+//   2. payload.idToken is a Google-issued ID token whose email matches
+//      DEVELOPER_EMAIL — used by the developer's own app. We verify via
+//      Google's tokeninfo endpoint (no JWT signing libraries needed).
+//
+// Open endpoints (no auth required):
+//   submit, check_version. submit is rate-limited by field caps + audio
+//   cap. check_version is read-only and only returns approved content
+//   that is intended for distribution to all clients.
+// =========================================================================
+var SCRIPT_PROPS = PropertiesService.getScriptProperties();
+
 /**
  * Run once to create Sheet + Drive folder.
  */
@@ -71,8 +105,39 @@ function setupContributions() {
  */
 function doPost(e) {
   try {
-    var payload = JSON.parse(e.postData.contents);
+    // Hard cap on inbound payload size as the very first check. Without
+    // this an attacker could submit gigabytes of base64 audio and OOM
+    // the Apps Script worker before we even parse it. 4 MB leaves
+    // ~3 MB for base64 audio (which we re-cap to 2 MB after decoding)
+    // plus all other fields.
+    var raw = e && e.postData ? e.postData.contents : '';
+    if (!raw) {
+      return jsonResponse({ status: 'error', message: 'empty body' });
+    }
+    if (raw.length > 4 * 1024 * 1024) {
+      return jsonResponse({ status: 'error', message: 'payload too large' });
+    }
+
+    var payload = JSON.parse(raw);
     var action = payload.action || 'submit';
+
+    // Privileged actions require developer authentication. Anyone with
+    // the webhook URL can otherwise approve their own malicious
+    // submissions and trigger arbitrary Dart code injection on the
+    // developer's next build (apply_contributions.py reads approved
+    // contributions and modifies lib/data/*.dart). The validators
+    // there are belt-and-suspenders, but auth here is the actual lock.
+    var privileged = {
+      'fetch_pending': true,
+      'fetch_all': true,
+      'approve': true,
+      'reject': true,
+      'fetch_audio': true,
+    };
+    if (privileged[action] && !requireDevAuth(payload)) {
+      Logger.log('Unauthorized ' + action + ' attempt');
+      return jsonResponse({ status: 'error', message: 'unauthorized' });
+    }
 
     switch (action) {
       case 'submit':
@@ -93,50 +158,169 @@ function doPost(e) {
         return jsonResponse({ status: 'error', message: 'Unknown action' });
     }
   } catch (err) {
-    return jsonResponse({ status: 'error', message: err.toString() });
+    // Don't leak the full stack to unauthenticated callers; just say
+    // something failed. Log the real error server-side for debugging.
+    Logger.log('doPost error: ' + err.toString());
+    return jsonResponse({ status: 'error', message: 'request failed' });
   }
+}
+
+// ==================== Auth + sanitization helpers ====================
+
+/**
+ * Verify the caller is the developer. Returns true on success.
+ *
+ * Two paths:
+ *  1) payload.scriptSecret matches the SCRIPT_SECRET script property
+ *     — for apply_contributions.py on the developer's machine.
+ *  2) payload.idToken is a Google ID token for DEVELOPER_EMAIL — for
+ *     in-app developer Review tab. Token is verified against Google's
+ *     tokeninfo endpoint (no local JWT verification needed).
+ */
+function requireDevAuth(payload) {
+  if (!payload) return false;
+
+  var secret = SCRIPT_PROPS.getProperty('SCRIPT_SECRET');
+  if (secret && payload.scriptSecret &&
+      typeof payload.scriptSecret === 'string' &&
+      payload.scriptSecret === secret) {
+    return true;
+  }
+
+  if (payload.idToken && typeof payload.idToken === 'string' &&
+      payload.idToken.length > 0 && payload.idToken.length < 4096) {
+    try {
+      var resp = UrlFetchApp.fetch(
+        'https://oauth2.googleapis.com/tokeninfo?id_token=' +
+          encodeURIComponent(payload.idToken),
+        { muteHttpExceptions: true }
+      );
+      if (resp.getResponseCode() === 200) {
+        var info = JSON.parse(resp.getContentText());
+        if (info && info.email === DEVELOPER_EMAIL &&
+            String(info.email_verified) === 'true') {
+          return true;
+        }
+      }
+    } catch (e) {
+      Logger.log('Token verify failed: ' + e);
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Coerce any input to a safe trimmed string with a length cap.
+ * Strips null bytes (which break Sheet/Drive tooling) and returns ''
+ * for null/undefined/non-string inputs.
+ */
+function safeStr(s, maxLen) {
+  if (s === null || s === undefined) return '';
+  s = String(s);
+  // Null bytes have no legitimate use and break later reads.
+  s = s.replace(/\x00/g, '');
+  if (s.length > maxLen) s = s.substring(0, maxLen);
+  return s;
+}
+
+/**
+ * Safe-for-email-headers string. Strips CR/LF entirely so user-supplied
+ * `targetWord` etc. can't inject extra headers (BCC, attachments) into
+ * MailApp.sendEmail's subject. The MailApp library doesn't itself
+ * crash on header injection but we don't want to give attackers
+ * the option.
+ */
+function safeEmailField(s) {
+  return safeStr(s, 200).replace(/[\r\n]/g, ' ');
 }
 
 /**
  * Handle a new user submission.
+ *
+ * SECURITY: This is the one OPEN endpoint, so every field is treated
+ * as hostile. We:
+ *   - cap every string field to its MAX_*_LEN
+ *   - reject audio over MAX_AUDIO_BYTES (post-base64-decode)
+ *   - strip CR/LF from anything that flows into the email subject
+ *   - constrain id to UUID-shape so attackers can't inject Sheet
+ *     formulas via the id column (Sheets evaluates =/+ as formulas)
+ *   - prepend a single-quote to any cell that starts with =, +, -, @
+ *     so Sheets stores it as text instead of a formula (CSV injection
+ *     defense — matters when a developer later opens the .xlsx export)
  */
 function handleSubmission(payload) {
   var ss = getSheet();
   var submissions = ss.getSheetByName('Submissions');
 
-  // Save audio file to Drive if included
+  // Sanitize every user-supplied field BEFORE doing anything with it.
+  var safeId = safeStr(payload.id, 64);
+  // id must be alphanumeric/dash/underscore — guards Sheet/file naming.
+  if (!safeId || !/^[A-Za-z0-9_\-]+$/.test(safeId)) {
+    safeId = Utilities.getUuid();
+  }
+  var safeProfile = sheetSafe(safeStr(payload.profileName, MAX_PROFILE_LEN) || 'Anonymous');
+  var safeType = safeStr(payload.type, 32);
+  var safeTarget = sheetSafe(safeStr(payload.targetWord, MAX_FIELD_LEN));
+  var safeCorrection = sheetSafe(safeStr(payload.correction, MAX_FIELD_LEN));
+  var safeEnglish = sheetSafe(safeStr(payload.englishMeaning, MAX_FIELD_LEN));
+  var safeCategory = sheetSafe(safeStr(payload.category, 64));
+  var safeNotes = sheetSafe(safeStr(payload.notes, MAX_NOTES_LEN));
+
+  // Save audio file to Drive if included.
   var audioFileUrl = '';
-  if (payload.audioBase64) {
-    try {
-      var folder = getAudioFolder();
-      var decoded = Utilities.base64Decode(payload.audioBase64);
-      var blob = Utilities.newBlob(decoded, 'audio/m4a', payload.id + '.m4a');
-      var file = folder.createFile(blob);
-      file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-      audioFileUrl = file.getUrl();
-    } catch (audioErr) {
-      Logger.log('Audio upload error: ' + audioErr.toString());
+  if (payload.audioBase64 && typeof payload.audioBase64 === 'string') {
+    // Post-decode size will be ~ base64Len * 3 / 4. Reject before
+    // calling the decoder if pre-decode size already exceeds the cap.
+    var maxBase64 = Math.ceil(MAX_AUDIO_BYTES * 4 / 3) + 100;
+    if (payload.audioBase64.length > maxBase64) {
+      Logger.log('Rejecting oversized audio: ' + payload.audioBase64.length + ' chars');
+    } else {
+      try {
+        var folder = getAudioFolder();
+        var decoded = Utilities.base64Decode(payload.audioBase64);
+        if (decoded.length > MAX_AUDIO_BYTES) {
+          Logger.log('Rejecting oversized audio: ' + decoded.length + ' bytes');
+        } else {
+          // Filename is derived from the sanitized id, so an attacker
+          // can't pass an id with .. / \ etc. to escape the folder.
+          var blob = Utilities.newBlob(decoded, 'audio/m4a', safeId + '.m4a');
+          var file = folder.createFile(blob);
+          // ANYONE_WITH_LINK is a knowing trade-off: apply_contributions.py
+          // running on the developer's machine fetches these URLs over
+          // unauthenticated HTTPS. The URLs are returned only to
+          // authenticated callers (fetch_audio is privileged), so
+          // discovering one requires either compromising the dev's
+          // environment or being the dev. We accept the residual risk
+          // (Drive bandwidth) in exchange for the simpler download path.
+          file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+          audioFileUrl = file.getUrl();
+        }
+      } catch (audioErr) {
+        Logger.log('Audio upload error: ' + audioErr.toString());
+      }
     }
   }
 
   // Append row to Submissions sheet
   submissions.appendRow([
-    payload.id || '',
+    safeId,
     new Date().toISOString(),
-    payload.profileName || 'Anonymous',
-    payload.type || '',
-    payload.targetWord || '',
-    payload.correction || '',
-    payload.englishMeaning || '',
-    payload.category || '',
-    payload.notes || '',
+    safeProfile,
+    safeType,
+    safeTarget,
+    safeCorrection,
+    safeEnglish,
+    safeCategory,
+    safeNotes,
     audioFileUrl,
     'pending',
     '',
     ''
   ]);
 
-  // Send email notification to developer
+  // Send email notification to developer. Subject uses safeEmailField()
+  // to strip CR/LF (header injection guard).
   try {
     var typeLabel = {
       'spellingCorrection': 'Spelling Fix',
@@ -145,18 +329,19 @@ function handleSubmission(payload) {
       'newSentence': 'New Sentence',
       'newPhrase': 'New Phrase',
       'generalFeedback': 'General Feedback'
-    }[payload.type] || payload.type;
+    }[safeType] || safeType || 'Contribution';
 
-    var subject = '[Awing] New ' + typeLabel + ': "' + (payload.targetWord || '?') + '"';
+    var subject = '[Awing] New ' + typeLabel + ': "' +
+                  safeEmailField(safeTarget || '?') + '"';
 
     var body = 'A user submitted a contribution:\n\n' +
       'Type: ' + typeLabel + '\n' +
-      'From: ' + (payload.profileName || 'Anonymous') + '\n' +
-      'Word: ' + (payload.targetWord || '') + '\n' +
-      'Correction: ' + (payload.correction || '(none)') + '\n' +
-      'English: ' + (payload.englishMeaning || '(none)') + '\n' +
-      'Category: ' + (payload.category || '(none)') + '\n' +
-      'Notes: ' + (payload.notes || '(none)') + '\n';
+      'From: ' + safeProfile + '\n' +
+      'Word: ' + safeTarget + '\n' +
+      'Correction: ' + (safeCorrection || '(none)') + '\n' +
+      'English: ' + (safeEnglish || '(none)') + '\n' +
+      'Category: ' + (safeCategory || '(none)') + '\n' +
+      'Notes: ' + (safeNotes || '(none)') + '\n';
 
     if (audioFileUrl) {
       body += '\nAudio recording: ' + audioFileUrl + '\n';
@@ -172,9 +357,24 @@ function handleSubmission(payload) {
 
   return jsonResponse({
     status: 'ok',
-    id: payload.id,
+    id: safeId,
     audioUrl: audioFileUrl || null
   });
+}
+
+/**
+ * CSV / Sheet formula injection defense. If a string starts with =, +,
+ * -, or @, prepend a single-quote so Google Sheets stores it as text.
+ * Without this, a `targetWord` of `=IMPORTRANGE("https://attacker/", ..)`
+ * would execute as a formula whenever a viewer opens the Sheet.
+ */
+function sheetSafe(s) {
+  if (!s) return '';
+  var first = s.charAt(0);
+  if (first === '=' || first === '+' || first === '-' || first === '@') {
+    return "'" + s;
+  }
+  return s;
 }
 
 /**

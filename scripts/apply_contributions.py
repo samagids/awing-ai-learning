@@ -74,6 +74,168 @@ REGENERATE_FILE = os.path.join(CONTRIBUTIONS_DIR, 'regenerate_words.json')
 # They are NEVER played directly in the app — the 6 Edge TTS character voices
 # are always what the learner hears.
 VOICE_REFERENCES_DIR = os.path.join(CONTRIBUTIONS_DIR, 'voice_references')
+
+
+# ============================================================
+# SECURITY: input sanitization
+# ============================================================
+# Every user-submitted string that lands in a Dart source file MUST go
+# through these helpers. Without them, a malicious contribution payload
+# could inject arbitrary Dart code into the project (e.g. an `english`
+# field of "x'); print(open('/etc/passwd').read()); ('", which would
+# get embedded verbatim into a vocabulary AwingWord literal and execute
+# at next build).
+#
+# The contributions webhook is a public endpoint — assume hostile input.
+
+# Length limits — generous but bounded.
+MAX_AWING_LEN = 80          # A single Awing word or short phrase.
+MAX_ENGLISH_LEN = 200       # English gloss or short sentence translation.
+MAX_CATEGORY_LEN = 32       # Category name (allowlisted further below).
+MAX_SENTENCE_LEN = 300      # A whole Awing sentence + punctuation.
+
+# Awing alphabet: a-z A-Z + special vowels + tone diacritics (combining
+# acute, grave, circumflex, caron) + apostrophe + space + a few common
+# punctuation marks. Anything else means probably an injection attempt.
+_AWING_OK_RE = re.compile(
+    r"^[A-Za-zɛɔəɨŋɣÆ"
+    r"̀́̂̌̃"  # combining diacritics
+    r"'’‘"                    # apostrophes (straight + curly)
+    r" \-.,;:!\?\(\)\[\] ]+$",
+    re.UNICODE,
+)
+# Allowed English chars: letters, digits, spaces, basic punctuation.
+# Notably DISALLOWED: backslash, quote, paren-bracket-bracket combos
+# that could close+reopen a Dart string literal.
+_ENGLISH_OK_RE = re.compile(
+    r"^[A-Za-z0-9 \-.,;:!\?\(\)/'’]+$",
+)
+_CATEGORY_OK_RE = re.compile(r"^[a-z_]{1,32}$")
+
+
+def _dart_string_literal(s):
+    """Return a safe Dart-quoted string literal for s. Always uses
+    single quotes; escapes any character that would terminate the
+    literal or inject code. Output is guaranteed parsable by Dart."""
+    if not isinstance(s, str):
+        s = str(s)
+    # Strip null bytes outright (no legitimate use, breaks tooling).
+    s = s.replace('\x00', '')
+    # Backslash MUST be escaped first, before we add new backslashes.
+    s = s.replace('\\', '\\\\')
+    s = s.replace("'", "\\'")
+    s = s.replace('\n', '\\n').replace('\r', '\\r').replace('\t', '\\t')
+    # $ and ${} are interpolation in Dart strings — escape both.
+    s = s.replace('$', '\\$')
+    return "'" + s + "'"
+
+
+class ContributionRejected(ValueError):
+    """Raised when a contribution fails sanity validation. The caller
+    should log + skip without modifying any source file."""
+
+
+def _validate_awing(s, max_len=MAX_AWING_LEN, field_name='awing'):
+    """Reject Awing strings that look like injection attempts. Length
+    cap + character allowlist + must-not-contain Dart syntax.
+
+    We NFD-decompose before checking the allowlist so pre-composed
+    Latin-with-diacritic codepoints (e.g. 'ô' U+00F4, 'ě' U+011B,
+    'á' U+00E1) split into base ASCII letter + combining mark, both
+    of which appear in the allowlist. Without this step, every word
+    containing a tone-marked Latin vowel would get rejected.
+    """
+    if not isinstance(s, str) or not s.strip():
+        raise ContributionRejected(f"{field_name}: empty or non-string")
+    s = s.strip()
+    if len(s) > max_len:
+        raise ContributionRejected(
+            f"{field_name}: too long ({len(s)} > {max_len})"
+        )
+    s_nfd = unicodedata.normalize('NFD', s)
+    if not _AWING_OK_RE.match(s_nfd):
+        # Find offending chars for the log (in the original NFC form for
+        # readability — the user submitted NFC text; report NFC chars).
+        bad = ''.join(sorted(set(
+            c for c in unicodedata.normalize('NFD', s)
+            if not _AWING_OK_RE.match(c)
+        )))
+        raise ContributionRejected(
+            f"{field_name}: contains disallowed chars: {bad!r}"
+        )
+    # Defense in depth: explicitly forbid Dart syntax tokens.
+    for token in ('//', '/*', '*/', "'''", '"""', '${', '\\u', '\\x'):
+        if token in s:
+            raise ContributionRejected(
+                f"{field_name}: contains forbidden token {token!r}"
+            )
+    return s
+
+
+def _validate_english(s, max_len=MAX_ENGLISH_LEN, field_name='english'):
+    """Reject English glosses that look like injection."""
+    if not isinstance(s, str) or not s.strip():
+        raise ContributionRejected(f"{field_name}: empty or non-string")
+    s = s.strip()
+    if len(s) > max_len:
+        raise ContributionRejected(
+            f"{field_name}: too long ({len(s)} > {max_len})"
+        )
+    if not _ENGLISH_OK_RE.match(s):
+        bad = ''.join(sorted(set(c for c in s if not _ENGLISH_OK_RE.match(c))))
+        raise ContributionRejected(
+            f"{field_name}: contains disallowed chars: {bad!r}"
+        )
+    for token in ('//', '/*', '*/', "'''", '"""', '${', '\\u', '\\x',
+                  'AwingWord', 'AwingSentence', 'AwingPhrase', 'import '):
+        if token in s:
+            raise ContributionRejected(
+                f"{field_name}: contains forbidden token {token!r}"
+            )
+    return s
+
+
+def _validate_category(s):
+    """Category MUST be in our explicit allowlist — never pass user-
+    supplied categories through unsanitized."""
+    allowed = {
+        'body', 'animals', 'nature', 'actions', 'things', 'family',
+        'daily', 'greeting', 'question', 'farewell', 'food',
+        'descriptive', 'numbers', 'pronouns', 'time', 'general',
+        'classroom',
+    }
+    if not isinstance(s, str):
+        raise ContributionRejected('category: non-string')
+    s = s.strip().lower()
+    if s not in allowed:
+        raise ContributionRejected(
+            f'category: {s!r} not in allowlist {sorted(allowed)}'
+        )
+    return s
+
+
+def _validate_audio_url(url):
+    """Audio URLs must be on Drive (or Apps Script proxy). Reject
+    anything else to prevent SSRF — a malicious audioUrl pointing at
+    an internal IP, file://, or attacker-controlled host could be
+    used to scan the dev's network or fetch malware."""
+    if not isinstance(url, str) or not url.startswith(('https://')):
+        raise ContributionRejected('audioUrl: must be https://')
+    allowed_hosts = (
+        'drive.google.com',
+        'docs.google.com',
+        'script.google.com',
+        'script.googleusercontent.com',
+    )
+    # Crude but reliable host check.
+    after_scheme = url[len('https://'):]
+    host = after_scheme.split('/', 1)[0].split('?', 1)[0].lower()
+    if host not in allowed_hosts and not any(host.endswith('.' + h) for h in allowed_hosts):
+        raise ContributionRejected(
+            f'audioUrl: host {host!r} not in allowlist {allowed_hosts}'
+        )
+    return url
+
 # Legacy file from the v1 pronunciationFix design (Session 48) that installed
 # the raw recording into every voice directory. If found, we delete it on
 # first run so the refactored pipeline starts clean.
@@ -412,6 +574,43 @@ def get_webhook_url():
     return None
 
 
+def get_script_secret():
+    """Read the SCRIPT_SECRET shared secret used to authenticate
+    privileged webhook calls (fetch_audio, fetch_all, approve, reject).
+
+    Source order:
+      1. AWING_SCRIPT_SECRET environment variable.
+      2. config/webhooks.json's `script_secret` key.
+      3. ~/.awing_script_secret file (single line, contents = secret).
+
+    Returns None if no secret is configured. Privileged calls without a
+    secret will be rejected by the webhook with status=unauthorized;
+    the caller surfaces that as a clear error.
+    """
+    secret = os.environ.get('AWING_SCRIPT_SECRET', '').strip()
+    if secret:
+        return secret
+    if os.path.exists(WEBHOOKS_FILE):
+        try:
+            with open(WEBHOOKS_FILE, 'r', encoding='utf-8') as f:
+                config = json.load(f)
+            secret = (config.get('script_secret') or '').strip()
+            if secret:
+                return secret
+        except Exception:
+            pass
+    home_secret = os.path.expanduser('~/.awing_script_secret')
+    if os.path.exists(home_secret):
+        try:
+            with open(home_secret, 'r', encoding='utf-8') as f:
+                secret = f.read().strip()
+            if secret:
+                return secret
+        except Exception:
+            pass
+    return None
+
+
 def get_last_version():
     """Get the last content version we applied (stored locally)."""
     if not os.path.exists(VERSION_FILE):
@@ -549,10 +748,31 @@ def load_contributions():
 def apply_spelling_correction(content, target_word, correction):
     """Replace a word's Awing spelling in a Dart file.
 
+    Both `target_word` and `correction` are validated as Awing strings
+    before any regex substitution. The correction is inserted via a
+    callable replacement function, NOT as a sub() pattern string —
+    this prevents the correction text from being interpreted as regex
+    backreferences (e.g. a malicious correction containing `\\1` would
+    otherwise expand to the previously matched group, allowing a
+    crafted contribution to inject content from elsewhere in the file
+    or trigger sub() errors).
+
     Handles both regular strings and strings with apostrophes.
     Returns (modified_content, was_changed).
+    Raises ContributionRejected if either input fails validation.
     """
+    target_word = _validate_awing(target_word, field_name='spellingCorrection.target')
+    correction = _validate_awing(correction, field_name='spellingCorrection.correction')
+
     changed = False
+
+    # Replacement is a CALLABLE so `correction` is treated as literal
+    # text — \1, \g<>, etc. inside `correction` are not interpreted.
+    def _make_repl(correction_value):
+        def _repl(m):
+            return m.group(1) + correction_value + m.group(3)
+        return _repl
+    repl = _make_repl(correction)
 
     # Pattern 1: awing: 'target_word' (single-quoted)
     pattern1 = re.compile(
@@ -560,7 +780,7 @@ def apply_spelling_correction(content, target_word, correction):
         re.UNICODE
     )
     if pattern1.search(content):
-        content = pattern1.sub(r'\g<1>' + correction + r'\3', content)
+        content = pattern1.sub(repl, content)
         changed = True
 
     # Pattern 2: awing: "target_word" (double-quoted)
@@ -569,7 +789,7 @@ def apply_spelling_correction(content, target_word, correction):
         re.UNICODE
     )
     if pattern2.search(content):
-        content = pattern2.sub(r'\g<1>' + correction + r'\3', content)
+        content = pattern2.sub(repl, content)
         changed = True
 
     # Pattern 3: letter: 'target_word' (for alphabet data)
@@ -578,7 +798,7 @@ def apply_spelling_correction(content, target_word, correction):
         re.UNICODE
     )
     if pattern3.search(content):
-        content = pattern3.sub(r'\g<1>' + correction + r'\3', content)
+        content = pattern3.sub(repl, content)
         changed = True
 
     return content, changed
@@ -587,9 +807,30 @@ def apply_spelling_correction(content, target_word, correction):
 def apply_new_word(content, word, english, category):
     """Add a new word to the appropriate category list in awing_vocabulary.dart.
 
+    All three fields are validated and re-escaped via _dart_string_literal()
+    before being concatenated into Dart source. This is the primary
+    defense against the contribution → arbitrary code execution attack:
+    without these escapes, a malicious `english` like:
+
+        x'); print(open('/etc/passwd').read()); ('
+
+    would be embedded into the AwingWord literal verbatim and execute at
+    next build (the file is just Dart source we're string-concatenating
+    into). _dart_string_literal() escapes \\, ', $, newlines, and null
+    bytes so the output is a guaranteed-safe Dart string literal.
+
+    Raises ContributionRejected if any field fails validation.
     Returns (modified_content, was_added).
     """
-    # Map categories to list variable names
+    # Hard validation FIRST — bail out before touching the file if any
+    # input looks hostile.
+    word = _validate_awing(word, field_name='newWord.word')
+    english = _validate_english(english, field_name='newWord.english')
+    category = _validate_category(category)
+
+    # Map categories to list variable names. Category itself is already
+    # in the allowlist (_validate_category) so this is a closed mapping
+    # with a safe default.
     category_map = {
         'body': 'bodyParts',
         'animals': 'animalsNature',
@@ -601,6 +842,13 @@ def apply_new_word(content, word, english, category):
         'greeting': 'dailyLife',
         'question': 'dailyLife',
         'farewell': 'dailyLife',
+        'food': 'foodDrink',
+        'descriptive': 'descriptiveWords',
+        'numbers': 'numbers',
+        'pronouns': 'pronouns',
+        'time': 'timeWords',
+        'classroom': 'dailyLife',
+        'general': 'dailyLife',
         'other': 'dailyLife',
     }
 
@@ -622,16 +870,14 @@ def apply_new_word(content, word, english, category):
         print(f"  Could not find list '{list_name}' for category '{category}'")
         return content, False
 
-    # Determine quoting: use double quotes if word contains apostrophe
-    if "'" in word:
-        awing_quoted = f'"{word}"'
-    else:
-        awing_quoted = f"'{word}'"
-
-    # Build the new entry
+    # Build the new entry using _dart_string_literal() — all three fields
+    # are guaranteed-safe Dart literals after this. No interpolation.
+    awing_lit = _dart_string_literal(word)
+    english_lit = _dart_string_literal(english)
+    category_lit = _dart_string_literal(category)
     new_entry = (
-        f"  AwingWord(awing: {awing_quoted}, english: '{english}', "
-        f"category: '{category}'),\n"
+        f"  AwingWord(awing: {awing_lit}, english: {english_lit}, "
+        f"category: {category_lit}),\n"
     )
 
     # Insert before the closing ];
@@ -644,8 +890,19 @@ def apply_new_word(content, word, english, category):
 def apply_new_sentence(tones_content, awing_text, english_text):
     """Add a new sentence to the sentences list in awing_tones.dart.
 
+    Both fields are validated as Awing-and-English strings respectively
+    (with the longer MAX_SENTENCE_LEN cap), then concatenated as
+    _dart_string_literal()-escaped tokens. See apply_new_word for the
+    rationale — same defense against Dart injection.
+
+    Raises ContributionRejected if either field fails validation.
     Returns (modified_content, was_added).
     """
+    awing_text = _validate_awing(awing_text, max_len=MAX_SENTENCE_LEN,
+                                 field_name='newSentence.awing')
+    english_text = _validate_english(english_text, max_len=MAX_SENTENCE_LEN,
+                                     field_name='newSentence.english')
+
     # Check if already exists
     if re.search(re.escape(awing_text), tones_content, re.UNICODE):
         print(f"  Sentence '{awing_text[:30]}...' already exists, skipping")
@@ -661,21 +918,13 @@ def apply_new_sentence(tones_content, awing_text, english_text):
         print("  Could not find awingSentences list in awing_tones.dart")
         return tones_content, False
 
-    # Determine quoting
-    if "'" in awing_text:
-        awing_q = f'"{awing_text}"'
-    else:
-        awing_q = f"'{awing_text}'"
-
-    if "'" in english_text:
-        eng_q = f'"{english_text}"'
-    else:
-        eng_q = f"'{english_text}'"
+    awing_lit = _dart_string_literal(awing_text)
+    english_lit = _dart_string_literal(english_text)
 
     new_entry = (
         f"  AwingSentence(\n"
-        f"    awing: {awing_q},\n"
-        f"    english: {eng_q},\n"
+        f"    awing: {awing_lit},\n"
+        f"    english: {english_lit},\n"
         f"    wordByWord: [],\n"
         f"  ),\n"
     )
@@ -771,6 +1020,7 @@ def apply_contributions(contributions, dry_run=False):
             tones_content = f.read()
 
     applied_count = 0
+    rejected_count = 0
     vocab_modified = False
     alphabet_modified = False
     tones_modified = False
@@ -787,74 +1037,111 @@ def apply_contributions(contributions, dry_run=False):
         profile = c.get('profileName', 'Unknown')
         audio_url = c.get('audioUrl') or ''
 
+        # SECURITY: validate audio_url BEFORE we ever fetch it. SSRF
+        # risk: a malicious contribution could point audioUrl at an
+        # internal IP, file://, or attacker-controlled server.
+        if audio_url:
+            try:
+                audio_url = _validate_audio_url(audio_url)
+            except ContributionRejected as e:
+                print(f"\n  ⚠ Rejecting audio for [{ctype}] '{target}': {e}")
+                audio_url = ''  # don't fetch, but allow non-audio fields to proceed
+
         print(f"\nApplying: [{ctype}] '{target}' → '{correction}' (from {profile})")
 
+        # SECURITY: every branch below that mutates a Dart file delegates
+        # input validation to its helper (apply_*). If a helper raises
+        # ContributionRejected we log the rejection, count it, and
+        # continue to the next contribution — never let one malicious
+        # payload break the whole batch.
+        # The try/except is intentionally wide: any helper-raised
+        # ContributionRejected is a data-quality failure, not a bug.
+
         if ctype == 'spellingCorrection':
-            # Try vocabulary file first
-            vocab_content, changed = apply_spelling_correction(
-                vocab_content, target, correction)
-            if changed:
-                vocab_modified = True
-                applied_count += 1
-                # Spelling changed → audio key changed → regenerate audio for new word
-                regenerate_words.append({
-                    'awing': correction,
-                    'english': english or '',
-                    'category': category,
-                })
-                print(f"  ✓ Updated spelling in awing_vocabulary.dart")
-                print(f"    Audio will be regenerated for corrected word '{correction}'")
-                continue
-
-            # Try alphabet file
-            alphabet_content, changed = apply_spelling_correction(
-                alphabet_content, target, correction)
-            if changed:
-                alphabet_modified = True
-                applied_count += 1
-                regenerate_words.append({
-                    'awing': correction,
-                    'english': english or '',
-                    'category': category,
-                })
-                print(f"  ✓ Updated spelling in awing_alphabet.dart")
-                print(f"    Audio will be regenerated for corrected word '{correction}'")
-                continue
-
-            # Try tones file
-            if tones_content:
-                tones_content, changed = apply_spelling_correction(
-                    tones_content, target, correction)
+            try:
+                # Try vocabulary file first
+                vocab_content, changed = apply_spelling_correction(
+                    vocab_content, target, correction)
                 if changed:
-                    tones_modified = True
+                    vocab_modified = True
+                    applied_count += 1
+                    # Spelling changed → audio key changed → regenerate audio for new word
+                    regenerate_words.append({
+                        'awing': correction,
+                        'english': english or '',
+                        'category': category if category in ('body', 'animals',
+                            'nature', 'actions', 'things', 'family', 'daily',
+                            'greeting', 'question', 'farewell', 'food',
+                            'descriptive', 'numbers', 'pronouns', 'time',
+                            'classroom', 'general') else 'general',
+                    })
+                    print(f"  ✓ Updated spelling in awing_vocabulary.dart")
+                    print(f"    Audio will be regenerated for corrected word '{correction}'")
+                    continue
+
+                # Try alphabet file
+                alphabet_content, changed = apply_spelling_correction(
+                    alphabet_content, target, correction)
+                if changed:
+                    alphabet_modified = True
                     applied_count += 1
                     regenerate_words.append({
                         'awing': correction,
                         'english': english or '',
-                        'category': category,
+                        'category': 'general',
                     })
-                    print(f"  ✓ Updated spelling in awing_tones.dart")
+                    print(f"  ✓ Updated spelling in awing_alphabet.dart")
                     print(f"    Audio will be regenerated for corrected word '{correction}'")
                     continue
 
-            print(f"  ✗ Word '{target}' not found in any data file")
+                # Try tones file
+                if tones_content:
+                    tones_content, changed = apply_spelling_correction(
+                        tones_content, target, correction)
+                    if changed:
+                        tones_modified = True
+                        applied_count += 1
+                        regenerate_words.append({
+                            'awing': correction,
+                            'english': english or '',
+                            'category': 'general',
+                        })
+                        print(f"  ✓ Updated spelling in awing_tones.dart")
+                        print(f"    Audio will be regenerated for corrected word '{correction}'")
+                        continue
+
+                print(f"  ✗ Word '{target}' not found in any data file")
+            except ContributionRejected as e:
+                print(f"  ⛔ REJECTED: {e}")
+                rejected_count += 1
+                continue
 
         elif ctype == 'newWord':
-            vocab_content, added = apply_new_word(
-                vocab_content, correction or target, english, category)
-            if added:
-                vocab_modified = True
-                applied_count += 1
-                print(f"  ✓ Added new word to awing_vocabulary.dart")
+            try:
+                vocab_content, added = apply_new_word(
+                    vocab_content, correction or target, english, category)
+                if added:
+                    vocab_modified = True
+                    applied_count += 1
+                    print(f"  ✓ Added new word to awing_vocabulary.dart")
+            except ContributionRejected as e:
+                print(f"  ⛔ REJECTED: {e}")
+                rejected_count += 1
+                continue
 
         elif ctype == 'newSentence' or ctype == 'newPhrase':
             if tones_content:
-                tones_content, added = apply_new_sentence(
-                    tones_content, correction or target, english or correction)
-                if added:
-                    tones_modified = True
-                    applied_count += 1
-                    print(f"  ✓ Added new sentence to awing_tones.dart")
+                try:
+                    tones_content, added = apply_new_sentence(
+                        tones_content, correction or target, english or correction)
+                    if added:
+                        tones_modified = True
+                        applied_count += 1
+                        print(f"  ✓ Added new sentence to awing_tones.dart")
+                except ContributionRejected as e:
+                    print(f"  ⛔ REJECTED: {e}")
+                    rejected_count += 1
+                    continue
 
         elif ctype == 'pronunciationFix':
             # Reference-only pronunciation fixes (v2 design):
@@ -995,6 +1282,20 @@ def apply_contributions(contributions, dry_run=False):
         print(f"✓ Archived contributions to {archive_path}")
     else:
         print("\n[DRY RUN] No files were modified.")
+
+    if rejected_count:
+        print()
+        print("  " + "!" * 64)
+        print(f"  !! REJECTED {rejected_count} contribution(s) for failing security validation.")
+        print(f"  !! These payloads contained disallowed characters, suspicious")
+        print(f"  !! tokens, or were too long. They were SKIPPED — no Dart")
+        print(f"  !! source file was modified by the rejected entries.")
+        print(f"  !!")
+        print(f"  !! If a legitimate contribution was rejected, check the")
+        print(f"  !! reason printed inline above (e.g. character allowlist,")
+        print(f"  !! length cap) and either fix the payload or relax the")
+        print(f"  !! validator. NEVER bypass validation to apply a payload.")
+        print("  " + "!" * 64)
 
     return applied_count
 
@@ -1148,10 +1449,22 @@ def refetch_audio():
     # (added in contributions_webapp.gs this session). If the endpoint
     # doesn't exist we'll get back an empty `audio` map and exit cleanly.
     print(f"  → Asking webhook for audioUrls of {len(ids)} contribution(s)...")
-    payload = json.dumps({
+    secret = get_script_secret()
+    if not secret:
+        print("  ⚠ No SCRIPT_SECRET configured — fetch_audio is a privileged endpoint")
+        print("    and requires authentication. Set one of:")
+        print("      • environment variable AWING_SCRIPT_SECRET=<your_secret>")
+        print("      • add 'script_secret' key to config/webhooks.json")
+        print("      • write the secret to ~/.awing_script_secret")
+        print("    The same value must be set in the Apps Script editor:")
+        print("      Project Settings → Script Properties → SCRIPT_SECRET")
+        return
+    payload_dict = {
         'action': 'fetch_audio',
         'ids': ids,
-    }).encode('utf-8')
+        'scriptSecret': secret,
+    }
+    payload = json.dumps(payload_dict).encode('utf-8')
     try:
         req = urllib.request.Request(
             webhook_url,

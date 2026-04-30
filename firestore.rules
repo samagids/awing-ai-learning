@@ -7,13 +7,27 @@ rules_version = '2';
 //   users/{email_sanitized}                — parent user doc
 //   users/{email_sanitized}/data/{docType} — synced data (accounts, progress,
 //                                            settings, ...)
-// Email is sanitized: lowercased + dots replaced with _dot_
+// Email is sanitized in the Dart client (cloud_backup_service.dart line 63):
+//   emailKey = email.toLowerCase().replaceAll('.', '_dot_')
+//
+// SECURITY MODEL (locked down):
+//   • Each authenticated user may read/write ONLY their own /users/{emailKey}
+//     document and the /data/{docType} subcollection beneath it. They cannot
+//     enumerate other users or read another user's progress.
+//   • Developer (samagids@gmail.com) is the only account that can read ALL
+//     users' data — used by the Developer Mode > Users tab via a collection
+//     group query.
+//   • No one can write to anyone else's document, ever.
 //
 // IMPORTANT: collection group queries (collectionGroup('data')) DO NOT
 // inherit from path-based rules. They need their own /{path=**}/data/...
 // rule. Developer Mode > Users tab uses a collection group query to list
 // all cloud-synced users — without the third match below it fails with
 //   [cloud_firestore/permission-denied]
+//
+// Email-to-userId mapping function MUST mirror cloud_backup_service.dart
+// exactly. If that file's _userDocPath() ever changes, this function and
+// the matching rules must be updated in lockstep.
 //
 // To deploy:
 //   1. Open https://console.firebase.google.com/
@@ -25,17 +39,36 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Each user can read/write their own nested data.
-    match /users/{userId}/data/{docType} {
-      allow read, write: if request.auth != null;
+    // Compute the sanitized email key the client uses to derive a userId.
+    // Matches cloud_backup_service.dart `_userDocPath()`:
+    //   emailKey = email.toLowerCase().replaceAll('.', '_dot_')
+    function emailKey() {
+      return request.auth != null
+          ? request.auth.token.email.lower().replace('\\.', '_dot_')
+          : '';
     }
 
-    // Developer can list all users and read parent docs.
-    // Any authenticated user can write to their own parent doc.
+    // Developer override — samagids@gmail.com sees everything.
+    function isDeveloper() {
+      return request.auth != null
+          && request.auth.token.email == 'samagids@gmail.com';
+    }
+
+    // Per-user data: users may read/write ONLY their own document.
+    // The path's {userId} segment is the sanitized email key. We compare
+    // it to the requesting user's email-derived key to enforce isolation.
+    match /users/{userId}/data/{docType} {
+      allow read, write: if request.auth != null
+                         && (userId == emailKey() || isDeveloper());
+    }
+
+    // Parent user doc: same isolation. Developer can also read for the
+    // Users tab listing.
     match /users/{userId} {
       allow read: if request.auth != null
-                  && request.auth.token.email == 'samagids@gmail.com';
-      allow write: if request.auth != null;
+                  && (userId == emailKey() || isDeveloper());
+      allow write: if request.auth != null
+                   && userId == emailKey();
     }
 
     // Collection group query support — Developer Mode > Users tab uses
@@ -43,8 +76,7 @@ service cloud.firestore {
     // Restrict to the developer email so only the dev account can list
     // every user's data.
     match /{path=**}/data/{dataDoc} {
-      allow read: if request.auth != null
-                  && request.auth.token.email == 'samagids@gmail.com';
+      allow read: if isDeveloper();
     }
   }
 }

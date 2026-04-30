@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:share_plus/share_plus.dart';
@@ -214,8 +215,52 @@ class ContributionService extends ChangeNotifier {
   ///   1. POST with followRedirects=false
   ///   2. Read the Location header from the 302
   ///   3. GET the redirect URL to read the actual JSON response
+  /// Set of webhook actions that require developer authentication.
+  /// Submit and check_version are intentionally open. Everything else
+  /// must come from a signed-in developer; the server (Apps Script)
+  /// verifies the attached `idToken` against DEVELOPER_EMAIL.
+  static const Set<String> _privilegedActions = {
+    'approve',
+    'reject',
+    'fetch_pending',
+    'fetch_all',
+    'fetch_audio',
+  };
+
+  /// If the requested webhook action is privileged AND a Firebase user
+  /// is signed in, attach a fresh ID token to the payload. The server
+  /// rejects privileged calls without a valid developer-email token.
+  ///
+  /// We never throw on token-fetch failure — a privileged call without
+  /// a token will simply be rejected by the server, which is the
+  /// correct outcome.
+  Future<void> _attachAuthIfPrivileged(Map<String, dynamic> payload) async {
+    final action = payload['action']?.toString() ?? '';
+    if (!_privilegedActions.contains(action)) return;
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+      // Force-refresh to keep tokens fresh; expired tokens server-side
+      // would otherwise look like an unauthorized call. The result is
+      // a short string we add to the payload — never logged.
+      final token = await user.getIdToken(true);
+      if (token != null && token.isNotEmpty) {
+        payload['idToken'] = token;
+      }
+    } catch (e) {
+      // Token fetch can fail for many benign reasons (offline, network,
+      // user signed out mid-call). Don't blow up — server rejects
+      // privileged calls without a token, which is the safe default.
+      if (kDebugMode) {
+        print('ContributionService: getIdToken failed (will retry): $e');
+      }
+    }
+  }
+
   Future<bool> _postToWebhook(Map<String, dynamic> payload, {bool queue = true}) async {
     if (_webhookUrl == null) return false;
+    // Stamp privileged calls with a Firebase ID token before sending.
+    await _attachAuthIfPrivileged(payload);
     try {
       final client = HttpClient();
       client.connectionTimeout = const Duration(seconds: 15);
@@ -579,7 +624,12 @@ class ContributionService extends ChangeNotifier {
       // but we keep the pattern consistent with _postToWebhook().
       request.headers.set('Content-Type', 'application/json; charset=utf-8');
       request.followRedirects = false;
-      request.add(utf8.encode(jsonEncode({'action': 'fetch_pending'})));
+      // fetch_pending is a privileged action — attach the developer's
+      // Firebase ID token so the server (Apps Script) can verify
+      // request comes from samagids@gmail.com.
+      final fetchPayload = <String, dynamic>{'action': 'fetch_pending'};
+      await _attachAuthIfPrivileged(fetchPayload);
+      request.add(utf8.encode(jsonEncode(fetchPayload)));
       final response = await request.close();
 
       String body;
@@ -691,7 +741,10 @@ class ContributionService extends ChangeNotifier {
       final request = await client.postUrl(Uri.parse(_webhookUrl!));
       request.headers.set('Content-Type', 'application/json; charset=utf-8');
       request.followRedirects = false;
-      request.add(utf8.encode(jsonEncode({'action': 'fetch_all'})));
+      // fetch_all is privileged — attach developer Firebase ID token.
+      final fetchAllPayload = <String, dynamic>{'action': 'fetch_all'};
+      await _attachAuthIfPrivileged(fetchAllPayload);
+      request.add(utf8.encode(jsonEncode(fetchAllPayload)));
       final response = await request.close();
 
       String body;
