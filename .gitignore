@@ -22,11 +22,17 @@ scripts/_ios_signing/
 private_key.pem
 *_base64.txt
 
-# Webhook secrets — config/webhooks.json may contain SCRIPT_SECRET, the
-# Apps Script shared key that authenticates apply_contributions.py to the
-# privileged endpoints (approve/reject/fetch_audio). If leaked, anyone
-# can approve their own malicious contributions. NEVER commit.
-config/webhooks.json
+# Webhook secrets — NEVER commit a file that contains SCRIPT_SECRET,
+# the Apps Script shared key that authenticates apply_contributions.py
+# to the privileged endpoints (approve/reject/fetch_audio). If leaked,
+# anyone can approve their own malicious contributions.
+#
+# config/webhooks.json IS tracked because Flutter bundles it as an asset
+# (pubspec.yaml -> assets) so the running app knows which URL to call.
+# It contains ONLY the public webhook URLs (the URLs themselves return
+# `unauthorized` to anyone without a valid Firebase ID token / secret).
+# DO NOT add `script_secret` to that file — keep the secret in the
+# AWING_SCRIPT_SECRET env var or ~/.awing_script_secret instead.
 .awing_script_secret
 
 # IntelliJ related
