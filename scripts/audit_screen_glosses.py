@@ -115,6 +115,13 @@ def audit_file(path: Path, vocab: dict[str, list[str]]) -> list[tuple[str, str, 
             seen.add(key)
 
             norm = normalize_awing(awing_raw)
+            # Awing grammatical particles legitimately have multiple
+            # correct uses (a = pronoun OR subject marker, tə = pronoun
+            # OR progressive aspect, lə = "but" OR locative). Don't
+            # flag them — both senses are correct.
+            if norm in {"a", "ə", "kə", "tə", "lə", "nə", "ma", "po",
+                        "pə", "yə", "yi", "ne", "li"}:
+                continue
             dict_glosses = vocab.get(norm, [])
             if not dict_glosses:
                 # Word not in vocab — can't audit.

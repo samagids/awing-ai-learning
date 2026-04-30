@@ -48,6 +48,25 @@ STOPWORDS = {
     "come", "coming",
 }
 
+# Awing grammatical particles legitimately have multiple correct
+# uses depending on context. Don't flag them as gloss mismatches —
+# whoever uses them is choosing the right sense for their context.
+GRAMMATICAL_PARTICLES = {
+    "a",    # pronoun "he/she" AND subject marker
+    "ə",    # vowel particle, used as subject in some forms
+    "kə",   # past tense marker
+    "tə",   # pronoun "we/us (excl)" AND progressive aspect marker
+    "lə",   # "but" AND locative preposition "to/at/in"
+    "nə",   # "and" / "with"
+    "ma",   # negative particle "not" AND noun "mother"
+    "po",   # "they" pronoun
+    "pə",   # plural subject marker
+    "yə",   # possessive/grammatical marker (Session 51 audit)
+    "yi",   # 3rd person object marker
+    "ne",   # connective
+    "li",   # focus marker
+}
+
 
 def normalize(s: str) -> str:
     s = "".join(c for c in unicodedata.normalize("NFD", s)
@@ -181,9 +200,12 @@ def audit_file(file: Path, vocab: dict, all_tokens: set[str]) -> list[dict]:
                         "detail": f"token {tok!r} not in vocab data",
                     })
 
-            # 2. SUSPICIOUS_GLOSS — single-headword cases only
+            # 2. SUSPICIOUS_GLOSS — single-headword cases only.
+            # Skip grammatical particles (multiple correct uses by design).
             if len(tokens) == 1:
                 head = normalize(tokens[0])
+                if head in GRAMMATICAL_PARTICLES:
+                    continue
                 dict_glosses = vocab.get(head, [])
                 if dict_glosses:
                     screen_words = tokenize_english(english)
