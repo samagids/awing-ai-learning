@@ -281,7 +281,10 @@ jobs:
           # use it as a filename. If for any reason the read returned the
           # fallback "<unreadable>" or something else weird, fail here
           # rather than later when `cp` writes to a garbage path.
-          if ! echo "$PP_UUID" | grep -qE '^[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}$'; then
+          # Accept both upper and lowercase hex — `security cms -D` emits
+          # lowercase UUIDs (e.g. 87a46d09-0135-4785-9ed5-43c177a1020b)
+          # while older Apple tooling emitted uppercase. Either is valid.
+          if ! echo "$PP_UUID" | grep -qE '^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$'; then
             echo "::error::PP_UUID '$PP_UUID' is not a valid UUID. Provisioning profile decode produced an unexpected value."
             echo "  Decoded plist (first 100 lines):"
             head -100 "$PP_PLIST_PATH" || true
