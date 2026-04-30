@@ -32,8 +32,10 @@ class AwingWord {
 
 /// Pronouns — personal and demonstrative pronouns
 const List<AwingWord> pronouns = [
-  // Source: Awing English Dictionary English-Awing Index
+  // Source: Awing English Dictionary English-Awing Index +
+  // AwingOrthography2005.pdf example sentences (pages 9, 11, 12).
   AwingWord(awing: 'ghǒ', english: 'you (singular)', category: 'pronouns', difficulty: 1),
+  // From orthography PDF p.12: "Ghǒ ghɛnɔ́ lə əfó?" (Where are you going?)
 ];
 
 /// Time words — temporal expressions and temporal nouns
@@ -45,6 +47,43 @@ const List<AwingWord> timeWords = [
   AwingWord(awing: 'təká', english: 'never', category: 'time', difficulty: 2),  // Session 56 audit: was "taká" — dict says "təká"
   AwingWord(awing: 'sáŋə', english: 'month', category: 'time', difficulty: 2),  // Session 56 audit: was "saŋ" — dict says "sáŋə"
   AwingWord(awing: 'agha', english: 'season', category: 'time', difficulty: 2),
+];
+
+/// PDF-verified extras — words and forms that appear in
+/// AwingOrthography2005.pdf example sentences but were missing from
+/// the dictionary-derived vocabulary. Added to support PDF-verified
+/// stories and sentences without flagging them as "fabricated".
+/// Pages cited from AwingOrthography2005.pdf.
+const List<AwingWord> pdfVerifiedExtras = [
+  // From p.9: "A kə ghɛnɔ́ məteenɔ́." (He went to the market.)
+  AwingWord(awing: 'ghɛnɔ́', english: 'go, went', category: 'actions', tonePattern: 'high', difficulty: 2),
+  AwingWord(awing: 'məteenɔ́', english: 'market', category: 'things', tonePattern: 'high', difficulty: 2),
+  // From p.11: "Móonə a tə nonnɔ́ a əkwunɔ́." (The baby is lying on the bed.)
+  AwingWord(awing: 'nonnɔ́', english: 'lying, lying down', category: 'actions', tonePattern: 'high', difficulty: 2),
+  AwingWord(awing: 'əkwunɔ́', english: 'bed', category: 'things', tonePattern: 'high', difficulty: 2),
+  // From p.11: "A ghɛlɔ́ lə aké?" (What is he doing?)
+  AwingWord(awing: 'ghɛlɔ́', english: 'doing, do', category: 'actions', tonePattern: 'high', difficulty: 2),
+  AwingWord(awing: 'aké', english: 'what', category: 'pronouns', difficulty: 2),
+  // From p.11: "Po ma ngyǐə lə əfê" (They are not coming here)
+  AwingWord(awing: 'ngyǐə', english: 'coming', category: 'actions', tonePattern: 'rising', difficulty: 2),
+  // əfê here = "here" (locative); dict has separate homonym əfê = "giver"
+  // From p.12: "Po zí nóolə." (They have seen a snake.)
+  AwingWord(awing: 'zí', english: 'have seen, saw', category: 'actions', tonePattern: 'high', difficulty: 2),
+  // From p.12: "Mbá'chi, Apɛnə nə Mbyáb tə nkɔ́'ə atǐə." (Mbachia, Apena and Mbyaabo are climbing a tree.)
+  AwingWord(awing: "nkɔ́'ə", english: 'climbing, climb', category: 'actions', tonePattern: 'high', difficulty: 2),
+  AwingWord(awing: 'atǐə', english: 'tree', category: 'nature', tonePattern: 'rising', difficulty: 2),
+  // Proper names from p.12 — Awing names that appear in orthography examples
+  AwingWord(awing: "Mbá'chi", english: 'Mbachia (name)', category: 'family', tonePattern: 'high', difficulty: 2),
+  AwingWord(awing: 'Apɛnə', english: 'Apena (name)', category: 'family', difficulty: 2),
+  AwingWord(awing: 'Mbyáb', english: 'Mbyaabo (name)', category: 'family', tonePattern: 'high', difficulty: 2),
+  // From p.10: "Lɛ̌ nəpɔ́'ə." (This is a pumpkin.)
+  AwingWord(awing: 'Lɛ̌', english: 'this is', category: 'pronouns', tonePattern: 'rising', difficulty: 2),
+  // Homonyms: orthography uses these meanings that differ from
+  // dictionary's primary listing. Both are valid in actual Awing.
+  AwingWord(awing: 'móonə', english: 'baby, child', category: 'family', difficulty: 1),
+  AwingWord(awing: 'əfó', english: 'where (interrogative)', category: 'pronouns', difficulty: 2),
+  AwingWord(awing: 'ma', english: 'not (negative particle)', category: 'descriptive', difficulty: 2),
+  AwingWord(awing: 'əfê', english: 'here, this place', category: 'descriptive', tonePattern: 'falling', difficulty: 2),
 ];
 
 // ============================================================
@@ -5352,6 +5391,9 @@ const List<AwingWord> dictionaryEntries = [
 
 /// All vocabulary combined for easy access
 List<AwingWord> get allVocabulary => [
+  ...pronouns,
+  ...timeWords,
+  ...pdfVerifiedExtras,
   ...bodyParts,
   ...animalsNature,
   ...foodDrink,

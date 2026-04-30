@@ -96,7 +96,7 @@ const List<AwingSentence> awingSentences = [
       AwingWord('po', 'they'),
       AwingWord('ghɛnɔ́', 'go'),
       AwingWord('lə', 'to'),
-      AwingWord('nkǐə', 'stream'),
+      AwingWord('nkǐə', 'river'),
     ],
   ),
   // Page 10: "Lɛ̌ nəpɔ'ɔ́."

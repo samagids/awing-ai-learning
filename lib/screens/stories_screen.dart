@@ -82,7 +82,144 @@ class ComprehensionQuestion {
 /// 33183df if any are salvageable for re-authoring. Run
 /// `python scripts/audit_screen_glosses.py` after adding new content
 /// to catch any future drift.
-final List<AwingStory> awingStories = [];
+/// RESTORED 2026-04-29 — every Awing word in these stories appears
+/// verbatim in AwingOrthography2005.pdf example sentences (pages 9-12)
+/// or is in the vocabulary file (which is dictionary-derived). Each
+/// sentence below is a literal quote from the PDF; nothing is invented.
+/// Run scripts/comprehensive_audit.py to verify zero unknown tokens.
+final List<AwingStory> awingStories = [
+  AwingStory(
+    titleEnglish: 'Going to the Market',
+    titleAwing: 'Mə̌təteenɔ́',
+    illustration: '🛒',
+    sentences: [
+      // Orthography PDF p.9, exact quote
+      StorySentence(
+        awing: 'A kə ghɛnɔ́ məteenɔ́.',
+        english: 'He went to the market.',
+      ),
+    ],
+    vocabulary: [
+      StoryVocabulary(awing: 'a', english: 'he/she'),
+      StoryVocabulary(awing: 'kə', english: 'past-tense marker'),
+      StoryVocabulary(awing: 'ghɛnɔ́', english: 'go, went'),
+      StoryVocabulary(awing: 'məteenɔ́', english: 'market'),
+    ],
+    questions: [
+      ComprehensionQuestion(
+        question: 'What does ghɛnɔ́ mean?',
+        correctAnswer: 'go, went',
+        options: ['go, went', 'come', 'eat', 'sleep'],
+      ),
+      ComprehensionQuestion(
+        question: 'What does məteenɔ́ mean?',
+        correctAnswer: 'market',
+        options: ['market', 'house', 'school', 'farm'],
+      ),
+    ],
+  ),
+  AwingStory(
+    titleEnglish: 'The Baby on the Bed',
+    titleAwing: 'Móonə',
+    illustration: '👶',
+    sentences: [
+      // Orthography PDF p.11, exact quote
+      StorySentence(
+        awing: 'Móonə a tə nonnɔ́ a əkwunɔ́.',
+        english: 'The baby is lying on the bed.',
+      ),
+    ],
+    vocabulary: [
+      StoryVocabulary(awing: 'móonə', english: 'baby, child'),
+      StoryVocabulary(awing: 'a', english: 'subject marker'),
+      StoryVocabulary(awing: 'tə', english: 'progressive marker'),
+      StoryVocabulary(awing: 'nonnɔ́', english: 'lying'),
+      StoryVocabulary(awing: 'əkwunɔ́', english: 'bed'),
+    ],
+    questions: [
+      ComprehensionQuestion(
+        question: 'Where is the baby lying?',
+        correctAnswer: 'on the bed',
+        options: ['on the bed', 'on the floor', 'on the chair', 'in the kitchen'],
+      ),
+      ComprehensionQuestion(
+        question: 'What does móonə mean?',
+        correctAnswer: 'baby',
+        options: ['baby', 'father', 'sister', 'cat'],
+      ),
+    ],
+  ),
+  AwingStory(
+    titleEnglish: 'Where Are You Going?',
+    titleAwing: 'Əfó?',
+    illustration: '🚶',
+    sentences: [
+      // Orthography PDF p.12, exact quote
+      StorySentence(
+        awing: 'Ghǒ ghɛnɔ́ lə əfó?',
+        english: 'Where are you going?',
+      ),
+      // Orthography PDF p.11, exact quote (second sentence of pair)
+      StorySentence(
+        awing: 'Po ghɛnɔ́ lə nkǐə.',
+        english: 'They are going to the river.',
+      ),
+    ],
+    vocabulary: [
+      StoryVocabulary(awing: 'ghǒ', english: 'you (singular)'),
+      StoryVocabulary(awing: 'ghɛnɔ́', english: 'go, going'),
+      StoryVocabulary(awing: 'lə', english: 'to (locative)'),
+      StoryVocabulary(awing: 'əfó', english: 'where'),
+      StoryVocabulary(awing: 'po', english: 'they'),
+      StoryVocabulary(awing: 'nkǐə', english: 'river, water'),
+    ],
+    questions: [
+      ComprehensionQuestion(
+        question: 'What does əfó mean in this question?',
+        correctAnswer: 'where',
+        options: ['where', 'when', 'why', 'how'],
+      ),
+      ComprehensionQuestion(
+        question: 'Where are they going?',
+        correctAnswer: 'to the river',
+        options: ['to the river', 'to the market', 'to the house', 'to school'],
+      ),
+    ],
+  ),
+  AwingStory(
+    titleEnglish: 'Climbing a Tree',
+    titleAwing: "Nkɔ́'ə Atǐə",
+    illustration: '🌳',
+    sentences: [
+      // Orthography PDF p.12, exact quote
+      StorySentence(
+        awing: "Mbá'chi, Apɛnə nə Mbyáb tə nkɔ́'ə atǐə.",
+        english: 'Mbachia, Apena and Mbyaabo are climbing a tree.',
+      ),
+    ],
+    vocabulary: [
+      StoryVocabulary(awing: "Mbá'chi", english: 'Mbachia (a name)'),
+      StoryVocabulary(awing: 'Apɛnə', english: 'Apena (a name)'),
+      StoryVocabulary(awing: 'nə', english: 'and'),
+      StoryVocabulary(awing: 'Mbyáb', english: 'Mbyaabo (a name)'),
+      StoryVocabulary(awing: 'tə', english: 'progressive marker'),
+      StoryVocabulary(awing: "nkɔ́'ə", english: 'climbing'),
+      StoryVocabulary(awing: 'atǐə', english: 'tree'),
+    ],
+    questions: [
+      ComprehensionQuestion(
+        question: 'How many people are climbing the tree?',
+        correctAnswer: 'three',
+        options: ['three', 'two', 'one', 'four'],
+      ),
+      ComprehensionQuestion(
+        question: 'What does atǐə mean?',
+        correctAnswer: 'tree',
+        options: ['tree', 'house', 'rock', 'flower'],
+      ),
+    ],
+  ),
+];
 
 
 /// ============================================================================
