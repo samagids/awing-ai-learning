@@ -47,14 +47,18 @@ const List<AwingSentence> awingSentences = [
       AwingWord('ko', 'takes'),
     ],
   ),
-  // 3-word sentence — ndě = water (dictionary)
+  // CORRECTED 2026-04-29: ndě does NOT mean water. Per native speaker
+  // (Dr. Sama), water AND river are both "nkǐə" (rising tone, caron) in
+  // real usage — same word, two meanings. The 2007 Awing English
+  // Dictionary lists ndě=water as a homonym but native usage rejects
+  // that; nkǐə is the only word for water/river.
   AwingSentence(
-    awing: 'Mǎ nô ndě',
+    awing: 'Mǎ nô nkǐə',
     english: 'Mother drinks water',
     words: [
       AwingWord('Mǎ', 'Mother'),
       AwingWord('nô', 'drinks'),
-      AwingWord('ndě', 'water'),
+      AwingWord('nkǐə', 'water'),
     ],
   ),
   // yǐə = come (p.8, RISING tone ǐ, not falling î)

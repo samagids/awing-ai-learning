@@ -448,6 +448,11 @@ const List<AwingWord> actions = [
 const List<AwingWord> thingsObjects = [
   // Beginner — everyday objects and food
   AwingWord(awing: 'ajúmə', english: 'thing', category: 'things'),
+  // ndě homonym 3: house, inheritance. Used in compounds like
+  // ndě móga (kitchen = house of cooking), ndě melo'ə (bar = house of
+  // drinking), ndě móona (naming ceremony). The word for "water/river"
+  // is nkǐə (rising tone), NOT ndě.
+  AwingWord(awing: 'ndě', english: 'house, inheritance', category: 'things', difficulty: 2),
   AwingWord(awing: 'nəngoomá', english: 'plantain', category: 'things'),  // Session 56 audit: was "nəgoomɔ́" — dict says "nəngoomá"
   AwingWord(awing: 'ngwáŋə', english: 'salt', category: 'things'),
   AwingWord(awing: 'ndzɔ', english: 'beans', category: 'food'),  // Session 56 audit: was "ndzǒ" — dict says "ndzɔ"; Session 57: category 'things'→'food' (beans is food)
@@ -587,6 +592,12 @@ const List<AwingWord> familyPeople = [
   AwingWord(awing: 'mǎ', english: 'mother', category: 'family', pluralForm: 'pəmǎ'),
   AwingWord(awing: 'tátə', english: 'grandfather', category: 'family'),
   AwingWord(awing: 'mábna', english: 'baby', category: 'family'),
+  // ndě has 3 homonyms per dict + native speaker (Dr. Sama):
+  // (1) neck (body part) — entry 60 in bodyParts
+  // (2) elder, person of higher rank — vocative form of address
+  // (3) house, inheritance — entry below in thingsObjects
+  // Water/river is NOT one of the meanings — that's nkǐə (rising tone).
+  AwingWord(awing: 'ndě', english: 'elder, respected person', category: 'family', difficulty: 2),
   // REMOVED yə "he/she" — per Awing English Dictionary yə is an associative/possessive grammatical marker, not the pronoun for "he/she" (Session 51 audit, EXACT match)
   AwingWord(awing: "alá'ə", english: 'village', category: 'family', pluralForm: "əlá'ə"),
   AwingWord(awing: 'adě', english: 'house', category: 'family'),
