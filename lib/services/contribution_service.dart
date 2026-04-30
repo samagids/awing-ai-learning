@@ -1,13 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'cloud_backup_service.dart';
 
 /// Type of contribution a user can submit.
 enum ContributionType {
@@ -227,9 +227,20 @@ class ContributionService extends ChangeNotifier {
     'fetch_audio',
   };
 
-  /// If the requested webhook action is privileged AND a Firebase user
-  /// is signed in, attach a fresh ID token to the payload. The server
-  /// rejects privileged calls without a valid developer-email token.
+  /// If the requested webhook action is privileged AND a Google user
+  /// is signed in, attach the Google OAuth ID token to the payload.
+  ///
+  /// IMPORTANT: this MUST be the Google ID token, NOT the Firebase ID
+  /// token. The webhook verifies via Google's `oauth2.googleapis.com/
+  /// tokeninfo` endpoint, which only accepts tokens whose issuer is
+  /// `https://accounts.google.com` (Google OAuth) — Firebase tokens
+  /// have issuer `https://securetoken.google.com/<project-id>` and
+  /// would always 4xx on tokeninfo.
+  ///
+  /// `loginGoogleSignIn` (declared in cloud_backup_service.dart) caches
+  /// the Google account; `account.authentication.idToken` returns the
+  /// Google OAuth ID token, refreshed by the GoogleSignIn plugin as
+  /// needed.
   ///
   /// We never throw on token-fetch failure — a privileged call without
   /// a token will simply be rejected by the server, which is the
@@ -238,21 +249,22 @@ class ContributionService extends ChangeNotifier {
     final action = payload['action']?.toString() ?? '';
     if (!_privilegedActions.contains(action)) return;
     try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) return;
-      // Force-refresh to keep tokens fresh; expired tokens server-side
-      // would otherwise look like an unauthorized call. The result is
-      // a short string we add to the payload — never logged.
-      final token = await user.getIdToken(true);
-      if (token != null && token.isNotEmpty) {
-        payload['idToken'] = token;
+      // Reach into the same Google sign-in instance the cloud backup
+      // service uses, so we don't trigger a second silent sign-in.
+      final account = CloudBackupService.loginGoogleSignIn.currentUser
+          ?? await CloudBackupService.loginGoogleSignIn.signInSilently();
+      if (account == null) return;
+      final googleAuth = await account.authentication;
+      final idToken = googleAuth.idToken;
+      if (idToken != null && idToken.isNotEmpty) {
+        payload['idToken'] = idToken;
       }
     } catch (e) {
       // Token fetch can fail for many benign reasons (offline, network,
       // user signed out mid-call). Don't blow up — server rejects
       // privileged calls without a token, which is the safe default.
       if (kDebugMode) {
-        print('ContributionService: getIdToken failed (will retry): $e');
+        print('ContributionService: googleAuth.idToken failed: $e');
       }
     }
   }

@@ -100,9 +100,21 @@ contributions/applied/
 contributions/last_version.txt
 contributions/regenerate_words.json
 
-# Clasp project dirs (contain .clasp.json with script IDs)
-scripts/clasp_analytics/
-scripts/clasp_contributions/
+# Clasp project dirs (mostly local — .clasp.json holds private script
+# IDs and Code.js is auto-mirrored from the .gs source by
+# scripts/setup_and_deploy.py). We DO track each project's
+# appsscript.json because it declares the OAuth scopes the deployed
+# webhook needs at runtime — when scopes change (e.g. adding
+# script.external_request for UrlFetchApp), the manifest update is the
+# canonical record and must survive across machines.
+#
+# IMPORTANT: use the `dir/*` pattern (NOT `dir/`). When a directory
+# itself is excluded, no `!` exception inside it can re-include files —
+# git stops descending into the directory entirely.
+scripts/clasp_analytics/*
+scripts/clasp_contributions/*
+!scripts/clasp_analytics/appsscript.json
+!scripts/clasp_contributions/appsscript.json
 
 # Large files — model and video downloads
 assets/model.tflite
