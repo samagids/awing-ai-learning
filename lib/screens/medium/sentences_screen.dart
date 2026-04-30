@@ -29,48 +29,15 @@ class AwingWord {
 // Sentences verified from AwingOrthography2005.pdf.
 // Individual words verified from orthography page 8 tone chart and page 9 noun classes.
 const List<AwingSentence> awingSentences = [
-  // Simple 2-word sentences — words verified from orthography tone chart (p.8)
-  // yə = he (p.8), ko = take (p.8), mǎ = mother (p.9)
-  AwingSentence(
-    awing: 'Yə nô',
-    english: 'He/she drinks',
-    words: [
-      AwingWord('Yə', 'He/she'),
-      AwingWord('nô', 'drinks'),
-    ],
-  ),
-  AwingSentence(
-    awing: 'Mǎ ko',
-    english: 'Mother takes',
-    words: [
-      AwingWord('Mǎ', 'Mother'),
-      AwingWord('ko', 'takes'),
-    ],
-  ),
-  // CORRECTED 2026-04-29: ndě does NOT mean water. Per native speaker
-  // (Dr. Sama), water AND river are both "nkǐə" (rising tone, caron) in
-  // real usage — same word, two meanings. The 2007 Awing English
-  // Dictionary lists ndě=water as a homonym but native usage rejects
-  // that; nkǐə is the only word for water/river.
-  AwingSentence(
-    awing: 'Mǎ nô nkǐə',
-    english: 'Mother drinks water',
-    words: [
-      AwingWord('Mǎ', 'Mother'),
-      AwingWord('nô', 'drinks'),
-      AwingWord('nkǐə', 'water'),
-    ],
-  ),
-  // yǐə = come (p.8, RISING tone ǐ, not falling î)
-  AwingSentence(
-    awing: 'Yə yǐə',
-    english: 'He/she comes',
-    words: [
-      AwingWord('Yə', 'He/she'),
-      AwingWord('yǐə', 'comes'),
-    ],
-  ),
-  // Longer sentences — VERIFIED from orthography PDF
+  // AUDIT 2026-04-29: 4 short 2-word sentences removed — they used
+  // 'yə' as "He/she" but Session 51 audit confirmed yə is actually
+  // a grammatical/possessive marker, not a pronoun. The combinations
+  // 'Mǎ ko' / 'Mǎ nô nkǐə' were also fabricated 2-word sentences
+  // not present in any source PDF. Per project rule, all Awing must
+  // be PDF-verified. The 7 longer sentences below ARE PDF-verified
+  // (orthography pages 9, 11, 12) and stay.
+  //
+  // PDF-verified sentences from AwingOrthography2005.pdf:
   // Page 11: "Móonə a tə nonnɔ́ a əkwunɔ́."
   AwingSentence(
     awing: "Móonə a tə nonnɔ́ a əkwunɔ́.",
