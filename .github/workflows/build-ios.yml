@@ -248,21 +248,45 @@ jobs:
           # holds the WRONG profile (e.g. a Development profile vs App
           # Store), we'll see it here BEFORE wasting 10 min on a doomed
           # archive.
-          PP_PLIST=$(security cms -D -i "$PP_PATH" 2>/dev/null || true)
-          if [ -z "$PP_PLIST" ]; then
+          # Write the decoded XML plist to a real tempfile, then read every
+          # field from THAT file — never pipe the plist string through
+          # `echo` to `PlistBuddy /dev/stdin`. The pipe form races: when
+          # PlistBuddy closes its stdin early on one of 4 reads, `echo`
+          # gets a broken pipe and PlistBuddy returns literal error text
+          # ("Error Reading File: /dev/stdin"). A previous run baked that
+          # error string into PP_UUID and then used it as a filename in
+          # `cp`, breaking the whole signing step on a transient race.
+          # Reading from a real file path is fully deterministic.
+          PP_PLIST_PATH="$RUNNER_TEMP/pp_decoded.plist"
+          if ! security cms -D -i "$PP_PATH" -o "$PP_PLIST_PATH" 2>/dev/null; then
             echo "::error::Could not decode $PP_PATH as a CMS-wrapped mobileprovision. Secret content is corrupt."
             exit 1
           fi
+          if [ ! -s "$PP_PLIST_PATH" ]; then
+            echo "::error::security cms -D produced an empty plist at $PP_PLIST_PATH."
+            exit 1
+          fi
 
-          PP_NAME=$(echo "$PP_PLIST" | /usr/libexec/PlistBuddy -c "Print :Name" /dev/stdin 2>/dev/null || echo "<unreadable>")
-          PP_TEAM=$(echo "$PP_PLIST" | /usr/libexec/PlistBuddy -c "Print :TeamIdentifier:0" /dev/stdin 2>/dev/null || echo "<unreadable>")
-          PP_APPID=$(echo "$PP_PLIST" | /usr/libexec/PlistBuddy -c "Print :Entitlements:application-identifier" /dev/stdin 2>/dev/null || echo "<unreadable>")
-          PP_UUID=$(echo "$PP_PLIST" | /usr/libexec/PlistBuddy -c "Print :UUID" /dev/stdin 2>/dev/null || echo "<unreadable>")
+          PP_NAME=$(/usr/libexec/PlistBuddy -c "Print :Name" "$PP_PLIST_PATH" 2>/dev/null || echo "<unreadable>")
+          PP_TEAM=$(/usr/libexec/PlistBuddy -c "Print :TeamIdentifier:0" "$PP_PLIST_PATH" 2>/dev/null || echo "<unreadable>")
+          PP_APPID=$(/usr/libexec/PlistBuddy -c "Print :Entitlements:application-identifier" "$PP_PLIST_PATH" 2>/dev/null || echo "<unreadable>")
+          PP_UUID=$(/usr/libexec/PlistBuddy -c "Print :UUID" "$PP_PLIST_PATH" 2>/dev/null || echo "<unreadable>")
           echo "Provisioning profile contents:"
           echo "  Name:                   $PP_NAME"
           echo "  TeamIdentifier:         $PP_TEAM"
           echo "  application-identifier: $PP_APPID"
           echo "  UUID:                   $PP_UUID"
+
+          # Validate PP_UUID looks like a UUID (8-4-4-4-12 hex) BEFORE we
+          # use it as a filename. If for any reason the read returned the
+          # fallback "<unreadable>" or something else weird, fail here
+          # rather than later when `cp` writes to a garbage path.
+          if ! echo "$PP_UUID" | grep -qE '^[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}$'; then
+            echo "::error::PP_UUID '$PP_UUID' is not a valid UUID. Provisioning profile decode produced an unexpected value."
+            echo "  Decoded plist (first 100 lines):"
+            head -100 "$PP_PLIST_PATH" || true
+            exit 1
+          fi
 
           EXPECTED_NAME="Awing AI Learning App Store"
           EXPECTED_TEAM="9GUMAMVYJF"
