@@ -65,6 +65,46 @@ class _ConversationScreenState extends State<ConversationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Empty-state guard (Session 60: removed fabricated conversations).
+    if (_conversations.isEmpty) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Conversation Practice'),
+          backgroundColor: Colors.red,
+          foregroundColor: Colors.white,
+        ),
+        body: const Center(
+          child: Padding(
+            padding: EdgeInsets.all(32),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.forum_outlined, size: 80, color: Colors.grey),
+                SizedBox(height: 16),
+                Text(
+                  'Conversations coming soon',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'We are preparing verified Awing conversations '
+                  'with native speakers. Check back in the next '
+                  'update!',
+                  style: TextStyle(fontSize: 14, color: Colors.grey),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     final conversation = _conversations[_currentConversationIndex];
     final lines = conversation['lines'] as List<Map<String, String>>;
     final currentLine = lines[_currentLineIndex];
@@ -309,167 +349,10 @@ class _ConversationScreenState extends State<ConversationScreen> {
   }
 }
 
-const List<Map<String, dynamic>> _conversations = [
-  {
-    'title': 'Greeting',
-    'context': 'Two friends meet on the path',
-    'lines': [
-      {
-        'speaker': 'Person A',
-        'awing': "Cha'tɔ́!",
-        'english': 'Greetings!',
-        'tip': 'Cha\'tɔ́ is the standard greeting. The tone is important!',
-      },
-      {
-        'speaker': 'Person B',
-        'awing': "Cha'tɔ́! Yə yǐə?",
-        'english': 'Greetings! How are you? (Is he/she coming?)',
-        'tip': 'Yə yǐə? is a polite way to ask someone\'s status.',
-      },
-      {
-        'speaker': 'Person A',
-        'awing': 'Ndèe, mǎ wə nə mə kwátə.',
-        'english': 'Well, my mother is fine.',
-        'tip': 'Mǎ (mother) can be used to show respect or closeness.',
-      },
-    ],
-  },
-  {
-    'title': 'Asking for Something',
-    'context': 'A child asks a parent for food',
-    'lines': [
-      {
-        'speaker': 'Person A',
-        'awing': 'Mǎ, ndèe?',
-        'english': 'Mother, please? (Can I have something?)',
-        'tip': 'Ndèe shows respect and politeness when asking.',
-      },
-      {
-        'speaker': 'Person B',
-        'awing': 'Ache kə?',
-        'english': 'What do you want?',
-        'tip': 'Ache means "what". It\'s a natural question word.',
-      },
-      {
-        'speaker': 'Person A',
-        'awing': 'Ko akwe pə nəgoomɔ́.',
-        'english': 'Give me some plantain, please.',
-        'tip': 'Ko means "take/give". Pə shows politeness with the request.',
-      },
-      {
-        'speaker': 'Person B',
-        'awing': "Wo'! Ee wə nə fɛ́ə.",
-        'english': 'Sure! It is there.',
-        'tip': 'Wo\' means "okay". Ee marks agreement and emphasis.',
-      },
-    ],
-  },
-  {
-    'title': 'Visiting a Friend',
-    'context': 'Arriving at a friend\'s house',
-    'lines': [
-      {
-        'speaker': 'Person A',
-        'awing': "Cha'tɔ́! Yə yǐə?",
-        'english': 'Hello! How are you?',
-        'tip': 'This is the standard greeting when arriving.',
-      },
-      {
-        'speaker': 'Person B',
-        'awing': "Cha'tɔ́! Yə kwa'ə.",
-        'english': 'Hello! I am well.',
-        'tip': 'Kwa\'ə shows the person is doing well and happy.',
-      },
-      {
-        'speaker': 'Person A',
-        'awing': 'Apô wə nə mə ntô.',
-        'english': 'I came to visit (my hand/heart is here).',
-        'tip': 'Apô (hand) can represent coming with good intentions.',
-      },
-      {
-        'speaker': 'Person B',
-        'awing': 'Ee wə nə mə fɛ́ə. Ko pə asé.',
-        'english': 'Good! Come and sit down.',
-        'tip': 'Asé means "place" or "sit". Ko is the invitation.',
-      },
-    ],
-  },
-  {
-    'title': 'Learning Together',
-    'context': 'A teacher and student learning Awing',
-    'lines': [
-      {
-        'speaker': 'Person A',
-        'awing': 'Ache fɛ́ə ndo?',
-        'english': 'What is this thing?',
-        'tip': 'Ndo means "thing". This is how you ask what something is.',
-      },
-      {
-        'speaker': 'Person B',
-        'awing': 'Ee wə nə apô. A apô.',
-        'english': 'It is a hand. A hand.',
-        'tip': 'Repeating the word emphasizes it for learning.',
-      },
-      {
-        'speaker': 'Person A',
-        'awing': 'Apô. A-po. Akwe?',
-        'english': 'Hand. A-po. What does it mean?',
-        'tip': 'Breaking it down helps with learning pronunciation.',
-      },
-      {
-        'speaker': 'Person B',
-        'awing': 'Apô wə nə ajúmə wə nə mə pə ko.',
-        'english': 'A hand is the thing we use to take things.',
-        'tip': 'This explanation helps understand the word through context.',
-      },
-    ],
-  },
-  {
-    'title': 'Simple Exchange',
-    'context': 'Quick daily conversation',
-    'lines': [
-      {
-        'speaker': 'Person A',
-        'awing': 'Ee wə nə kó?',
-        'english': 'Is it good?',
-        'tip': 'Kó can mean "good" or "fine". This asks for confirmation.',
-      },
-      {
-        'speaker': 'Person B',
-        'awing': 'Ee! Kó ndo! Ndèe?',
-        'english': 'Yes! Good thing! Please?',
-        'tip': 'Ndèe at the end makes a statement turn into a polite question.',
-      },
-      {
-        'speaker': 'Person A',
-        'awing': 'Wo\'! Ee ndèe mə kwa\'ə.',
-        'english': 'Sure! That\'s very good.',
-        'tip': 'Wo\' is agreement. Ndèe adds emphasis and politeness.',
-      },
-    ],
-  },
-  {
-    'title': 'Farewell',
-    'context': 'Saying goodbye to a friend',
-    'lines': [
-      {
-        'speaker': 'Person A',
-        'awing': 'Tifwə nə pə zə wǎ lɛ́ə.',
-        'english': 'I will go now.',
-        'tip': 'Tifwə shows gentle intention to leave.',
-      },
-      {
-        'speaker': 'Person B',
-        'awing': 'Akwe! Wə yǐə ndèe.',
-        'english': 'Okay! Come back please.',
-        'tip': 'Ndèe at the end makes this a hopeful request.',
-      },
-      {
-        'speaker': 'Person A',
-        'awing': "Ee! Cha'tɔ́ ndèe!",
-        'english': 'Yes! Goodbye! (Greetings please!)',
-        'tip': 'Cha\'tɔ́ means both "hello" and "goodbye" depending on context.',
-      },
-    ],
-  },
-];
+// Session 60: Removed all 6 conversations — Session 30 audit flagged
+// Cha'tɔ́, Wo'!, and Yə kwa'ə as fabricated phrases that survived
+// earlier cleanup. Conversations screen will show empty until verified
+// content is sourced from AwingOrthography2005.pdf or confirmed by
+// Dr. Sama. The original entries are preserved in git history (last
+// commit before this change: 4e8835e).
+const List<Map<String, dynamic>> _conversations = [];
