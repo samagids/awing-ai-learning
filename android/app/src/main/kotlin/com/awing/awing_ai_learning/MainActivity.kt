@@ -1,5 +1,7 @@
 package com.awing.awing_ai_learning
 
+import android.os.Bundle
+import androidx.activity.enableEdgeToEdge
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -8,6 +10,17 @@ import java.io.FileOutputStream
 
 class MainActivity : FlutterActivity() {
     private val CHANNEL = "com.awing.learning/asset_pack"
+
+    // Android 15 (SDK 35) requires apps to opt into edge-to-edge display.
+    // enableEdgeToEdge() is the AndroidX-provided backwards-compatible API
+    // that works on Android 5.0+ and silences the Play Console warning
+    // "Edge-to-edge may not display for all users". It also handles the
+    // deprecated APIs (setStatusBarColor / setNavigationBarColor) that
+    // were flagged in the same warning bundle.
+    override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge()
+        super.onCreate(savedInstanceState)
+    }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)

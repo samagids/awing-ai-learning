@@ -18,7 +18,7 @@ class AnalyticsService {
 
   // Keep this in sync with AboutScreen.appVersion in lib/screens/about_screen.dart.
   // Cannot import AboutScreen here without circular deps, so it's a manual mirror.
-  static const String _appVersion = '1.11.2';
+  static const String _appVersion = '1.11.3';
   static const int _batchSize = 20;
   static const Duration _flushInterval = Duration(minutes: 5);
   static const String _keyDeviceId = 'analytics_device_id';

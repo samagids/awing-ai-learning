@@ -72,3 +72,10 @@ flutter {
     source = "../.."
 }
 
+// Explicit dependency for `enableEdgeToEdge()` (androidx.activity 1.8.0+).
+// Required for the Android 15 (SDK 35) edge-to-edge fix in MainActivity.
+// Flutter's transitive activity dep may be older.
+dependencies {
+    implementation("androidx.activity:activity-ktx:1.9.2")
+}
+
