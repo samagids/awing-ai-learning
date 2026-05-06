@@ -2,13 +2,18 @@ package com.awing.awing_ai_learning
 
 import android.os.Bundle
 import androidx.activity.enableEdgeToEdge
-import io.flutter.embedding.android.FlutterActivity
+import io.flutter.embedding.android.FlutterFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import java.io.File
 import java.io.FileOutputStream
 
-class MainActivity : FlutterActivity() {
+// Extends FlutterFragmentActivity (NOT FlutterActivity) so the activity
+// inherits from androidx.fragment.app.FragmentActivity → ComponentActivity.
+// This is required because the AndroidX `enableEdgeToEdge()` extension
+// is only defined on ComponentActivity. FlutterActivity (the default)
+// extends android.app.Activity directly, which would fail to resolve.
+class MainActivity : FlutterFragmentActivity() {
     private val CHANNEL = "com.awing.learning/asset_pack"
 
     // Android 15 (SDK 35) requires apps to opt into edge-to-edge display.
